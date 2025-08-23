@@ -57,46 +57,50 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="container mx-auto px-4 py-20 lg:py-32">
-          <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6">
-              Effortless time tracking for{" "}
-              <span className="text-primary">freelancers</span>
-            </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-              Simple start/stop timer, seamless project and client management, 
-              and clean reports that help you focus on what matters most.
-            </p>
-            <Button 
-              onClick={scrollToSignup}
-              size="lg" 
-              className="text-lg px-8 py-6 h-auto"
-            >
-              Join the Waitlist
-            </Button>
+      <header>
+        {/* Hero Section */}
+        <section className="relative overflow-hidden">
+          <div className="container mx-auto px-4 py-20 lg:py-32">
+            <div className="text-center max-w-4xl mx-auto">
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6">
+                Effortless time tracking for{" "}
+                <span className="text-primary">freelancers</span>
+              </h1>
+              <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+                Simple start/stop timer, seamless project and client management, 
+                and clean reports that help you focus on what matters most.
+              </p>
+              <Button 
+                onClick={scrollToSignup}
+                size="lg" 
+                className="text-lg px-8 py-6 h-auto"
+                aria-label="Scroll to email signup form"
+              >
+                Join the Waitlist
+              </Button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </header>
 
-      {/* Feature Teaser Section */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Everything you need to track time efficiently
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              TimeHatch is designed specifically for freelancers who want to focus on their work, 
-              not on complicated time-tracking software.
-            </p>
-          </div>
+      <main>
+        {/* Feature Teaser Section */}
+        <section className="py-20 bg-muted/30" aria-labelledby="features-heading">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 id="features-heading" className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Everything you need to track time efficiently
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                TimeHatch is designed specifically for freelancers who want to focus on their work, 
+                not on complicated time-tracking software.
+              </p>
+            </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <Card className="text-center border-0 shadow-sm">
               <CardContent className="pt-8 pb-6">
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4" aria-hidden="true">
                   <Clock className="w-6 h-6 text-primary" />
                 </div>
                 <h3 className="text-xl font-semibold mb-3">Intuitive Time Tracking</h3>
@@ -108,7 +112,7 @@ const LandingPage = () => {
 
             <Card className="text-center border-0 shadow-sm">
               <CardContent className="pt-8 pb-6">
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4" aria-hidden="true">
                   <Users className="w-6 h-6 text-primary" />
                 </div>
                 <h3 className="text-xl font-semibold mb-3">Project Management</h3>
@@ -120,7 +124,7 @@ const LandingPage = () => {
 
             <Card className="text-center border-0 shadow-sm">
               <CardContent className="pt-8 pb-6">
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4" aria-hidden="true">
                   <FileText className="w-6 h-6 text-primary" />
                 </div>
                 <h3 className="text-xl font-semibold mb-3">Smart Reporting</h3>
@@ -132,7 +136,7 @@ const LandingPage = () => {
 
             <Card className="text-center border-0 shadow-sm">
               <CardContent className="pt-8 pb-6">
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4" aria-hidden="true">
                   <Smartphone className="w-6 h-6 text-primary" />
                 </div>
                 <h3 className="text-xl font-semibold mb-3">Modern UI/UX</h3>
@@ -146,10 +150,10 @@ const LandingPage = () => {
       </section>
 
       {/* Signup Section */}
-      <section id="signup" className="py-20">
+      <section id="signup" className="py-20" aria-labelledby="signup-heading">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+            <h2 id="signup-heading" className="text-3xl md:text-4xl font-bold text-foreground mb-4">
               Be the first to know when TimeHatch launches
             </h2>
             <p className="text-lg text-muted-foreground mb-8">
@@ -157,8 +161,8 @@ const LandingPage = () => {
             </p>
 
             {isSubmitted ? (
-              <div className="bg-primary/10 border border-primary/20 rounded-lg p-6">
-                <CheckCircle className="w-12 h-12 text-primary mx-auto mb-4" />
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-6" role="alert">
+                <CheckCircle className="w-12 h-12 text-primary mx-auto mb-4" aria-hidden="true" />
                 <h3 className="text-xl font-semibold text-primary mb-2">Thank you for joining!</h3>
                 <p className="text-muted-foreground">
                   We'll keep you updated on our progress and notify you as soon as TimeHatch is ready.
@@ -173,43 +177,49 @@ const LandingPage = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   className="flex-1"
+                  aria-label="Email address for waitlist signup"
                 />
                 <Button 
                   type="submit" 
                   disabled={isLoading}
                   size="lg"
                   className="whitespace-nowrap"
+                  aria-describedby={isLoading ? "loading-status" : undefined}
                 >
                   {isLoading ? "Joining..." : "Join the Waitlist"}
                 </Button>
+                {isLoading && <span id="loading-status" className="sr-only">Processing your request</span>}
               </form>
             )}
           </div>
         </div>
       </section>
+      </main>
 
-      {/* Coming Soon / About Section */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-              Coming Soon
-            </h2>
-            <p className="text-lg text-muted-foreground mb-6">
-              TimeHatch is currently in active development. We're building something special – 
-              a time-tracking tool that actually makes your life easier, not more complicated.
-            </p>
-            <p className="text-lg text-muted-foreground mb-8">
-              By joining our waitlist, you'll get exclusive early access and help shape the future 
-              of TimeHatch with your feedback. We respect your privacy and will never share your 
-              email with third parties. You can unsubscribe at any time.
-            </p>
-            <div className="text-sm text-muted-foreground">
-              <p>Questions? Contact us at hello@timehatch.app</p>
+      <footer>
+        {/* Coming Soon / About Section */}
+        <section className="py-20 bg-muted/30" aria-labelledby="about-heading">
+          <div className="container mx-auto px-4">
+            <div className="max-w-3xl mx-auto text-center">
+              <h2 id="about-heading" className="text-3xl md:text-4xl font-bold text-foreground mb-6">
+                Coming Soon
+              </h2>
+              <p className="text-lg text-muted-foreground mb-6">
+                TimeHatch is currently in active development. We're building something special – 
+                a time-tracking tool that actually makes your life easier, not more complicated.
+              </p>
+              <p className="text-lg text-muted-foreground mb-8">
+                By joining our waitlist, you'll get exclusive early access and help shape the future 
+                of TimeHatch with your feedback. We respect your privacy and will never share your 
+                email with third parties. You can unsubscribe at any time.
+              </p>
+              <address className="text-sm text-muted-foreground not-italic">
+                <p>Questions? Contact us at <a href="mailto:hello@timehatch.app" className="hover:text-foreground transition-colors">hello@timehatch.app</a></p>
+              </address>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </footer>
     </div>
   );
 };
