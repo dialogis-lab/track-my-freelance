@@ -205,7 +205,7 @@ const LandingPage = () => {
               email with third parties. You can unsubscribe at any time.
             </p>
             <div className="text-sm text-muted-foreground">
-              <p>Questions? Contact us at hello@timehatch.com</p>
+              <p>Questions? Contact us at hello@timehatch.app</p>
             </div>
           </div>
         </div>
