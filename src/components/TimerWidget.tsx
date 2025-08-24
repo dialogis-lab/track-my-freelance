@@ -190,17 +190,6 @@ export function TimerWidget() {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getDecimalHours = (seconds: number) => {
-    const hours = seconds / 3600;
-    return hours.toFixed(2);
-  };
-
-  const getHourProgressPercentage = () => {
-    const minutesInHour = Math.floor((elapsedTime % 3600) / 60);
-    const secondsInMinute = elapsedTime % 60;
-    const totalSecondsInHour = (minutesInHour * 60) + secondsInMinute;
-    return (totalSecondsInHour / 3600) * 100;
-  };
 
   const getProjectDisplay = (project: Project) => {
     if (project.clients?.name) {
@@ -225,16 +214,6 @@ export function TimerWidget() {
             {formatTimeDisplay(elapsedTime)}
           </div>
           
-          
-          {/* Optional Linear Progress Bar */}
-          <div className="w-full max-w-md mt-4">
-            <div className="h-1 bg-muted rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary/60 transition-all duration-1000 ease-out"
-                style={{ width: `${getHourProgressPercentage()}%` }}
-              />
-            </div>
-          </div>
         </div>
 
         {/* Long Running Warning */}
