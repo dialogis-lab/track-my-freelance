@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTimerContext } from '@/contexts/TimerContext';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,7 @@ export default function ProjectDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { timerUpdated } = useTimerContext();
   const [project, setProject] = useState<Project | null>(null);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +49,14 @@ export default function ProjectDetail() {
       checkActiveTimer();
     }
   }, [user, id]);
+
+  // Listen for timer updates from TimerWidget
+  useEffect(() => {
+    if (user && id && timerUpdated > 0) {
+      loadProjectData();
+      checkActiveTimer();
+    }
+  }, [user, id, timerUpdated]);
 
   const checkActiveTimer = async () => {
     const { data } = await supabase
