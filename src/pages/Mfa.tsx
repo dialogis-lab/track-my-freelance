@@ -69,11 +69,14 @@ export default function Mfa() {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) return;
 
+      console.log('Checking trusted device...');
       const response = await supabase.functions.invoke('check-trusted-device', {
         headers: {
           'Authorization': `Bearer ${sessionData.session.access_token}`,
         },
       });
+
+      console.log('Trusted device response:', response);
 
       if (response.error) {
         console.error('Error checking trusted device:', response.error);
@@ -81,9 +84,14 @@ export default function Mfa() {
       }
 
       const { is_trusted } = response.data;
+      console.log('Device is trusted:', is_trusted);
+      
       if (is_trusted) {
+        console.log('Device is trusted, navigating to dashboard');
         navigate('/dashboard', { replace: true });
         return;
+      } else {
+        console.log('Device is not trusted, continuing with MFA');
       }
     } catch (error) {
       console.error('Error checking trusted device:', error);
