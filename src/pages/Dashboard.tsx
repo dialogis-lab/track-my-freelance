@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/AppLayout';
 import { TimerWidget } from '@/components/TimerWidget';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, FolderOpen, Users, TrendingUp } from 'lucide-react';
+import { Clock, FolderOpen, Users, TrendingUp, ExternalLink } from 'lucide-react';
 import { formatTime, hoursToMinutes, calculateDurationMinutes, formatDuration } from '@/lib/timeUtils';
 
 interface DashboardStats {
@@ -31,6 +32,7 @@ export default function Dashboard() {
   });
   const [recentEntries, setRecentEntries] = useState<RecentEntry[]>([]);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
@@ -128,14 +130,15 @@ export default function Dashboard() {
     }
   };
 
-  const formatEntryDuration = (start: string, end: string | null) => {
-    if (!end) return "Running...";
-    
-    const startTime = new Date(start);
-    const endTime = new Date(end);
-    const minutes = calculateDurationMinutes(startTime, endTime);
-    
-    return formatTime(minutes, true);  // Show both formats
+  const handleCardClick = (route: string) => {
+    navigate(route);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent, route: string) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      navigate(route);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -157,40 +160,80 @@ export default function Dashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
+          <Card 
+            className="cursor-pointer hover:bg-muted/50 transition-colors duration-200 group relative"
+            onClick={() => handleCardClick('/reports?range=today')}
+            onKeyDown={(e) => handleKeyDown(e, '/reports?range=today')}
+            tabIndex={0}
+            role="button"
+            aria-label="View today's time report"
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Today's Hours</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center space-x-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.todayHours.toFixed(1)}h</div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover:bg-muted/50 transition-colors duration-200 group relative"
+            onClick={() => handleCardClick('/reports?range=week')}
+            onKeyDown={(e) => handleKeyDown(e, '/reports?range=week')}
+            tabIndex={0}
+            role="button"
+            aria-label="View this week's time report"
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">This Week</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center space-x-2">
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.weekHours.toFixed(1)}h</div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover:bg-muted/50 transition-colors duration-200 group relative"
+            onClick={() => handleCardClick('/projects?status=active')}
+            onKeyDown={(e) => handleKeyDown(e, '/projects?status=active')}
+            tabIndex={0}
+            role="button"
+            aria-label="View active projects"
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
-              <FolderOpen className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center space-x-2">
+                <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalProjects}</div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover:bg-muted/50 transition-colors duration-200 group relative"
+            onClick={() => handleCardClick('/clients?status=active')}
+            onKeyDown={(e) => handleKeyDown(e, '/clients?status=active')}
+            tabIndex={0}
+            role="button"
+            aria-label="View active clients"
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Clients</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center space-x-2">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalClients}</div>
