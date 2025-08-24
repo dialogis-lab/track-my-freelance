@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Play, Pause, Square, Coffee, Timer, AlertCircle, Maximize2 } from 'lucide-react';
 import { usePomodoro } from '@/hooks/usePomodoro';
+import { useTimerSkin } from '@/hooks/useTimerSkin';
 
 interface Project {
   id: string;
@@ -35,6 +36,8 @@ export function PomodoroControls({ projects, selectedProjectId, onProjectChange 
     getIndustrialHours,
     getNextPhase,
   } = usePomodoro();
+  
+  const { timerSkin } = useTimerSkin();
 
   const [showPresets, setShowPresets] = useState(false);
 
@@ -104,11 +107,11 @@ export function PomodoroControls({ projects, selectedProjectId, onProjectChange 
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-skin={timerSkin}>
       {/* Timer Display */}
       <div className="flex flex-col items-center justify-center py-12">
-        <div className="timer-display">
-          <div className={`timer-digits ${isLongRunning ? 'warning' : ''}`}>
+        <div className={`timer-display timer-skin-${timerSkin}`}>
+          <div className={`timer-digits ${timerSkin === 'gradient' ? 'gradient' : ''} ${isLongRunning ? 'warning' : ''}`}>
             {formatTime(timeRemaining)}
           </div>
         </div>
