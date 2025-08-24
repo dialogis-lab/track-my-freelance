@@ -186,16 +186,16 @@ export function TimerWidget() {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getProgressPercentage = () => {
-    const secondsInMinute = elapsedTime % 60;
-    return (secondsInMinute / 60) * 100;
+  const getDecimalHours = (seconds: number) => {
+    const hours = seconds / 3600;
+    return hours.toFixed(2);
   };
 
-  const getTimerColorClass = () => {
-    if (elapsedTime > 8 * 60 * 60) {
-      return "text-destructive";
-    }
-    return "text-primary";
+  const getHourProgressPercentage = () => {
+    const minutesInHour = Math.floor((elapsedTime % 3600) / 60);
+    const secondsInMinute = elapsedTime % 60;
+    const totalSecondsInHour = (minutesInHour * 60) + secondsInMinute;
+    return (totalSecondsInHour / 3600) * 100;
   };
 
   const getProjectDisplay = (project: Project) => {
@@ -209,60 +209,44 @@ export function TimerWidget() {
   const showLongRunningWarning = elapsedTime > 8 * 60 * 60;
 
   return (
-    <Card className="overflow-hidden">
+    <Card>
       <CardHeader className="pb-4">
         <CardTitle className="text-xl font-semibold">Time Tracker</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Timer Display */}
-        <div className="relative flex flex-col items-center justify-center py-8">
-          {/* Progress Circle Background */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-48 h-48 md:w-56 md:h-56 rounded-full border-4 border-muted/20">
-              {/* Progress Circle */}
-              <div 
-                className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary/30 transition-all duration-1000 ease-out"
-                style={{
-                  transform: `rotate(${(getProgressPercentage() * 360) / 100}deg)`
-                }}
-              />
+        {/* Clean Timer Display */}
+        <div className="flex flex-col items-center justify-center py-12 space-y-3">
+          {/* Main Timer Display */}
+          <div className="font-mono font-bold tracking-wider text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-primary">
+            {formatTimeDisplay(elapsedTime)}
+          </div>
+          
+          {/* Subtext */}
+          <div className="flex flex-col items-center space-y-1">
+            <div className="text-sm text-muted-foreground font-medium uppercase tracking-wide">
+              Elapsed Time
+            </div>
+            <div className="text-xs text-muted-foreground/70">
+              = {getDecimalHours(elapsedTime)}h
             </div>
           </div>
           
-          {/* Timer Container */}
-          <div className="relative z-10 flex flex-col items-center space-y-2">
-            {/* Main Timer Display */}
-            <div className={`
-              font-mono font-bold tracking-wider
-              text-4xl sm:text-5xl md:text-6xl lg:text-7xl
-              ${getTimerColorClass()}
-              drop-shadow-2xl
-              transition-all duration-300 ease-out
-              ${activeEntry ? 'animate-pulse' : ''}
-            `}>
-              {formatTimeDisplay(elapsedTime)}
+          {/* Optional Linear Progress Bar */}
+          <div className="w-full max-w-md mt-4">
+            <div className="h-1 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary/60 transition-all duration-1000 ease-out"
+                style={{ width: `${getHourProgressPercentage()}%` }}
+              />
             </div>
-            
-            {/* Elapsed Time Label */}
-            <div className="text-sm text-muted-foreground font-medium tracking-wide uppercase">
-              Elapsed Time
-            </div>
-            
-            {/* Gradient Glow Effect */}
-            <div className={`
-              absolute inset-0 -z-10 blur-3xl opacity-20
-              bg-gradient-to-r from-primary to-primary/50
-              ${elapsedTime > 8 * 60 * 60 ? 'from-destructive to-destructive/50' : ''}
-              transition-colors duration-500
-            `} />
           </div>
         </div>
 
         {/* Long Running Warning */}
         {showLongRunningWarning && (
-          <div className="bg-gradient-to-r from-destructive/10 to-orange-500/10 border border-destructive/20 rounded-xl p-4 animate-fade-in">
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-destructive rounded-full animate-pulse" />
+              <div className="w-2 h-2 bg-destructive rounded-full" />
               <p className="text-sm text-destructive font-medium">
                 Timer has been running for more than 8 hours. Consider stopping and reviewing your entry.
               </p>
@@ -271,21 +255,19 @@ export function TimerWidget() {
         )}
 
         {/* Project Selection */}
-        <div className="space-y-3">
-          <label className="text-sm font-semibold text-foreground/80 uppercase tracking-wide">
-            Project
-          </label>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Project</label>
           <Select
             value={selectedProjectId}
             onValueChange={setSelectedProjectId}
             disabled={!!activeEntry || loading}
           >
-            <SelectTrigger className="h-12 border-2 focus:border-primary transition-colors">
+            <SelectTrigger>
               <SelectValue placeholder="Select a project" />
             </SelectTrigger>
-            <SelectContent className="max-h-64">
+            <SelectContent>
               {projects.map((project) => (
-                <SelectItem key={project.id} value={project.id} className="py-3">
+                <SelectItem key={project.id} value={project.id}>
                   {getProjectDisplay(project)}
                 </SelectItem>
               ))}
@@ -294,17 +276,14 @@ export function TimerWidget() {
         </div>
 
         {/* Notes Section */}
-        <div className="space-y-3">
-          <label className="text-sm font-semibold text-foreground/80 uppercase tracking-wide">
-            Notes
-          </label>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Notes</label>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             onBlur={updateNotes}
             placeholder="What are you working on?"
             rows={3}
-            className="border-2 focus:border-primary transition-colors resize-none"
           />
         </div>
 
@@ -315,9 +294,9 @@ export function TimerWidget() {
               onClick={startTimer}
               disabled={loading || !selectedProjectId}
               size="lg"
-              className="w-full h-14 text-base font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-200"
+              className="w-full"
             >
-              <Play className="w-5 h-5 mr-3" />
+              <Play className="w-4 h-4 mr-2" />
               Start Timer
             </Button>
           ) : (
@@ -326,9 +305,9 @@ export function TimerWidget() {
               disabled={loading}
               size="lg"
               variant="destructive"
-              className="w-full h-14 text-base font-semibold bg-gradient-to-r from-destructive to-destructive/80 hover:from-destructive/90 hover:to-destructive/70 shadow-lg hover:shadow-xl transition-all duration-200"
+              className="w-full"
             >
-              <Square className="w-5 h-5 mr-3" />
+              <Square className="w-4 h-4 mr-2" />
               Stop Timer
             </Button>
           )}
