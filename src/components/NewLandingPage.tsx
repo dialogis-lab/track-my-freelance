@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import LeadForm from "./LeadForm";
 import { Link } from "react-router-dom";
 import { useCookieContext } from "@/components/CookieProvider";
+import { BrandLogo } from "./BrandLogo";
 import {
   Accordion,
   AccordionContent,
@@ -20,13 +21,7 @@ const NewLandingPage = () => {
       <nav className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <a href="/" className="flex items-center">
-              <img 
-                src="/lovable-uploads/4ceff044-ed35-49b5-9c99-0420e1a45ea5.png" 
-                alt="Timehatch Logo" 
-                className="h-8 w-auto md:h-10 hover:opacity-90 transition-opacity"
-              />
-            </a>
+            <BrandLogo size="md" />
             
             <div className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
@@ -41,6 +36,9 @@ const NewLandingPage = () => {
       <section className="pt-20 pb-32 bg-gradient-to-br from-muted/30 to-background">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-4xl mx-auto">
+            <div className="mb-6">
+              <BrandLogo size="xl" noLink />
+            </div>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
               Track your time.{" "}
               <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
@@ -344,11 +342,9 @@ const NewLandingPage = () => {
       <footer className="py-16 bg-muted/30 border-t border-border/50">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto">
-            <div className="flex items-center justify-center space-x-2 mb-6">
-              <div className="w-8 h-8 bg-gradient-to-r from-primary to-accent rounded-lg flex items-center justify-center">
-                <Timer className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-foreground">TimeHatch</span>
+            <div className="flex items-center justify-center space-x-3 mb-6">
+              <BrandLogo size="sm" noLink />
+              <span className="text-xl font-bold text-foreground">Simple time tracking for freelancers</span>
             </div>
             
             <h3 className="text-2xl font-bold text-foreground mb-4">Coming Soon</h3>

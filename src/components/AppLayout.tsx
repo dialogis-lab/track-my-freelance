@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Clock, Users, FolderOpen, BarChart3, Settings, LogOut } from 'lucide-react';
+import { BrandLogo } from './BrandLogo';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -26,15 +27,9 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Top Navigation */}
-      <header className="border-b border-border bg-card">
+      <header className="border-b border-border bg-card min-h-[3.5rem]">
         <div className="flex h-16 items-center justify-between px-6">
-          <Link to="/dashboard" className="flex items-center space-x-2">
-            <img 
-              src="/lovable-uploads/4ceff044-ed35-49b5-9c99-0420e1a45ea5.png" 
-              alt="Timehatch Logo" 
-              className="h-8 w-auto"
-            />
-          </Link>
+          <BrandLogo size="md" />
 
           <nav className="hidden md:flex items-center space-x-6">
             {navigation.map((item) => {
