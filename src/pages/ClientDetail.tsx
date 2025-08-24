@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Plus, FolderOpen, Clock, TrendingUp, Play, Square } from 'lucide-react';
+import { ArrowLeft, Plus, FolderOpen, Clock, TrendingUp, Play, Square, FileText } from 'lucide-react';
+import { InvoiceWizard } from '@/components/InvoiceWizard';
 import { formatDuration, calculateDurationMinutes } from '@/lib/timeUtils';
 
 interface Client {
@@ -49,6 +50,7 @@ export default function ClientDetail() {
   });
   const [activeTimer, setActiveTimer] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [invoiceWizardOpen, setInvoiceWizardOpen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -307,10 +309,16 @@ export default function ClientDetail() {
             </div>
           </div>
           
-          <Button onClick={handleCreateProject}>
-            <Plus className="w-4 h-4 mr-2" />
-            New Project
-          </Button>
+          <div className="space-x-2">
+            <Button variant="outline" onClick={() => setInvoiceWizardOpen(true)}>
+              <FileText className="w-4 h-4 mr-2" />
+              Create Invoice
+            </Button>
+            <Button onClick={handleCreateProject}>
+              <Plus className="w-4 h-4 mr-2" />
+              New Project
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -470,6 +478,13 @@ export default function ClientDetail() {
             </div>
           )}
         </div>
+        {/* Invoice Wizard */}
+        <InvoiceWizard
+          open={invoiceWizardOpen}
+          onOpenChange={setInvoiceWizardOpen}
+          clientId={id!}
+          clientName={client.name}
+        />
       </div>
     </AppLayout>
   );
