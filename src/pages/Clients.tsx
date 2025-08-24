@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { Plus, Archive, Edit2, ArchiveRestore, FolderOpen } from 'lucide-react';
+import { Plus, Archive, Edit2, ArchiveRestore, FolderOpen, Clock, ExternalLink } from 'lucide-react';
+import { formatDuration, calculateDurationMinutes } from '@/lib/timeUtils';
 
 interface Client {
   id: string;
@@ -18,6 +20,7 @@ interface Client {
   archived: boolean;
   created_at: string;
   projects?: { id: string; name: string; archived: boolean }[];
+  totalHours?: number;
 }
 
 export default function Clients() {
@@ -28,6 +31,7 @@ export default function Clients() {
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
@@ -36,7 +40,7 @@ export default function Clients() {
   }, [user]);
 
   const loadClients = async () => {
-    const { data, error } = await supabase
+    const { data: clientsData, error } = await supabase
       .from('clients')
       .select(`
         id, name, archived, created_at,
@@ -51,9 +55,38 @@ export default function Clients() {
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      setClients(data || []);
+      return;
     }
+
+    // Calculate total hours for each client
+    const clientsWithHours = await Promise.all(
+      (clientsData || []).map(async (client) => {
+        if (!client.projects || client.projects.length === 0) {
+          return { ...client, totalHours: 0 };
+        }
+
+        // Get time entries for all projects of this client
+        const { data: timeEntries } = await supabase
+          .from('time_entries')
+          .select('started_at, stopped_at')
+          .in('project_id', client.projects.map(p => p.id))
+          .not('stopped_at', 'is', null);
+
+        let totalMinutes = 0;
+        if (timeEntries) {
+          totalMinutes = timeEntries.reduce((total, entry) => {
+            return total + calculateDurationMinutes(
+              new Date(entry.started_at),
+              new Date(entry.stopped_at)
+            );
+          }, 0);
+        }
+
+        return { ...client, totalHours: totalMinutes / 60 };
+      })
+    );
+
+    setClients(clientsWithHours);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -130,6 +163,17 @@ export default function Clients() {
     setIsDialogOpen(true);
   };
 
+  const handleClientClick = (clientId: string) => {
+    navigate(`/clients/${clientId}`);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent, clientId: string) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      navigate(`/clients/${clientId}`);
+    }
+  };
+
   const getProjectCount = (client: Client) => {
     if (!client.projects) return 0;
     return client.projects.filter(p => !p.archived).length;
@@ -202,25 +246,42 @@ export default function Clients() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {activeClients.map((client) => (
-                  <Card key={client.id}>
+                  <Card 
+                    key={client.id}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors duration-200 group"
+                    onClick={() => handleClientClick(client.id)}
+                    onKeyDown={(e) => handleKeyDown(e, client.id)}
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`View details for ${client.name}`}
+                  >
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
                         <span className="truncate">{client.name}</span>
-                        <div className="flex space-x-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => startEdit(client)}
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleArchive(client)}
-                          >
-                            <Archive className="w-4 h-4" />
-                          </Button>
+                        <div className="flex items-center space-x-2">
+                          <div className="flex space-x-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEdit(client);
+                              }}
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleArchive(client);
+                              }}
+                            >
+                              <Archive className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                         </div>
                       </CardTitle>
                     </CardHeader>
@@ -238,9 +299,22 @@ export default function Clients() {
                           </Badge>
                         )}
                       </div>
+
+                      {client.totalHours !== undefined && client.totalHours > 0 && (
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-2">
+                            <Clock className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">Total hours</span>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-bold">{formatDuration(Math.round(client.totalHours * 60)).normal}</div>
+                            <div className="text-xs text-muted-foreground">= {formatDuration(Math.round(client.totalHours * 60)).industrial}h</div>
+                          </div>
+                        </div>
+                      )}
                       
                       {client.projects && client.projects.length > 0 && (
-                        <div className="space-y-1">
+                        <div className="space-y-1 mb-2">
                           <p className="text-xs font-medium text-muted-foreground">Recent Projects:</p>
                           {client.projects
                             .filter(p => !p.archived)
@@ -258,7 +332,7 @@ export default function Clients() {
                         </div>
                       )}
                       
-                      <p className="text-xs text-muted-foreground mt-2">
+                      <p className="text-xs text-muted-foreground">
                         Created: {new Date(client.created_at).toLocaleDateString()}
                       </p>
                     </CardContent>

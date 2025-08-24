@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -34,21 +35,30 @@ export default function Projects() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    client_id: 'none',
+    client_id: '',
     rate_hour: ''
   });
   const [loading, setLoading] = useState(false);
   const [activeTimer, setActiveTimer] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+  const location = useLocation();
 
   useEffect(() => {
     if (user) {
       loadProjects();
       loadClients();
       checkActiveTimer();
+      
+      // Handle query parameters for pre-selecting client
+      const params = new URLSearchParams(location.search);
+      const clientId = params.get('client');
+      if (clientId) {
+        setFormData(prev => ({ ...prev, client_id: clientId }));
+        setIsDialogOpen(true);
+      }
     }
-  }, [user]);
+  }, [user, location.search]);
 
   const checkActiveTimer = async () => {
     const { data } = await supabase
@@ -103,10 +113,21 @@ export default function Projects() {
 
     const projectData = {
       name: formData.name,
-      client_id: formData.client_id === 'none' ? null : formData.client_id,
+      client_id: formData.client_id || null,
       rate_hour: formData.rate_hour ? parseFloat(formData.rate_hour) : null,
       user_id: user!.id,
     };
+
+    // Validate that client is selected
+    if (!formData.client_id) {
+      toast({
+        title: "Client required",
+        description: "Please select a client for this project.",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
 
     let error;
     if (editingProject) {
@@ -162,7 +183,7 @@ export default function Projects() {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', client_id: 'none', rate_hour: '' });
+    setFormData({ name: '', client_id: '', rate_hour: '' });
     setEditingProject(null);
     setIsDialogOpen(false);
   };
@@ -171,7 +192,7 @@ export default function Projects() {
     setEditingProject(project);
     setFormData({
       name: project.name,
-      client_id: project.client_id || 'none',
+      client_id: project.client_id || '',
       rate_hour: project.rate_hour ? project.rate_hour.toString() : ''
     });
     setIsDialogOpen(true);
@@ -271,7 +292,7 @@ export default function Projects() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="client">Client (Optional)</Label>
+                  <Label htmlFor="client">Client *</Label>
                   <Select
                     value={formData.client_id}
                     onValueChange={(value) => setFormData({ ...formData, client_id: value })}
@@ -280,7 +301,6 @@ export default function Projects() {
                       <SelectValue placeholder="Select a client" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No client</SelectItem>
                       {clients.map((client) => (
                         <SelectItem key={client.id} value={client.id}>
                           {client.name}
@@ -288,6 +308,11 @@ export default function Projects() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {clients.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      No clients available. <span className="underline cursor-pointer" onClick={() => window.open('/clients', '_blank')}>Create a client first</span>.
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -303,7 +328,7 @@ export default function Projects() {
                 </div>
 
                 <div className="flex space-x-2">
-                  <Button type="submit" disabled={loading}>
+                  <Button type="submit" disabled={loading || !formData.client_id}>
                     {editingProject ? 'Update' : 'Create'} Project
                   </Button>
                   <Button type="button" variant="outline" onClick={resetForm}>

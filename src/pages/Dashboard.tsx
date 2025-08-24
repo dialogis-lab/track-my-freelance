@@ -81,7 +81,10 @@ export default function Dashboard() {
 
     const [projectsData, clientsData, todayData, weekData] = await Promise.all([
       supabase.from('projects').select('id').eq('archived', false).eq('user_id', user!.id),
-      supabase.from('clients').select('id').eq('archived', false).eq('user_id', user!.id),
+      supabase.from('clients').select(`
+        id,
+        projects:projects!client_id (id, archived)
+      `).eq('archived', false).eq('user_id', user!.id),
       supabase
         .from('time_entries')
         .select('started_at, stopped_at')
@@ -102,9 +105,14 @@ export default function Dashboard() {
       }, 0);
     };
 
+    // Count clients with at least one active project
+    const activeClientsCount = clientsData.data?.filter(client => 
+      client.projects && client.projects.some((p: any) => !p.archived)
+    ).length || 0;
+
     setStats({
       totalProjects: projectsData.data?.length || 0,
-      totalClients: clientsData.data?.length || 0,
+      totalClients: activeClientsCount,
       todayHours: calculateHours(todayData.data || []),
       weekHours: calculateHours(weekData.data || []),
     });

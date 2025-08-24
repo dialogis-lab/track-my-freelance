@@ -61,6 +61,27 @@ export default function Reports() {
     if (user) {
       loadFiltersData();
       loadReport();
+      
+      // Handle URL parameters for range and client
+      const params = new URLSearchParams(window.location.search);
+      const range = params.get('range');
+      const client = params.get('client');
+      
+      if (range === 'today') {
+        const today = new Date().toISOString().split('T')[0];
+        setStartDate(today);
+        setEndDate(today);
+      } else if (range === 'week') {
+        const today = new Date();
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay());
+        setStartDate(weekStart.toISOString().split('T')[0]);
+        setEndDate(today.toISOString().split('T')[0]);
+      }
+      
+      if (client) {
+        setClientFilter(client);
+      }
     }
   }, [user]);
 
@@ -106,8 +127,22 @@ export default function Reports() {
       .not('stopped_at', 'is', null)
       .order('started_at', { ascending: false });
 
+    // Apply client filter by filtering projects that belong to the client
     if (clientFilter && clientFilter !== 'all') {
-      query = query.eq('projects.client_id', clientFilter);
+      const { data: clientProjects } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('client_id', clientFilter);
+      
+      if (clientProjects && clientProjects.length > 0) {
+        query = query.or(clientProjects.map(p => `project_id.eq.${p.id}`).join(','));
+      } else {
+        // If no projects found for this client, return empty result
+        setEntries([]);
+        calculateSummary([]);
+        setLoading(false);
+        return;
+      }
     }
     
     if (projectFilter && projectFilter !== 'all') {
