@@ -1,9 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { usePomodoro } from '@/hooks/usePomodoro';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Users, FolderOpen, BarChart3, Receipt, Settings, LogOut, Timer } from 'lucide-react';
+import { Clock, Users, FolderOpen, BarChart3, Receipt, Settings, LogOut, Timer, ShieldCheck } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 
 interface AppLayoutProps {
@@ -12,6 +13,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { signOut, user } = useAuth();
+  const { isAdmin } = useUserRole();
   const { isEnabled: pomodoroEnabled, setIsEnabled: setPomodoroEnabled, state, timeRemaining, formatTime } = usePomodoro();
   const location = useLocation();
 
@@ -59,6 +61,14 @@ export function AppLayout({ children }: AppLayoutProps) {
           </nav>
 
           <div className="flex items-center space-x-4">
+            {isAdmin && (
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/admin">
+                  <ShieldCheck className="w-4 h-4 mr-2" />
+                  Admin
+                </Link>
+              </Button>
+            )}
             <span className="text-sm text-muted-foreground hidden sm:block">
               {user?.email}
             </span>

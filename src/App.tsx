@@ -29,6 +29,11 @@ import Success from "./pages/Success";
 import Error from "./pages/Error";
 import NotFound from "./pages/NotFound";
 import Mfa from "./pages/Mfa";
+import { AdminLayout } from "@/components/AdminLayout";
+import { AdminOverview } from "@/pages/admin/AdminOverview";
+import { AdminUsers } from "@/pages/admin/AdminUsers";
+import { AdminInvoices } from "@/pages/admin/AdminInvoices";
+import { AdminSystem } from "@/pages/admin/AdminSystem";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +63,37 @@ const App = () => (
             <Route path="/invoices/:id" element={<ProtectedRoute><InvoiceView /></ProtectedRoute>} />
             <Route path="/settings/*" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/focus" element={<ProtectedRoute><Focus /></ProtectedRoute>} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <AdminOverview />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/users" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <AdminUsers />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/invoices" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <AdminInvoices />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/system" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <AdminSystem />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            
               <Route path="/system-check" element={<ProtectedRoute><SystemCheck /></ProtectedRoute>} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/imprint" element={<Imprint />} />

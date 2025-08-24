@@ -544,22 +544,7 @@ export type Database = {
       }
     }
     Views: {
-      admin_invoice_stats: {
-        Row: {
-          invoices_last_30_days: number | null
-          total_invoices: number | null
-          total_revenue_minor: number | null
-        }
-        Relationships: []
-      }
-      admin_user_stats: {
-        Row: {
-          active_last_7_days: number | null
-          new_last_7_days: number | null
-          total_users: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       cleanup_expired_trusted_devices: {
@@ -573,6 +558,18 @@ export type Database = {
       generate_invoice_number: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_admin_invoice_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_admin_new_users_chart: {
+        Args: { days?: number }
+        Returns: Json
+      }
+      get_admin_user_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       get_user_role: {
         Args: { _user_id: string }
