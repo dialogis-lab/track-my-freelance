@@ -192,11 +192,6 @@ export function TimerWidget() {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getIndustrialHours = (seconds: number) => {
-    const hours = seconds / 3600;
-    return hours.toFixed(2);
-  };
-
 
   const getProjectDisplay = (project: Project) => {
     if (project.clients?.name) {
@@ -215,21 +210,11 @@ export function TimerWidget() {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Timer Display with Skin Support */}
-        <div className="flex flex-col items-center justify-center py-12 space-y-4">
+        <div className="flex flex-col items-center justify-center py-12">
           {/* Main Timer Display */}
           <div className="timer-display">
             <div className={`timer-digits ${timerSkin === 'gradient' ? 'gradient' : ''} ${showLongRunningWarning ? 'warning' : ''}`}>
               {formatTimeDisplay(elapsedTime)}
-            </div>
-          </div>
-          
-          {/* Subtext */}
-          <div className="flex flex-col items-center space-y-1">
-            <div className="timer-subtext">
-              Elapsed Time
-            </div>
-            <div className="timer-subtext-small">
-              = {getIndustrialHours(elapsedTime)}h
             </div>
           </div>
         </div>
