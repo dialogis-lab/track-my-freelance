@@ -225,15 +225,6 @@ export function TimerWidget() {
             {formatTimeDisplay(elapsedTime)}
           </div>
           
-          {/* Subtext */}
-          <div className="flex flex-col items-center space-y-1">
-            <div className="text-sm text-muted-foreground font-medium uppercase tracking-wide">
-              Elapsed Time
-            </div>
-            <div className="text-xs text-muted-foreground/70">
-              = {getDecimalHours(elapsedTime)}h
-            </div>
-          </div>
           
           {/* Optional Linear Progress Bar */}
           <div className="w-full max-w-md mt-4">
