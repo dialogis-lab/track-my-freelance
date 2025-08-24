@@ -24,6 +24,8 @@ export function SettingsReminders() {
     enabled: true,
   });
   const [loading, setLoading] = useState(false);
+  const [originalReminder, setOriginalReminder] = useState<Reminder | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -32,6 +34,25 @@ export function SettingsReminders() {
       loadReminder();
     }
   }, [user]);
+
+  // Check for changes whenever reminderForm changes
+  useEffect(() => {
+    if (originalReminder) {
+      const hasReminderChanges = 
+        reminderForm.cadence !== originalReminder.cadence ||
+        reminderForm.hour_local !== originalReminder.hour_local ||
+        reminderForm.enabled !== originalReminder.enabled;
+      
+      setHasChanges(hasReminderChanges);
+    } else {
+      // If no original reminder exists, any non-default values are changes
+      setHasChanges(
+        reminderForm.cadence !== 'daily' ||
+        reminderForm.hour_local !== 9 ||
+        reminderForm.enabled !== true
+      );
+    }
+  }, [reminderForm, originalReminder]);
 
   const loadReminder = async () => {
     const { data, error } = await supabase
@@ -42,17 +63,23 @@ export function SettingsReminders() {
     if (error) {
       console.error('Error loading reminder:', error);
     } else if (data) {
-      setReminder({
+      const reminderData = {
         id: data.id,
         cadence: data.cadence as 'daily' | 'weekly',
         hour_local: data.hour_local,
         enabled: data.enabled,
-      });
+      };
+      
+      setReminder(reminderData);
+      setOriginalReminder(reminderData); // Store original state
       setReminderForm({
         cadence: data.cadence as 'daily' | 'weekly',
         hour_local: data.hour_local,
         enabled: data.enabled,
       });
+    } else {
+      // No reminder exists, set defaults
+      setOriginalReminder(null);
     }
   };
 
@@ -91,6 +118,17 @@ export function SettingsReminders() {
         title: "Settings saved",
         description: "Your reminder preferences have been updated.",
       });
+      
+      // Update original reminder state
+      const newReminderData = {
+        id: reminder?.id || 'new',
+        cadence: reminderForm.cadence,
+        hour_local: reminderForm.hour_local,
+        enabled: reminderForm.enabled,
+      };
+      setOriginalReminder(newReminderData);
+      setHasChanges(false);
+      
       loadReminder();
     }
 
@@ -180,8 +218,8 @@ export function SettingsReminders() {
           </>
         )}
 
-        <Button onClick={saveReminder} disabled={loading} className="w-full">
-          Save Reminder Settings
+        <Button onClick={saveReminder} disabled={loading || !hasChanges} className="w-full">
+          {loading ? 'Saving...' : 'Save Reminder Settings'}
         </Button>
       </CardContent>
     </Card>

@@ -26,12 +26,28 @@ export function ProfileForm() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [originalProfile, setOriginalProfile] = useState<Profile | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
     if (user) {
       loadProfile();
     }
   }, [user]);
+
+  // Check for changes whenever profile changes
+  useEffect(() => {
+    if (profile && originalProfile) {
+      const hasProfileChanges = 
+        profile.company_name !== originalProfile.company_name ||
+        profile.address !== originalProfile.address ||
+        profile.vat_id !== originalProfile.vat_id ||
+        profile.bank_details !== originalProfile.bank_details ||
+        profile.logo_url !== originalProfile.logo_url;
+      
+      setHasChanges(hasProfileChanges);
+    }
+  }, [profile, originalProfile]);
 
   const loadProfile = async () => {
     try {
@@ -47,6 +63,7 @@ export function ProfileForm() {
 
       if (data) {
         setProfile(data);
+        setOriginalProfile(data); // Store original state
         if (data.logo_url) {
           // If we have a logo URL, create a fresh signed URL
           try {
@@ -69,14 +86,16 @@ export function ProfileForm() {
         }
       } else {
         // Create empty profile
-        setProfile({
+        const emptyProfile = {
           id: user!.id,
           company_name: null,
           address: null,
           vat_id: null,
           bank_details: null,
           logo_url: null,
-        });
+        };
+        setProfile(emptyProfile);
+        setOriginalProfile(emptyProfile);
       }
     } catch (error: any) {
       toast({
@@ -212,6 +231,10 @@ export function ProfileForm() {
         title: "Profile saved",
         description: "Your profile has been updated successfully.",
       });
+      
+      // Update original profile to current state
+      setOriginalProfile({ ...profile });
+      setHasChanges(false);
     } catch (error: any) {
       toast({
         title: "Error saving profile",
@@ -350,7 +373,7 @@ export function ProfileForm() {
           />
         </div>
 
-        <Button onClick={saveProfile} disabled={saving} className="w-full">
+        <Button onClick={saveProfile} disabled={saving || !hasChanges} className="w-full">
           {saving ? 'Saving...' : 'Save Profile'}
         </Button>
       </CardContent>
