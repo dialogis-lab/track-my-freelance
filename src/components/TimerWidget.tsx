@@ -183,7 +183,19 @@ export function TimerWidget() {
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
     
-    return `${hours.toString().padStart(2, '0')}h:${minutes.toString().padStart(2, '0')}m:${secs.toString().padStart(2, '0')}s`;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getProgressPercentage = () => {
+    const secondsInMinute = elapsedTime % 60;
+    return (secondsInMinute / 60) * 100;
+  };
+
+  const getTimerColorClass = () => {
+    if (elapsedTime > 8 * 60 * 60) {
+      return "text-destructive";
+    }
+    return "text-primary";
   };
 
   const getProjectDisplay = (project: Project) => {
@@ -197,37 +209,83 @@ export function TimerWidget() {
   const showLongRunningWarning = elapsedTime > 8 * 60 * 60;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Time Tracker</span>
-          <div className="text-4xl font-mono font-bold text-center py-4 text-primary">
-            {formatTimeDisplay(elapsedTime)}
-          </div>
-        </CardTitle>
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-xl font-semibold">Time Tracker</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
+        {/* Timer Display */}
+        <div className="relative flex flex-col items-center justify-center py-8">
+          {/* Progress Circle Background */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-48 h-48 md:w-56 md:h-56 rounded-full border-4 border-muted/20">
+              {/* Progress Circle */}
+              <div 
+                className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary/30 transition-all duration-1000 ease-out"
+                style={{
+                  transform: `rotate(${(getProgressPercentage() * 360) / 100}deg)`
+                }}
+              />
+            </div>
+          </div>
+          
+          {/* Timer Container */}
+          <div className="relative z-10 flex flex-col items-center space-y-2">
+            {/* Main Timer Display */}
+            <div className={`
+              font-mono font-bold tracking-wider
+              text-4xl sm:text-5xl md:text-6xl lg:text-7xl
+              ${getTimerColorClass()}
+              drop-shadow-2xl
+              transition-all duration-300 ease-out
+              ${activeEntry ? 'animate-pulse' : ''}
+            `}>
+              {formatTimeDisplay(elapsedTime)}
+            </div>
+            
+            {/* Elapsed Time Label */}
+            <div className="text-sm text-muted-foreground font-medium tracking-wide uppercase">
+              Elapsed Time
+            </div>
+            
+            {/* Gradient Glow Effect */}
+            <div className={`
+              absolute inset-0 -z-10 blur-3xl opacity-20
+              bg-gradient-to-r from-primary to-primary/50
+              ${elapsedTime > 8 * 60 * 60 ? 'from-destructive to-destructive/50' : ''}
+              transition-colors duration-500
+            `} />
+          </div>
+        </div>
+
+        {/* Long Running Warning */}
         {showLongRunningWarning && (
-          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-            <p className="text-sm text-destructive">
-              ⚠️ Timer has been running for more than 8 hours. Consider stopping and reviewing your entry.
-            </p>
+          <div className="bg-gradient-to-r from-destructive/10 to-orange-500/10 border border-destructive/20 rounded-xl p-4 animate-fade-in">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-destructive rounded-full animate-pulse" />
+              <p className="text-sm text-destructive font-medium">
+                Timer has been running for more than 8 hours. Consider stopping and reviewing your entry.
+              </p>
+            </div>
           </div>
         )}
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Project</label>
+        {/* Project Selection */}
+        <div className="space-y-3">
+          <label className="text-sm font-semibold text-foreground/80 uppercase tracking-wide">
+            Project
+          </label>
           <Select
             value={selectedProjectId}
             onValueChange={setSelectedProjectId}
             disabled={!!activeEntry || loading}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-12 border-2 focus:border-primary transition-colors">
               <SelectValue placeholder="Select a project" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-64">
               {projects.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
+                <SelectItem key={project.id} value={project.id} className="py-3">
                   {getProjectDisplay(project)}
                 </SelectItem>
               ))}
@@ -235,35 +293,42 @@ export function TimerWidget() {
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Notes</label>
+        {/* Notes Section */}
+        <div className="space-y-3">
+          <label className="text-sm font-semibold text-foreground/80 uppercase tracking-wide">
+            Notes
+          </label>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             onBlur={updateNotes}
             placeholder="What are you working on?"
             rows={3}
+            className="border-2 focus:border-primary transition-colors resize-none"
           />
         </div>
 
-        <div className="flex space-x-2">
+        {/* Control Buttons */}
+        <div className="pt-2">
           {!activeEntry ? (
             <Button
               onClick={startTimer}
               disabled={loading || !selectedProjectId}
-              className="flex-1"
+              size="lg"
+              className="w-full h-14 text-base font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-200"
             >
-              <Play className="w-4 h-4 mr-2" />
+              <Play className="w-5 h-5 mr-3" />
               Start Timer
             </Button>
           ) : (
             <Button
               onClick={stopTimer}
               disabled={loading}
+              size="lg"
               variant="destructive"
-              className="flex-1"
+              className="w-full h-14 text-base font-semibold bg-gradient-to-r from-destructive to-destructive/80 hover:from-destructive/90 hover:to-destructive/70 shadow-lg hover:shadow-xl transition-all duration-200"
             >
-              <Square className="w-4 h-4 mr-2" />
+              <Square className="w-5 h-5 mr-3" />
               Stop Timer
             </Button>
           )}
