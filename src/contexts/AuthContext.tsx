@@ -65,47 +65,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkMfaRequired = async (session: Session) => {
     try {
-      // Temporarily disable MFA checking to allow dashboard access
-      // TODO: Fix MFA logic properly
-      console.log('checkMfaRequired: Temporarily disabled for debugging');
-      setNeedsMfa(false);
-      return;
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const hasTotp = !!factors?.all?.find((f: any) => f.factor_type === 'totp' && f.status === 'verified');
       
-      // Keep the old logic commented for reference
-      /*
-      const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
-      
-      if (factorsError) {
-        console.error('Error listing MFA factors:', factorsError);
-        setNeedsMfa(false);
-        return;
-      }
-      
-      const verifiedFactor = factors?.totp?.find(f => f.status === 'verified');
-      
-      if (!verifiedFactor) {
-        console.log('checkMfaRequired: No MFA factors, no challenge needed');
+      if (!hasTotp) {
         setNeedsMfa(false);
         return;
       }
 
-      console.log('checkMfaRequired: User has MFA enabled, checking AAL and AMR');
+      // Check if session AMR already includes 'mfa' (AAL2)
+      const amr = ((session.user as any)?.amr ?? []).map((a: any) => a.method || a).flat();
+      const aal = (session.user as any)?.aal;
+      const strong = amr.includes('mfa') || aal === 'aal2';
       
-      const aal = (session.user as any).aal || 'aal1';
-      const amr = (session.user as any).amr || [];
-      const hasTotp = amr.some((method: any) => method.method === 'totp');
-      
-      console.log('checkMfaRequired: AAL:', aal, 'AMR methods:', amr, 'Has TOTP:', hasTotp);
-      
-      if (aal === 'aal2' || hasTotp) {
-        console.log('checkMfaRequired: MFA already completed (AAL2 or TOTP in AMR)');
+      if (strong) {
         setNeedsMfa(false);
       } else {
-        console.log('checkMfaRequired: MFA challenge needed');
         setNeedsMfa(true);
       }
-      */
-      
     } catch (error) {
       console.error('Error checking MFA requirements:', error);
       setNeedsMfa(false);

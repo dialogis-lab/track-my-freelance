@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { BrandLogo } from '@/components/BrandLogo';
 import { Shield, Key } from 'lucide-react';
+import { getAuthState } from '@/lib/authState';
 
 export default function Mfa() {
   const [totpCode, setTotpCode] = useState('');
@@ -24,9 +25,44 @@ export default function Mfa() {
   const [rememberDevice, setRememberDevice] = useState(false);
 
   useEffect(() => {
-    checkMfaChallenge();
-    checkTrustedDevice();
+    initializeMfa();
   }, []);
+
+  const initializeMfa = async () => {
+    try {
+      const { mfa } = await getAuthState();
+      
+      if (!mfa.needsMfa) {
+        navigate('/dashboard', { replace: true });
+        return;
+      }
+
+      // Check trusted device first
+      await checkTrustedDevice();
+
+      // Start MFA challenge
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const verifiedFactor = factors?.all?.find((f: any) => f.factor_type === 'totp' && f.status === 'verified');
+      
+      if (!verifiedFactor) {
+        navigate('/dashboard', { replace: true });
+        return;
+      }
+
+      setFactorId(verifiedFactor.id);
+      
+      const { data: challenge } = await supabase.auth.mfa.challenge({
+        factorId: verifiedFactor.id,
+      });
+      
+      if (challenge) {
+        setChallengeId(challenge.id);
+      }
+    } catch (error: any) {
+      console.error('Error initializing MFA:', error);
+      navigate('/login', { replace: true });
+    }
+  };
 
   const checkTrustedDevice = async () => {
     try {
@@ -46,56 +82,12 @@ export default function Mfa() {
 
       const { is_trusted } = response.data;
       if (is_trusted) {
-        // Device is trusted, bypass MFA
-        navigate('/dashboard');
+        navigate('/dashboard', { replace: true });
         return;
       }
     } catch (error) {
       console.error('Error checking trusted device:', error);
     }
-  };
-
-  const checkMfaChallenge = async () => {
-    try {
-      const { data: session } = await supabase.auth.getSession();
-      
-      if (!session.session) {
-        navigate('/login');
-        return;
-      }
-
-      // Check if there's an active MFA challenge
-      const { data: factors } = await supabase.auth.mfa.listFactors();
-      const verifiedFactor = factors?.totp?.find(f => f.status === 'verified');
-      
-      if (!verifiedFactor) {
-        navigate('/dashboard');
-        return;
-      }
-
-      setFactorId(verifiedFactor.id);
-      
-      // Check if user needs to complete MFA challenge
-      const { data: challenge } = await supabase.auth.mfa.challenge({
-        factorId: verifiedFactor.id,
-      });
-      
-      if (challenge) {
-        setChallengeId(challenge.id);
-      }
-    } catch (error: any) {
-      console.error('Error checking MFA challenge:', error);
-      navigate('/login');
-    }
-  };
-
-  const hashCode = async (code: string): Promise<string> => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(code.toUpperCase());
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hash))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
   };
 
   const handleTotpSubmit = async (e: React.FormEvent) => {
@@ -144,7 +136,9 @@ export default function Mfa() {
         description: "Authentication successful.",
       });
       
-      navigate('/dashboard');
+      // Refresh session to ensure AMR includes 'mfa'
+      await supabase.auth.getSession();
+      navigate('/dashboard', { replace: true });
     } catch (error: any) {
       console.error('Error verifying TOTP:', error);
       toast({
@@ -203,7 +197,9 @@ export default function Mfa() {
         description: "Authentication successful using recovery code.",
       });
       
-      navigate('/dashboard');
+      // Refresh session to ensure AMR includes 'mfa'
+      await supabase.auth.getSession();
+      navigate('/dashboard', { replace: true });
     } catch (error: any) {
       console.error('Error using recovery code:', error);
       toast({

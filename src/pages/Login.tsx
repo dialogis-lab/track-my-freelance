@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Navigate, Link, useSearchParams } from 'react-router-dom';
+import { Navigate, Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
+import { getAuthState } from '@/lib/authState';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -17,6 +18,7 @@ export default function Login() {
   const { signIn, signInWithGoogle, user } = useAuth();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   // Check for OAuth error in URL params
   const oauthError = searchParams.get('error');
@@ -57,22 +59,39 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await signIn(email, password);
-    
-    if (error) {
-      toast({
-        title: "Sign in failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
+    try {
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        toast({
+          title: "Sign in failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check auth state after successful login
+      const { mfa } = await getAuthState();
+      if (mfa.needsMfa) {
+        navigate('/mfa', { replace: true });
+        return;
+      }
+
       toast({
         title: "Welcome back!",
         description: "You have been signed in successfully.",
       });
+      navigate('/dashboard', { replace: true });
+    } catch (error: any) {
+      toast({
+        title: "Sign in failed",
+        description: error.message || "An error occurred during sign in.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (
