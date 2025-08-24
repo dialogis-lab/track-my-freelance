@@ -24,12 +24,14 @@ const settingsItems = [
 
 export function SettingsSidebar() {
   return (
-    <Sidebar className="w-60">
-      <SidebarContent>
+    <Sidebar className="w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <SidebarContent className="p-4">
         <SidebarGroup>
-          <SidebarGroupLabel>Settings</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Settings
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {settingsItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
@@ -37,11 +39,15 @@ export function SettingsSidebar() {
                       to={item.path} 
                       end={item.exact}
                       className={({ isActive }) => 
-                        isActive ? "bg-muted text-primary font-medium" : "hover:bg-muted/50"
+                        `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground group ${
+                          isActive 
+                            ? "bg-primary text-primary-foreground shadow-sm" 
+                            : "text-muted-foreground hover:text-foreground"
+                        }`
                       }
                     >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <item.icon className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
+                      <span className="transition-all duration-200">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

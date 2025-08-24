@@ -21,20 +21,22 @@ export default function Settings() {
         </div>
 
         <SidebarProvider>
-          <div className="flex min-h-[600px] w-full rounded-lg border">
+          <div className="flex min-h-[600px] w-full rounded-xl border bg-card shadow-sm overflow-hidden">
             <SettingsSidebar />
             
-            <main className="flex-1 p-6">
-              <Routes>
-                <Route path="/" element={<ProfileForm />} />
-                <Route path="/account" element={<SettingsAccount />} />
-                <Route path="/reminders" element={<SettingsReminders />} />
-                <Route path="/currency" element={<SettingsCurrency />} />
-                <Route path="/timezone" element={<SettingsTimezone />} />
-                <Route path="/security" element={<SettingsSecurity />} />
-                <Route path="/cookies" element={<SettingsCookies />} />
-                <Route path="/about" element={<SettingsAbout />} />
-              </Routes>
+            <main className="flex-1 p-6 bg-background">
+              <div className="animate-fade-in">
+                <Routes>
+                  <Route path="/" element={<ProfileForm />} />
+                  <Route path="/account" element={<SettingsAccount />} />
+                  <Route path="/reminders" element={<SettingsReminders />} />
+                  <Route path="/currency" element={<SettingsCurrency />} />
+                  <Route path="/timezone" element={<SettingsTimezone />} />
+                  <Route path="/security" element={<SettingsSecurity />} />
+                  <Route path="/cookies" element={<SettingsCookies />} />
+                  <Route path="/about" element={<SettingsAbout />} />
+                </Routes>
+              </div>
             </main>
           </div>
         </SidebarProvider>
