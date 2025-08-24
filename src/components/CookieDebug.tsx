@@ -18,6 +18,7 @@ export function CookieDebug() {
           <div>Functional: {consent.functional ? 'Yes' : 'No'}</div>
           <div>Analytics: {consent.analytics ? 'Yes' : 'No'}</div>
           <div>Marketing: {consent.marketing ? 'Yes' : 'No'}</div>
+          <div>GA Loaded: {typeof window !== 'undefined' && document.querySelector('script[src*="googletagmanager"]') ? 'Yes' : 'No'}</div>
         </div>
         
         <div className="flex gap-2">
@@ -25,8 +26,13 @@ export function CookieDebug() {
             Open Modal
           </Button>
           <Button size="sm" variant="destructive" onClick={resetConsent}>
-            Reset
+            Reset & Reload
           </Button>
+        </div>
+        
+        <div className="text-xs text-muted-foreground">
+          <p>GA ID: G-FR7BLXPXR0</p>
+          <p>Analytics only loads with consent</p>
         </div>
       </CardContent>
     </Card>

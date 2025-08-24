@@ -58,23 +58,17 @@
     }
     </script>
     
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-FR7BLPXQRQ"></script>
+    <!-- Google tag (gtag.js) - Only loads with consent -->
     <script>
+      // Initialize gtag consent mode before any scripts load
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      // Initialize with consent mode
+      
+      // Set default consent state (denied by default)
       gtag('consent', 'default', {
         'analytics_storage': 'denied',
         'ad_storage': 'denied',
         'functionality_storage': 'granted'
-      });
-
-      gtag('config', 'G-FR7BLPXQRQ', {
-        'anonymize_ip': true,
-        'cookie_flags': 'samesite=strict;secure'
       });
     </script>
   </head>

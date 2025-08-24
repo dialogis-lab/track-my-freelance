@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect } from 'react';
+import { createContext, useContext, useEffect, useRef } from 'react';
 import { useCookieConsent } from '@/hooks/useCookieConsent';
 import { CookieBanner } from './CookieBanner';
 import { CookieModal } from './CookieModal';
@@ -11,22 +11,47 @@ const CookieContext = createContext<ReturnType<typeof useCookieConsent> | null>(
 
 export function CookieProvider({ children }: CookieProviderProps) {
   const cookieConsent = useCookieConsent();
+  const gaLoadedRef = useRef(false);
 
-  // Initialize Google Analytics consent mode
+  // Initialize Google Analytics consent mode and load GA when consent is granted
   useEffect(() => {
-    console.log('CookieProvider: Initializing GA consent mode', {
+    console.log('CookieProvider: Analytics consent changed', {
       hasConsented: cookieConsent.hasConsented,
       analytics: cookieConsent.consent.analytics,
-      marketing: cookieConsent.consent.marketing
+      gaLoaded: gaLoadedRef.current
     });
     
     if (window.gtag) {
-      // Set default consent state
-      window.gtag('consent', 'default', {
+      // Update consent state
+      window.gtag('consent', 'update', {
         analytics_storage: cookieConsent.hasConsented && cookieConsent.consent.analytics ? 'granted' : 'denied',
         ad_storage: cookieConsent.hasConsented && cookieConsent.consent.marketing ? 'granted' : 'denied',
-        functionality_storage: 'granted', // Always granted for functional cookies
       });
+    }
+
+    // Load Google Analytics if consent is granted and not already loaded
+    if (cookieConsent.hasConsented && cookieConsent.consent.analytics && !gaLoadedRef.current) {
+      console.log('Loading Google Analytics...');
+      
+      // Load GA script
+      const script1 = document.createElement('script');
+      script1.async = true;
+      script1.src = 'https://www.googletagmanager.com/gtag/js?id=G-FR7BLXPXR0';
+      document.head.appendChild(script1);
+
+      // Initialize GA
+      const script2 = document.createElement('script');
+      script2.innerHTML = `
+        window.gtag('js', new Date());
+        window.gtag('config', 'G-FR7BLXPXR0', {
+          'anonymize_ip': true,
+          'cookie_flags': 'samesite=strict;secure'
+        });
+      `;
+      document.head.appendChild(script2);
+      
+      gaLoadedRef.current = true;
+      console.log('Google Analytics loaded successfully');
     }
   }, [cookieConsent.hasConsented, cookieConsent.consent.analytics, cookieConsent.consent.marketing]);
 

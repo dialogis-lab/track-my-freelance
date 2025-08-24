@@ -115,13 +115,18 @@ export function useCookieConsent() {
     setShowBanner(true);
     setShowModal(false);
     
-    // Reset Google Analytics consent
+    // Reset Google Analytics consent and reload page to remove GA
     if (window.gtag) {
       window.gtag('consent', 'update', {
         analytics_storage: 'denied',
         ad_storage: 'denied',
       });
     }
+    
+    // Reload page to completely remove GA if it was loaded
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
   };
 
   return {
