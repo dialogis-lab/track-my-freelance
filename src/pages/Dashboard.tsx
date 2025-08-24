@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTimerContext } from '@/contexts/TimerContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/AppLayout';
@@ -32,6 +33,7 @@ export default function Dashboard() {
   });
   const [recentEntries, setRecentEntries] = useState<RecentEntry[]>([]);
   const { user } = useAuth();
+  const { timerUpdated } = useTimerContext();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,6 +41,13 @@ export default function Dashboard() {
       loadDashboardData();
     }
   }, [user]);
+
+  // Refresh dashboard when timer events occur
+  useEffect(() => {
+    if (user && timerUpdated > 0) {
+      loadDashboardData();
+    }
+  }, [user, timerUpdated]);
 
   // Listen for real-time updates to time entries
   useEffect(() => {

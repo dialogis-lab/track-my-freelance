@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTimerContext } from '@/contexts/TimerContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +32,7 @@ export function TimerWidget() {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
+  const { triggerTimerUpdate } = useTimerContext();
   const { toast } = useToast();
 
   // Load projects and active entry
@@ -128,6 +130,7 @@ export function TimerWidget() {
         title: "Timer started",
         description: "Time tracking has begun for the selected project.",
       });
+      triggerTimerUpdate(); // Trigger dashboard update
     }
     
     setLoading(false);
@@ -160,6 +163,7 @@ export function TimerWidget() {
         title: "Timer stopped",
         description: "Time entry has been saved successfully.",
       });
+      triggerTimerUpdate(); // Trigger dashboard update
     }
     
     setLoading(false);
