@@ -18,66 +18,68 @@ const Privacy = () => {
           
           <div className="space-y-8 text-muted-foreground">
             <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">Information We Collect</h2>
+              <p className="text-sm mb-6">
+                <strong>Last updated:</strong> August 24, 2025
+              </p>
               <p className="leading-relaxed">
-                When you join our waitlist, we collect your email address and optionally your name. 
-                We also collect technical information such as your IP address, browser type, and 
-                referring website to help us understand how you found TimeHatch.
+                Timehatch ("we," "our," or "us") is committed to protecting your privacy. This Privacy 
+                Policy explains how we collect, use, and safeguard your information when you use our 
+                website <a href="https://timehatch.app" className="text-primary hover:text-primary/80 transition-colors">https://timehatch.app</a>.
               </p>
             </section>
 
             <section>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">Information We Collect</h2>
+              <ul className="list-disc pl-6 space-y-3">
+                <li>
+                  <strong>Personal Information:</strong> When you join the waitlist, we may collect your name and email address.
+                </li>
+                <li>
+                  <strong>Usage Data:</strong> We automatically collect technical information such as browser type, operating system, and pages visited.
+                </li>
+              </ul>
+            </section>
+
+            <section>
               <h2 className="text-2xl font-semibold text-foreground mb-4">How We Use Your Information</h2>
-              <p className="leading-relaxed mb-4">We use your information to:</p>
-              <ul className="list-disc pl-6 space-y-2">
-                <li>Notify you when TimeHatch becomes available</li>
-                <li>Send you updates about our product development</li>
-                <li>Provide customer support when needed</li>
-                <li>Improve our marketing and product offerings</li>
+              <ul className="list-disc pl-6 space-y-3">
+                <li>To provide early access and updates about Timehatch.</li>
+                <li>To improve our website and services.</li>
+                <li>To communicate important announcements.</li>
               </ul>
             </section>
 
             <section>
               <h2 className="text-2xl font-semibold text-foreground mb-4">Data Protection</h2>
               <p className="leading-relaxed">
-                We take the security of your personal information seriously. Your data is encrypted 
-                in transit and at rest. We never sell your information to third parties and only 
-                share it with trusted service providers who help us operate our waitlist.
+                We store your personal information securely and do not share it with third parties except as required by law.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">Cookies</h2>
+              <p className="leading-relaxed">
+                We may use cookies and similar technologies to improve user experience.
               </p>
             </section>
 
             <section>
               <h2 className="text-2xl font-semibold text-foreground mb-4">Your Rights</h2>
-              <p className="leading-relaxed mb-4">You have the right to:</p>
-              <ul className="list-disc pl-6 space-y-2">
-                <li>Unsubscribe from our communications at any time</li>
-                <li>Request a copy of the data we have about you</li>
-                <li>Request deletion of your personal information</li>
-                <li>Correct any inaccurate information we have</li>
-              </ul>
+              <p className="leading-relaxed">
+                You may request access, correction, or deletion of your data at any time by contacting us.
+              </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">Contact Us</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">Contact</h2>
               <p className="leading-relaxed">
-                If you have any questions about this Privacy Policy or how we handle your data, 
-                please contact us at{" "}
-                <a 
+                For questions regarding this Privacy Policy, please contact:<br />
+                📧 <a 
                   href="mailto:privacy@timehatch.app" 
                   className="text-primary hover:text-primary/80 transition-colors"
                 >
                   privacy@timehatch.app
                 </a>
-              </p>
-            </section>
-
-            <section className="pt-8 border-t border-border">
-              <p className="text-sm text-muted-foreground">
-                This Privacy Policy was last updated on {new Date().toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}.
               </p>
             </section>
           </div>

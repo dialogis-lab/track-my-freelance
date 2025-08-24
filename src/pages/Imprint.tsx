@@ -14,60 +14,48 @@ const Imprint = () => {
         </Link>
         
         <div className="prose prose-gray max-w-none">
-          <h1 className="text-4xl font-bold text-foreground mb-8">Legal Notice</h1>
+          <h1 className="text-4xl font-bold text-foreground mb-8">⚖️ Legal Notice (Impressum)</h1>
           
           <div className="space-y-8 text-muted-foreground">
             <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">Company Information</h2>
-              <div className="space-y-2">
-                <p><strong>Company:</strong> TimeHatch, Inc.</p>
-                <p><strong>Address:</strong> [Company Address]</p>
-                <p><strong>City:</strong> [City, State, ZIP]</p>
-                <p><strong>Country:</strong> [Country]</p>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">Legal Notice</h2>
+              <p className="leading-relaxed mb-4">
+                Timehatch.app is operated by:
+              </p>
+              <div className="bg-muted/30 p-6 rounded-lg space-y-2">
+                <p><strong>Company:</strong> Timehatch</p>
+                <p><strong>Responsible Person:</strong> Nedjat Nuhi</p>
+                <p><strong>Address:</strong> Bahnhoftsrasse 5a, 5210 Windisch, AG - Switzerland</p>
+                <p><strong>Email:</strong> <a 
+                  href="mailto:contact@timehatch.app" 
+                  className="text-primary hover:text-primary/80 transition-colors"
+                >
+                  contact@timehatch.app
+                </a></p>
               </div>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">Contact Information</h2>
-              <div className="space-y-2">
-                <p>
-                  <strong>Email:</strong>{" "}
-                  <a 
-                    href="mailto:legal@timehatch.app" 
-                    className="text-primary hover:text-primary/80 transition-colors"
-                  >
-                    legal@timehatch.app
-                  </a>
-                </p>
-                <p><strong>Phone:</strong> [Phone Number]</p>
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">Responsible for Content</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">Liability for Content</h2>
               <p className="leading-relaxed">
-                The content of this website is the responsibility of TimeHatch, Inc. 
-                We strive to keep all information accurate and up-to-date, but we cannot 
-                guarantee the completeness or accuracy of all content.
+                We make every effort to keep the information on our website accurate and up to date. 
+                However, we cannot accept liability for the content provided.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">Liability Disclaimer</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">Liability for Links</h2>
               <p className="leading-relaxed">
-                Despite careful content control, we assume no liability for the content of 
-                external links. The operators of the linked pages are solely responsible 
-                for their content.
+                Our website contains links to external websites. We have no influence on the content of 
+                these third-party websites and therefore accept no liability for them.
               </p>
             </section>
 
             <section>
               <h2 className="text-2xl font-semibold text-foreground mb-4">Copyright</h2>
               <p className="leading-relaxed">
-                The content and works on these pages created by the site operator are subject 
-                to copyright law. Reproduction, processing, distribution, or any form of 
-                commercialization beyond the scope of copyright law requires written consent 
-                from the author or creator.
+                All content on this website is subject to copyright. Use, reproduction, or distribution 
+                requires written permission.
               </p>
             </section>
           </div>
