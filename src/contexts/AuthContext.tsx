@@ -25,31 +25,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session && event === 'SIGNED_IN') {
-          // Check if user has MFA enabled and needs to complete challenge
-          try {
-            const { data: factors } = await supabase.auth.mfa.listFactors();
-            const hasMfa = factors?.totp?.some(f => f.status === 'verified');
-            setNeedsMfa(hasMfa || false);
-          } catch (error) {
-            console.error('Error checking MFA status:', error);
-            setNeedsMfa(false);
-          }
-        } else {
-          setNeedsMfa(false);
-        }
+        // Temporarily disable MFA check to debug loading issue
+        setNeedsMfa(false);
         
+        console.log('Setting loading to false');
         setLoading(false);
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log('Initial session check:', session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
+      
+      // Temporarily disable MFA check
+      setNeedsMfa(false);
+      
+      console.log('Setting initial loading to false');
       setLoading(false);
     });
 
