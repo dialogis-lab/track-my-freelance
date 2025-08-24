@@ -78,9 +78,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const aal = (session.user as any)?.aal;
       const strong = amr.includes('mfa') || aal === 'aal2';
       
+      console.log('checkMfaRequired: AAL:', aal, 'AMR methods:', amr, 'Has MFA:', strong);
+      
       if (strong) {
+        console.log('checkMfaRequired: MFA completed');
         setNeedsMfa(false);
       } else {
+        console.log('checkMfaRequired: MFA challenge needed');
         setNeedsMfa(true);
       }
     } catch (error) {

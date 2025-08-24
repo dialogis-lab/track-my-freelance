@@ -144,8 +144,12 @@ export default function Mfa() {
         description: "Authentication successful.",
       });
       
-      // Refresh session to ensure AMR includes 'mfa'
-      await supabase.auth.getSession();
+      // Force session refresh and trigger auth state change
+      const { data: refreshedSession } = await supabase.auth.refreshSession();
+      if (refreshedSession.session) {
+        console.log('Session refreshed after MFA:', (refreshedSession.session.user as any).aal);
+      }
+      
       navigate('/dashboard', { replace: true });
     } catch (error: any) {
       console.error('Error verifying TOTP:', error);
@@ -206,8 +210,12 @@ export default function Mfa() {
         description: "Authentication successful using recovery code.",
       });
       
-      // Refresh session to ensure AMR includes 'mfa'
-      await supabase.auth.getSession();
+      // Force session refresh and trigger auth state change
+      const { data: refreshedSession } = await supabase.auth.refreshSession();
+      if (refreshedSession.session) {
+        console.log('Session refreshed after recovery code:', (refreshedSession.session.user as any).aal);
+      }
+      
       navigate('/dashboard', { replace: true });
     } catch (error: any) {
       console.error('Error using recovery code:', error);
