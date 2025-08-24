@@ -24,10 +24,10 @@ const settingsItems = [
 
 export function SettingsSidebar() {
   return (
-    <Sidebar className="w-64 border-r bg-card">
+    <Sidebar className="w-64 border-r border-border bg-white dark:bg-gray-900">
       <SidebarContent className="p-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
             Settings
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -41,8 +41,8 @@ export function SettingsSidebar() {
                       className={({ isActive }) => 
                         `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
                           isActive 
-                            ? "bg-primary text-primary-foreground shadow-sm" 
-                            : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                            ? "bg-blue-600 text-white shadow-sm" 
+                            : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
                         }`
                       }
                     >
