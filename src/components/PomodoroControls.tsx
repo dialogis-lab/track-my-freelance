@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Play, Pause, Square, Coffee, Timer, AlertCircle } from 'lucide-react';
+import { Play, Pause, Square, Coffee, Timer, AlertCircle, Maximize2 } from 'lucide-react';
 import { usePomodoro } from '@/hooks/usePomodoro';
 
 interface Project {
@@ -25,6 +25,7 @@ export function PomodoroControls({ projects, selectedProjectId, onProjectChange 
     timeRemaining,
     settings,
     todaySessions,
+    currentStreak,
     startFocus,
     startBreak,
     stopPomodoro,
@@ -127,6 +128,12 @@ export function PomodoroControls({ projects, selectedProjectId, onProjectChange 
           {timeRemaining > 0 && (
             <div className="timer-subtext-small">
               = {getIndustrialHours(timeRemaining)}h remaining
+            </div>
+          )}
+          {/* Streak Display */}
+          {currentStreak > 0 && (
+            <div className="text-sm text-muted-foreground">
+              Focus streak: {currentStreak}
             </div>
           )}
         </div>

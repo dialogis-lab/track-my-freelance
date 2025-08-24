@@ -71,28 +71,37 @@ export type Database = {
       focus_stats: {
         Row: {
           created_at: string
+          current_streak: number
           date: string
           focus_minutes: number
           id: string
+          longest_streak: number
           sessions: number
+          sessions_today: number
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          current_streak?: number
           date?: string
           focus_minutes?: number
           id?: string
+          longest_streak?: number
           sessions?: number
+          sessions_today?: number
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          current_streak?: number
           date?: string
           focus_minutes?: number
           id?: string
+          longest_streak?: number
           sessions?: number
+          sessions_today?: number
           updated_at?: string
           user_id?: string
         }

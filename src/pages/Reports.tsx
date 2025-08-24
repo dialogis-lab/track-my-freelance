@@ -363,7 +363,7 @@ export default function Reports() {
             <CardTitle>Filters</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="startDate">Start Date</Label>
                 <Input
@@ -436,7 +436,7 @@ export default function Reports() {
         </Card>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Total Hours</CardTitle>
@@ -484,6 +484,18 @@ export default function Reports() {
                 {summary.totalHours > 0 ? Math.round((summary.pomodoroHours / summary.totalHours) * 100) : 0}%
               </div>
               <div className="text-sm text-muted-foreground">of total time</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Average Streak</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {summary.pomodoroSessions > 0 ? Math.round(summary.pomodoroSessions / (summary.entriesCount > 0 ? summary.entriesCount : 1)) : 0}
+              </div>
+              <div className="text-sm text-muted-foreground">sessions per day</div>
             </CardContent>
           </Card>
         </div>

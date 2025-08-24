@@ -43,6 +43,8 @@ export function usePomodoro() {
   const [settings, setSettings] = useState<PomodoroSettings>(DEFAULT_SETTINGS);
   const [todaySessions, setTodaySessions] = useState(0);
   const [currentSession, setCurrentSession] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [longestStreak, setLongestStreak] = useState(0);
   const [activeEntryId, setActiveEntryId] = useState<string | null>(null);
 
   // Load settings and today's stats
@@ -99,14 +101,18 @@ export function usePomodoro() {
       
       const { data, error } = await supabase
         .from('focus_stats')
-        .select('sessions, focus_minutes')
+        .select('sessions, focus_minutes, sessions_today, current_streak, longest_streak')
         .eq('user_id', user!.id)
         .eq('date', today)
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
       
-      setTodaySessions(data?.sessions || 0);
+      if (data) {
+        setTodaySessions(data.sessions || 0);
+        setCurrentStreak(data.current_streak || 0);
+        setLongestStreak(data.longest_streak || 0);
+      }
     } catch (error) {
       console.error('Error loading today stats:', error);
     }
@@ -221,7 +227,11 @@ export function usePomodoro() {
   const getNextPhase = (): PomodoroPhase => {
     if (phase === 'focus') {
       const nextSession = currentSession + 1;
-      return nextSession % settings.longBreakEvery === 0 ? 'longBreak' : 'break';
+      // Check if it's time for a long break
+      if (settings.longBreakEvery > 0 && nextSession % settings.longBreakEvery === 0) {
+        return 'longBreak';
+      }
+      return 'break';
     }
     return 'focus';
   };
@@ -305,15 +315,25 @@ export function usePomodoro() {
 
       if (entryError) throw entryError;
 
-      // Update focus stats
+      // Increment streak and session counts
+      const newStreak = currentStreak + 1;
+      const newLongestStreak = Math.max(longestStreak, newStreak);
+      const newSessionsToday = todaySessions + 1;
+
+      // Update focus stats with streak information
       const today = new Date().toISOString().split('T')[0];
+      
+      // Manual upsert since RPC doesn't exist yet
       const { error: statsError } = await supabase
         .from('focus_stats')
         .upsert({
           user_id: user!.id,
           date: today,
-          sessions: todaySessions + 1,
-          focus_minutes: Math.floor(settings.focusMinutes)
+          sessions: newSessionsToday,
+          focus_minutes: Math.floor(settings.focusMinutes),
+          sessions_today: newSessionsToday,
+          current_streak: newStreak,
+          longest_streak: newLongestStreak
         }, {
           onConflict: 'user_id,date'
         });
@@ -322,8 +342,23 @@ export function usePomodoro() {
 
       setActiveEntryId(null);
       setCurrentSession(prev => prev + 1);
-      setTodaySessions(prev => prev + 1);
+      setTodaySessions(newSessionsToday);
+      setCurrentStreak(newStreak);
+      setLongestStreak(newLongestStreak);
       triggerTimerUpdate();
+
+      // Show streak milestone notification
+      if (newStreak > 0 && newStreak % 4 === 0) {
+        toast({
+          title: `🎉 Streak Milestone!`,
+          description: `${newStreak} focus sessions completed! Long break unlocked.`,
+        });
+      } else {
+        toast({
+          title: "Great job! 🎉",
+          description: `You completed a ${settings.focusMinutes} min focus block!`,
+        });
+      }
 
     } catch (error) {
       console.error('Error finishing focus session:', error);
@@ -336,17 +371,59 @@ export function usePomodoro() {
     setTimeRemaining(0);
 
     if (phase === 'focus' && activeEntryId) {
-      // If stopping during focus, finish the time entry
-      await finishFocusSession();
+      // If stopping during focus, finish the time entry but break the streak
+      const { error: entryError } = await supabase
+        .from('time_entries')
+        .update({
+          stopped_at: new Date().toISOString(),
+        })
+        .eq('id', activeEntryId);
+
+      if (entryError) {
+        console.error('Error stopping focus session:', entryError);
+      }
+
+      // Reset streak on incomplete session
+      await resetStreak();
+      
+      setActiveEntryId(null);
+      triggerTimerUpdate();
+      
       toast({
         title: "Focus session stopped",
-        description: "Your partial session has been saved.",
+        description: "Your partial session has been saved. Streak reset.",
+        variant: "destructive",
       });
     } else {
       toast({
         title: "Pomodoro stopped",
         description: "Timer has been reset.",
       });
+    }
+  };
+
+  const resetStreak = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { error } = await supabase
+        .from('focus_stats')
+        .upsert({
+          user_id: user!.id,
+          date: today,
+          sessions: todaySessions,
+          focus_minutes: 0,
+          sessions_today: todaySessions,
+          current_streak: 0,
+          longest_streak: longestStreak
+        }, {
+          onConflict: 'user_id,date'
+        });
+
+      if (error) throw error;
+      
+      setCurrentStreak(0);
+    } catch (error) {
+      console.error('Error resetting streak:', error);
     }
   };
 
@@ -384,6 +461,8 @@ export function usePomodoro() {
     settings,
     todaySessions,
     currentSession,
+    currentStreak,
+    longestStreak,
     activeEntryId,
 
     // Actions

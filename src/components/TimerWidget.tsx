@@ -39,7 +39,7 @@ export function TimerWidget() {
   const { user } = useAuth();
   const { triggerTimerUpdate } = useTimerContext();
   const { timerSkin } = useTimerSkin();
-  const { isEnabled: pomodoroEnabled, setIsEnabled: setPomodoroEnabled } = usePomodoro();
+  const { isEnabled: pomodoroEnabled, setIsEnabled: setPomodoroEnabled, state: pomodoroState } = usePomodoro();
   const { toast } = useToast();
 
   // Load projects and active entry
@@ -226,11 +226,25 @@ export function TimerWidget() {
       </CardHeader>
       <CardContent className="space-y-6">
         {pomodoroEnabled ? (
-          <PomodoroControls
-            projects={projects}
-            selectedProjectId={selectedProjectId}
-            onProjectChange={setSelectedProjectId}
-          />
+          <>
+            <PomodoroControls
+              projects={projects}
+              selectedProjectId={selectedProjectId}
+              onProjectChange={setSelectedProjectId}
+            />
+            
+            {/* Minimal Focus View Button */}
+            <div className="pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => window.location.href = '/focus'}
+                className="w-full"
+                disabled={pomodoroState === 'idle'}
+              >
+                📱 Minimal Focus View
+              </Button>
+            </div>
+          </>
         ) : (
           <>
             {/* Standard Timer Display */}

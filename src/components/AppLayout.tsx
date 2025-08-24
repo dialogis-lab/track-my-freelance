@@ -1,7 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePomodoro } from '@/hooks/usePomodoro';
 import { Button } from '@/components/ui/button';
-import { Clock, Users, FolderOpen, BarChart3, Receipt, Settings, LogOut } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Clock, Users, FolderOpen, BarChart3, Receipt, Settings, LogOut, Timer } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 
 interface AppLayoutProps {
@@ -10,6 +12,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { signOut, user } = useAuth();
+  const { isEnabled: pomodoroEnabled, setIsEnabled: setPomodoroEnabled, state, timeRemaining, formatTime } = usePomodoro();
   const location = useLocation();
 
   const navigation = [
@@ -88,6 +91,30 @@ export function AppLayout({ children }: AppLayoutProps) {
               </Link>
             );
           })}
+          
+          {/* Mobile Pomodoro Shortcut */}
+          <Button
+            variant={pomodoroEnabled && state !== 'idle' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => {
+              if (!pomodoroEnabled) {
+                setPomodoroEnabled(true);
+              }
+              // Navigate to dashboard to show timer
+              if (location.pathname !== '/dashboard') {
+                window.location.href = '/dashboard';
+              }
+            }}
+            className="flex items-center space-x-2 px-3 py-2 whitespace-nowrap"
+          >
+            <Timer className="w-4 h-4" />
+            <span>Pomodoro</span>
+            {state !== 'idle' && (
+              <Badge variant="secondary" className="ml-1 text-xs">
+                {formatTime(timeRemaining)}
+              </Badge>
+            )}
+          </Button>
         </div>
       </nav>
 
