@@ -86,7 +86,33 @@ serve(async (req) => {
   }
 
   try {
-    // Validate encryption configuration
+    // Parse request body first to check if this is a test request
+    const body: ProfileSaveRequest & { test_encryption?: string } = await req.json();
+
+    // Handle health check test requests
+    if (body.test_encryption === 'health_check') {
+      const encryptionCheck = validateEncryptionConfig();
+      if (!encryptionCheck.isValid) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Server configuration error', 
+            message: encryptionCheck.error,
+            adminAction: 'Configure ENCRYPTION_KEY environment variable'
+          }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+      
+      return new Response(
+        JSON.stringify({ success: true, message: 'Encryption is properly configured' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate encryption config for actual profile saves
     const encryptionCheck = validateEncryptionConfig();
     if (!encryptionCheck.isValid) {
       console.error('Encryption config invalid:', encryptionCheck.error);
@@ -123,7 +149,7 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const body: ProfileSaveRequest = await req.json();
+    const profileBody: ProfileSaveRequest = body;
 
     // Prepare data for database update
     const updateData: any = {};

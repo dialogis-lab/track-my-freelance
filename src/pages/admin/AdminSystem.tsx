@@ -77,27 +77,31 @@ export function AdminSystem() {
         health.edge_functions = 'error';
       }
 
-      // Check if encryption key is configured
+      // Check encryption key configuration
       try {
         const { data: session } = await supabase.auth.getSession();
         if (session?.session?.access_token) {
-          const response = await fetch('https://ollbuhgghkporvzmrzau.supabase.co/functions/v1/encrypted-profile-fetch', {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${session.session.access_token}`,
-              'Content-Type': 'application/json',
-            },
+          // Test encryption by calling the edge function with a test payload
+          const { data, error } = await supabase.functions.invoke('encrypted-profile-save', {
+            body: { test_encryption: 'health_check' }
           });
           
-          if (response.status === 500) {
-            const result = await response.json();
-            if (result.adminAction) {
+          if (error) {
+            const errorMessage = error.message || '';
+            if (errorMessage.includes('ENCRYPTION_KEY') || errorMessage.includes('Server configuration error')) {
               health.encryption = 'error';
+            } else {
+              health.encryption = 'warning';
             }
+          } else {
+            health.encryption = 'healthy';
           }
+        } else {
+          health.encryption = 'warning';
         }
       } catch (error) {
-        health.encryption = 'warning';
+        console.error('Encryption check failed:', error);
+        health.encryption = 'error';
       }
 
       setSystemHealth(health);
@@ -257,6 +261,20 @@ export function AdminSystem() {
               <AlertDescription className="text-orange-800">
                 <strong>Encryption Key Missing:</strong> The ENCRYPTION_KEY environment variable is not configured. 
                 Encrypted fields (bank details, VAT IDs, private notes) are currently disabled.
+                <br />
+                <span className="text-sm mt-2 block">
+                  The encryption key was recently added. Edge functions may need a few minutes to restart and pick up the new configuration.
+                </span>
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {systemHealth.encryption === 'warning' && (
+            <Alert className="mt-4 border-yellow-200 bg-yellow-50">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800">
+                <strong>Encryption Status Unknown:</strong> Unable to verify encryption configuration. 
+                This may be a temporary issue with the edge functions.
               </AlertDescription>
             </Alert>
           )}
