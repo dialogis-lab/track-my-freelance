@@ -139,7 +139,6 @@ export default function Settings() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Profile */}
           <div className="lg:col-span-2">
-            <h2 className="text-xl font-semibold mb-4">Company Profile</h2>
             <ProfileForm />
           </div>
 

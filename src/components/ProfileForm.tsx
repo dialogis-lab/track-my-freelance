@@ -48,7 +48,24 @@ export function ProfileForm() {
       if (data) {
         setProfile(data);
         if (data.logo_url) {
-          setLogoPreview(data.logo_url);
+          // If we have a logo URL, create a fresh signed URL
+          try {
+            const urlParts = data.logo_url.split('/');
+            const fileName = urlParts[urlParts.length - 1];
+            const filePath = `${user!.id}/${fileName}`;
+            
+            const { data: signedUrlData, error: urlError } = await supabase.storage
+              .from('logos')
+              .createSignedUrl(filePath, 60 * 60 * 24 * 365);
+
+            if (!urlError && signedUrlData) {
+              setLogoPreview(signedUrlData.signedUrl);
+            } else {
+              setLogoPreview(data.logo_url);
+            }
+          } catch {
+            setLogoPreview(data.logo_url);
+          }
         }
       } else {
         // Create empty profile
@@ -110,12 +127,18 @@ export function ProfileForm() {
         throw uploadError;
       }
 
-      const { data: { publicUrl } } = supabase.storage
+      // Get the signed URL for private bucket
+      const { data: signedUrlData, error: urlError } = await supabase.storage
         .from('logos')
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year expiry
 
-      setLogoPreview(publicUrl);
-      setProfile(prev => prev ? { ...prev, logo_url: publicUrl } : null);
+      if (urlError) {
+        throw urlError;
+      }
+
+      const logoUrl = signedUrlData.signedUrl;
+      setLogoPreview(logoUrl);
+      setProfile(prev => prev ? { ...prev, logo_url: logoUrl } : null);
 
       toast({
         title: "Logo uploaded",
@@ -225,37 +248,37 @@ export function ProfileForm() {
           Company Profile
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4">
         {/* Logo Upload */}
         <div className="space-y-2">
           <Label>Company Logo</Label>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             {logoPreview ? (
               <div className="relative">
                 <img
                   src={logoPreview}
                   alt="Company logo"
-                  className="w-20 h-20 object-contain bg-muted rounded-lg p-2"
+                  className="w-16 h-16 object-contain bg-muted rounded-lg p-2"
                 />
                 <Button
                   variant="destructive"
                   size="sm"
-                  className="absolute -top-2 -right-2 w-6 h-6 p-0"
+                  className="absolute -top-1 -right-1 w-5 h-5 p-0"
                   onClick={removeLogo}
                 >
                   <X className="w-3 h-3" />
                 </Button>
               </div>
             ) : (
-              <div className="w-20 h-20 bg-muted rounded-lg flex items-center justify-center">
-                <Building2 className="w-8 h-8 text-muted-foreground" />
+              <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
+                <Building2 className="w-6 h-6 text-muted-foreground" />
               </div>
             )}
             
-            <div>
+            <div className="flex-1">
               <input
                 type="file"
-                accept="image/png,image/svg+xml"
+                accept="image/png,image/svg+xml,image/jpeg,image/jpg"
                 onChange={handleLogoUpload}
                 className="hidden"
                 id="logo-upload"
@@ -263,13 +286,13 @@ export function ProfileForm() {
               />
               <Label
                 htmlFor="logo-upload"
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 cursor-pointer"
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 py-2 cursor-pointer"
               >
                 <Upload className="w-4 h-4 mr-2" />
                 {uploading ? 'Uploading...' : 'Upload Logo'}
               </Label>
               <p className="text-xs text-muted-foreground mt-1">
-                PNG or SVG, max 1MB
+                PNG, JPG or SVG, max 1MB
               </p>
             </div>
           </div>
@@ -294,7 +317,8 @@ export function ProfileForm() {
             value={profile.address || ''}
             onChange={(e) => setProfile({ ...profile, address: e.target.value })}
             placeholder="Your company address"
-            rows={3}
+            rows={2}
+            className="text-sm"
           />
         </div>
 
@@ -317,7 +341,8 @@ export function ProfileForm() {
             value={profile.bank_details || ''}
             onChange={(e) => setProfile({ ...profile, bank_details: e.target.value })}
             placeholder="Bank name, account number, routing information, etc."
-            rows={3}
+            rows={2}
+            className="text-sm"
           />
         </div>
 
