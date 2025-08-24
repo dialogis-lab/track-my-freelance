@@ -7,7 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Plus, FolderOpen, Clock, TrendingUp, Play, Square, FileText } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
+import { ArrowLeft, Plus, FolderOpen, Clock, TrendingUp, Play, Square, FileText, Edit2 } from 'lucide-react';
 import { InvoiceWizard } from '@/components/InvoiceWizard';
 import { formatDuration, calculateDurationMinutes } from '@/lib/timeUtils';
 
@@ -64,6 +69,23 @@ export default function ClientDetail() {
   const [activeTimer, setActiveTimer] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [invoiceWizardOpen, setInvoiceWizardOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    company_name: '',
+    contact_person: '',
+    email: '',
+    phone: '',
+    address_street: '',
+    address_city: '',
+    address_postal_code: '',
+    address_country: 'Germany',
+    vat_id: '',
+    tax_number: '',
+    website: '',
+    notes: ''
+  });
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -98,7 +120,7 @@ export default function ClientDetail() {
         vat_id, tax_number, website, notes, created_at, updated_at
       `)
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
     if (clientError) {
       toast({
@@ -275,6 +297,91 @@ export default function ClientDetail() {
     navigate(`/projects?client=${id}`);
   };
 
+  const startEdit = () => {
+    if (!client) return;
+    
+    setFormData({
+      name: client.name,
+      company_name: client.company_name || '',
+      contact_person: client.contact_person || '',
+      email: client.email || '',
+      phone: client.phone || '',
+      address_street: client.address_street || '',
+      address_city: client.address_city || '',
+      address_postal_code: client.address_postal_code || '',
+      address_country: client.address_country || 'Germany',
+      vat_id: client.vat_id || '',
+      tax_number: client.tax_number || '',
+      website: client.website || '',
+      notes: client.notes || ''
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!client) return;
+    
+    setEditLoading(true);
+
+    const clientData = {
+      name: formData.name,
+      company_name: formData.company_name || null,
+      contact_person: formData.contact_person || null,
+      email: formData.email || null,
+      phone: formData.phone || null,
+      address_street: formData.address_street || null,
+      address_city: formData.address_city || null,
+      address_postal_code: formData.address_postal_code || null,
+      address_country: formData.address_country || 'Germany',
+      vat_id: formData.vat_id || null,
+      tax_number: formData.tax_number || null,
+      website: formData.website || null,
+      notes: formData.notes || null,
+    };
+
+    const { error } = await supabase
+      .from('clients')
+      .update(clientData)
+      .eq('id', client.id);
+
+    if (error) {
+      toast({
+        title: "Error updating client",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Client updated",
+        description: "Client information has been updated successfully.",
+      });
+      setIsEditDialogOpen(false);
+      loadClientData(); // Reload client data
+    }
+
+    setEditLoading(false);
+  };
+
+  const resetEditForm = () => {
+    setIsEditDialogOpen(false);
+    setFormData({
+      name: '',
+      company_name: '',
+      contact_person: '',
+      email: '',
+      phone: '',
+      address_street: '',
+      address_city: '',
+      address_postal_code: '',
+      address_country: 'Germany',
+      vat_id: '',
+      tax_number: '',
+      website: '',
+      notes: ''
+    });
+  };
+
   if (loading) {
     return (
       <AppLayout>
@@ -330,6 +437,10 @@ export default function ClientDetail() {
           </div>
           
           <div className="flex space-x-2">
+            <Button variant="outline" onClick={startEdit}>
+              <Edit2 className="w-4 h-4 mr-2" />
+              Edit Client
+            </Button>
             <Button onClick={() => navigate(`/invoices/new?clientId=${id}`)}>
               <FileText className="w-4 h-4 mr-2" />
               Create Invoice
@@ -602,6 +713,188 @@ export default function ClientDetail() {
           clientId={id!}
           clientName={client.name}
         />
+        
+        {/* Edit Client Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Client</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleEditSubmit} className="space-y-6">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-brand-gradient">Basic Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-name">Client Name *</Label>
+                    <Input
+                      id="edit-name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      required
+                      placeholder="Enter client name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-company_name">Company Name</Label>
+                    <Input
+                      id="edit-company_name"
+                      value={formData.company_name}
+                      onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                      placeholder="Enter company name"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-contact_person">Contact Person</Label>
+                  <Input
+                    id="edit-contact_person"
+                    value={formData.contact_person}
+                    onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
+                    placeholder="Enter contact person name"
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Contact Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-brand-gradient">Contact Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-email">Email</Label>
+                    <Input
+                      id="edit-email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="client@example.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-phone">Phone</Label>
+                    <Input
+                      id="edit-phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="+49 123 456789"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-website">Website (Optional)</Label>
+                  <Input
+                    id="edit-website"
+                    type="url"
+                    value={formData.website}
+                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                    placeholder="https://example.com"
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Address Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-brand-gradient">Address Information</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-address_street">Street Address</Label>
+                  <Input
+                    id="edit-address_street"
+                    value={formData.address_street}
+                    onChange={(e) => setFormData({ ...formData, address_street: e.target.value })}
+                    placeholder="Musterstraße 123"
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-address_city">City</Label>
+                    <Input
+                      id="edit-address_city"
+                      value={formData.address_city}
+                      onChange={(e) => setFormData({ ...formData, address_city: e.target.value })}
+                      placeholder="Berlin"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-address_postal_code">Postal Code</Label>
+                    <Input
+                      id="edit-address_postal_code"
+                      value={formData.address_postal_code}
+                      onChange={(e) => setFormData({ ...formData, address_postal_code: e.target.value })}
+                      placeholder="10115"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-address_country">Country</Label>
+                    <Input
+                      id="edit-address_country"
+                      value={formData.address_country}
+                      onChange={(e) => setFormData({ ...formData, address_country: e.target.value })}
+                      placeholder="Germany"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Tax Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-brand-gradient">Tax Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-vat_id">VAT ID</Label>
+                    <Input
+                      id="edit-vat_id"
+                      value={formData.vat_id}
+                      onChange={(e) => setFormData({ ...formData, vat_id: e.target.value })}
+                      placeholder="DE123456789"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-tax_number">Tax Number</Label>
+                    <Input
+                      id="edit-tax_number"
+                      value={formData.tax_number}
+                      onChange={(e) => setFormData({ ...formData, tax_number: e.target.value })}
+                      placeholder="123/456/78901"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Additional Notes */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-brand-gradient">Additional Notes</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-notes">Notes (Optional)</Label>
+                  <Textarea
+                    id="edit-notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder="Add any additional notes about this client..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              <div className="flex space-x-2 pt-4">
+                <Button type="submit" disabled={editLoading} variant="gradient">
+                  {editLoading ? 'Updating...' : 'Update Client'}
+                </Button>
+                <Button type="button" variant="outline" onClick={resetEditForm}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </AppLayout>
   );
