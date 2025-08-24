@@ -33,6 +33,13 @@ serve(async (req) => {
     const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
     const userAgent = req.headers.get('user-agent') || 'unknown'
     
+    console.log('Request headers:', { 
+      'x-forwarded-for': req.headers.get('x-forwarded-for'),
+      'x-real-ip': req.headers.get('x-real-ip'),
+      'user-agent': userAgent,
+      'final-ip': clientIP
+    })
+    
     // Generate device hash
     const deviceHash = await generateDeviceHash(userAgent, clientIP)
     
@@ -145,11 +152,20 @@ serve(async (req) => {
 })
 
 async function generateDeviceHash(userAgent: string, ip: string): Promise<string> {
-  const deviceString = `${userAgent}-${ip}`
+  // Clean and normalize the input to avoid hash variations
+  const cleanUserAgent = userAgent.replace(/\s+/g, ' ').trim()
+  const cleanIP = ip.split(',')[0].trim() // Take only first IP if there are multiple
+  
+  const deviceString = `${cleanUserAgent}-${cleanIP}`
+  console.log('Generating device hash for:', { userAgent: cleanUserAgent, ip: cleanIP, deviceString })
+  
   const encoder = new TextEncoder()
   const data = encoder.encode(deviceString)
   const hash = await crypto.subtle.digest('SHA-256', data)
-  return Array.from(new Uint8Array(hash))
+  const hashString = Array.from(new Uint8Array(hash))
     .map(b => b.toString(16).padStart(2, '0'))
     .join('')
+  
+  console.log('Generated device hash:', hashString)
+  return hashString
 }
