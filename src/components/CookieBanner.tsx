@@ -1,9 +1,9 @@
-import { useCookieConsent } from '@/hooks/useCookieConsent';
+import { useCookieContext } from '@/components/CookieProvider';
 import { Button } from '@/components/ui/button';
 import { Cookie, Settings } from 'lucide-react';
 
 export function CookieBanner() {
-  const { showBanner, acceptAll, rejectNonEssential, openModal } = useCookieConsent();
+  const { showBanner, acceptAll, rejectNonEssential, openModal } = useCookieContext();
 
   console.log('Cookie banner render - showBanner:', showBanner);
 

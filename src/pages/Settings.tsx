@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/use-toast';
-import { Bell, Clock, User } from 'lucide-react';
+import { Bell, Clock, User, Shield } from 'lucide-react';
+import { CookieDebug } from '@/components/CookieDebug';
 
 interface Reminder {
   id: string;
@@ -294,6 +295,22 @@ export default function Settings() {
                   <a href="/imprint" target="_blank">Legal Notice</a>
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Cookie Consent Debug */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <Shield className="w-5 h-5" />
+                <CardTitle>Cookie Consent</CardTitle>
+              </div>
+              <CardDescription>
+                Manage your cookie preferences and test the consent system.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CookieDebug />
             </CardContent>
           </Card>
         </div>

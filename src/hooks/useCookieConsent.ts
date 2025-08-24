@@ -108,11 +108,20 @@ export function useCookieConsent() {
   };
 
   const resetConsent = () => {
+    console.log('Resetting cookie consent');
     localStorage.removeItem(STORAGE_KEY);
     setConsent(DEFAULT_CONSENT);
     setHasConsented(false);
     setShowBanner(true);
     setShowModal(false);
+    
+    // Reset Google Analytics consent
+    if (window.gtag) {
+      window.gtag('consent', 'update', {
+        analytics_storage: 'denied',
+        ad_storage: 'denied',
+      });
+    }
   };
 
   return {

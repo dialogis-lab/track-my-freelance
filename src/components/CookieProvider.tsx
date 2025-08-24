@@ -14,6 +14,12 @@ export function CookieProvider({ children }: CookieProviderProps) {
 
   // Initialize Google Analytics consent mode
   useEffect(() => {
+    console.log('CookieProvider: Initializing GA consent mode', {
+      hasConsented: cookieConsent.hasConsented,
+      analytics: cookieConsent.consent.analytics,
+      marketing: cookieConsent.consent.marketing
+    });
+    
     if (window.gtag) {
       // Set default consent state
       window.gtag('consent', 'default', {

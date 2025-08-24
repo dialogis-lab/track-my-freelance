@@ -1,16 +1,24 @@
-import { useEffect, useRef } from 'react';
-import { useCookieConsent } from '@/hooks/useCookieConsent';
+import { useEffect, useRef, useState } from 'react';
+import { useCookieContext } from '@/components/CookieProvider';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { X } from 'lucide-react';
 
 export function CookieModal() {
-  const { consent, showModal, updateConsent, closeModal } = useCookieConsent();
+  const { consent, showModal, updateConsent, closeModal } = useCookieContext();
   const modalRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  
+  // Local state for modal preferences
+  const [localConsent, setLocalConsent] = useState(consent);
 
-  console.log('Cookie modal render - showModal:', showModal);
+  console.log('Cookie modal render - showModal:', showModal, 'consent:', consent);
+
+  // Update local state when consent changes
+  useEffect(() => {
+    setLocalConsent(consent);
+  }, [consent]);
 
   // Focus trap and ESC key handling
   useEffect(() => {
@@ -67,7 +75,8 @@ export function CookieModal() {
   if (!showModal) return null;
 
   const handleSavePreferences = () => {
-    updateConsent(consent);
+    console.log('Saving preferences:', localConsent);
+    updateConsent(localConsent);
   };
 
   return (
@@ -80,7 +89,7 @@ export function CookieModal() {
     >
       <div
         ref={modalRef}
-        className="bg-background border border-border rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto relative z-51"
+        className="bg-background border border-border rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
       >
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
@@ -126,9 +135,9 @@ export function CookieModal() {
             <div className="flex items-start space-x-3 p-4 border border-border rounded-lg">
               <Checkbox
                 id="analytics"
-                checked={consent.analytics}
+                checked={localConsent.analytics}
                 onCheckedChange={(checked) =>
-                  updateConsent({ analytics: checked === true })
+                  setLocalConsent(prev => ({ ...prev, analytics: checked === true }))
                 }
                 className="mt-1"
               />
@@ -146,9 +155,9 @@ export function CookieModal() {
             <div className="flex items-start space-x-3 p-4 border border-border rounded-lg">
               <Checkbox
                 id="marketing"
-                checked={consent.marketing}
+                checked={localConsent.marketing}
                 onCheckedChange={(checked) =>
-                  updateConsent({ marketing: checked === true })
+                  setLocalConsent(prev => ({ ...prev, marketing: checked === true }))
                 }
                 className="mt-1"
               />
