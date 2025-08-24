@@ -262,8 +262,8 @@ export default function Projects() {
       return;
     }
     
-    // Navigate to reports page with project filter
-    navigate(`/reports?project=${projectId}`);
+    // Navigate to project detail page
+    navigate(`/projects/${projectId}`);
   };
 
   const activeProjects = projects.filter(p => !p.archived);

@@ -18,7 +18,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import AuthCallback from "./pages/AuthCallback";
 import Dashboard from "./pages/Dashboard";
-import Projects from "./pages/Projects";
+import Projects from '@/pages/Projects';
+import ProjectDetail from '@/pages/ProjectDetail';
 import Clients from "./pages/Clients";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
@@ -47,7 +48,8 @@ const App = () => (
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/mfa" element={<Mfa />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+          <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+          <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
               <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
             <Route path="/clients/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
