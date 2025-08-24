@@ -57,19 +57,29 @@ export function MfaSetupCard() {
       
       // Clean up ALL existing unverified factors to prevent conflicts
       const unverifiedFactors = existingFactors?.totp?.filter(f => f.status === 'unverified') || [];
-      for (const factor of unverifiedFactors) {
-        console.log('Removing existing unverified factor:', factor.id);
-        const { error: unenrollError } = await supabase.auth.mfa.unenroll({
-          factorId: factor.id,
-        });
-        if (unenrollError) {
-          console.warn('Could not unenroll existing factor:', unenrollError);
+      if (unverifiedFactors.length > 0) {
+        console.log(`Removing ${unverifiedFactors.length} existing unverified factors`);
+        for (const factor of unverifiedFactors) {
+          console.log('Removing existing unverified factor:', factor.id);
+          const { error: unenrollError } = await supabase.auth.mfa.unenroll({
+            factorId: factor.id,
+          });
+          if (unenrollError) {
+            console.warn('Could not unenroll existing factor:', unenrollError);
+          }
         }
+        
+        // Wait a bit for the cleanup to process
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
+
+      // Use a unique friendly name to avoid conflicts
+      const uniqueFriendlyName = `TimeHatch TOTP ${Date.now()}`;
+      console.log('Creating new MFA factor with name:', uniqueFriendlyName);
 
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: 'totp',
-        friendlyName: 'TimeHatch TOTP', // Add a friendly name to avoid conflicts
+        friendlyName: uniqueFriendlyName,
       });
 
       if (error) throw error;
