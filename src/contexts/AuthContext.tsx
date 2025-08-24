@@ -65,18 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkMfaRequired = async (session: Session) => {
     try {
-      // Get AAL directly from the JWT token
-      const currentAal = (session as any).aal || session.user.app_metadata?.aal || 'aal1';
-      console.log('checkMfaRequired: Current AAL from token:', currentAal);
-      
-      // If already AAL2, no MFA needed
-      if (currentAal === 'aal2') {
-        console.log('checkMfaRequired: AAL2 detected, no MFA needed');
-        setNeedsMfa(false);
-        return;
-      }
-      
-      // Check if user has MFA enabled
+      // Check if user has MFA enabled first
       const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
       
       if (factorsError) {
@@ -87,12 +76,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       const verifiedFactor = factors?.totp?.find(f => f.status === 'verified');
       
-      if (verifiedFactor) {
-        console.log('checkMfaRequired: User has MFA enabled but AAL is not 2, MFA challenge needed');
-        setNeedsMfa(true);
-      } else {
+      if (!verifiedFactor) {
         console.log('checkMfaRequired: No MFA factors, no challenge needed');
         setNeedsMfa(false);
+        return;
+      }
+
+      console.log('checkMfaRequired: User has MFA enabled, checking AAL level');
+      
+      // Check AAL level from the session - look at the AMR (Authentication Methods Reference)
+      const amr = (session.user as any).amr || [];
+      const hasTotp = amr.some((method: any) => method.method === 'totp');
+      
+      console.log('checkMfaRequired: AMR methods:', amr, 'Has TOTP:', hasTotp);
+      
+      if (hasTotp) {
+        console.log('checkMfaRequired: TOTP method found in AMR, MFA already completed');
+        setNeedsMfa(false);
+      } else {
+        console.log('checkMfaRequired: No TOTP in AMR, MFA challenge needed');
+        setNeedsMfa(true);
       }
       
     } catch (error) {

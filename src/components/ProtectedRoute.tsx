@@ -25,13 +25,15 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
-  // Check AAL level directly from the session
-  const currentAal = (user as any).aal || user.app_metadata?.aal || 'aal1';
-  console.log('ProtectedRoute: Current AAL level:', currentAal);
+  // Check if user completed TOTP by looking at AMR (Authentication Methods Reference)
+  const amr = (user as any).amr || [];
+  const hasCompletedTotp = amr.some((method: any) => method.method === 'totp');
   
-  // Only redirect to MFA if we're not already on the MFA page, MFA is needed, and AAL is not 2
-  if (needsMfa && currentAal !== 'aal2' && window.location.pathname !== '/mfa') {
-    console.log('ProtectedRoute: MFA needed and AAL not 2, redirecting to /mfa');
+  console.log('ProtectedRoute: AMR methods:', amr, 'Has completed TOTP:', hasCompletedTotp);
+  
+  // Only redirect to MFA if we're not already on the MFA page, MFA is needed, and TOTP not completed
+  if (needsMfa && !hasCompletedTotp && window.location.pathname !== '/mfa') {
+    console.log('ProtectedRoute: MFA needed and TOTP not completed, redirecting to /mfa');
     return <Navigate to="/mfa" replace />;
   }
 
