@@ -3,8 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { RefreshCw, AlertTriangle, CheckCircle, Clock, Server, Database, Mail, Key } from 'lucide-react';
+import { RefreshCw, AlertTriangle, CheckCircle, Clock, Server, Database, Mail, Key, Info, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -13,6 +14,37 @@ interface SystemHealth {
   edge_functions: 'healthy' | 'warning' | 'error';
   storage: 'healthy' | 'warning' | 'error';
   encryption: 'healthy' | 'warning' | 'error';
+}
+
+interface SystemHealthDetails {
+  database: {
+    status: 'healthy' | 'warning' | 'error';
+    message: string;
+    technicalDetails: string;
+    lastChecked: string;
+    suggestions?: string[];
+  };
+  edge_functions: {
+    status: 'healthy' | 'warning' | 'error';
+    message: string;
+    technicalDetails: string;
+    lastChecked: string;
+    suggestions?: string[];
+  };
+  storage: {
+    status: 'healthy' | 'warning' | 'error';
+    message: string;
+    technicalDetails: string;
+    lastChecked: string;
+    suggestions?: string[];
+  };
+  encryption: {
+    status: 'healthy' | 'warning' | 'error';
+    message: string;
+    technicalDetails: string;
+    lastChecked: string;
+    suggestions?: string[];
+  };
 }
 
 interface CronJobStatus {
@@ -30,8 +62,15 @@ export function AdminSystem() {
     storage: 'healthy',
     encryption: 'healthy'
   });
+  const [systemHealthDetails, setSystemHealthDetails] = useState<SystemHealthDetails>({
+    database: { status: 'healthy', message: '', technicalDetails: '', lastChecked: '' },
+    edge_functions: { status: 'healthy', message: '', technicalDetails: '', lastChecked: '' },
+    storage: { status: 'healthy', message: '', technicalDetails: '', lastChecked: '' },
+    encryption: { status: 'healthy', message: '', technicalDetails: '', lastChecked: '' }
+  });
   const [cronJobs, setCronJobs] = useState<CronJobStatus[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [selectedComponent, setSelectedComponent] = useState<keyof SystemHealthDetails | null>(null);
 
   useEffect(() => {
     checkSystemHealth();
@@ -41,40 +80,134 @@ export function AdminSystem() {
   const checkSystemHealth = async () => {
     try {
       setLoading(true);
+      const now = new Date().toISOString();
       const health: SystemHealth = {
         database: 'healthy',
         edge_functions: 'healthy',
         storage: 'healthy',
         encryption: 'healthy'
       };
+      const details: SystemHealthDetails = {
+        database: { status: 'healthy', message: '', technicalDetails: '', lastChecked: now },
+        edge_functions: { status: 'healthy', message: '', technicalDetails: '', lastChecked: now },
+        storage: { status: 'healthy', message: '', technicalDetails: '', lastChecked: now },
+        encryption: { status: 'healthy', message: '', technicalDetails: '', lastChecked: now }
+      };
 
       // Check database connectivity
       try {
-        await supabase.from('profiles').select('count').limit(1);
-      } catch (error) {
+        const { data, error } = await supabase.from('profiles').select('count').limit(1);
+        if (error) throw error;
+        
+        health.database = 'healthy';
+        details.database = {
+          status: 'healthy',
+          message: 'Database is responsive and accessible',
+          technicalDetails: `Successfully connected to Supabase database. Query executed successfully.`,
+          lastChecked: now,
+          suggestions: ['Database is operating normally']
+        };
+      } catch (error: any) {
         health.database = 'error';
+        details.database = {
+          status: 'error',
+          message: 'Cannot connect to database',
+          technicalDetails: `Database connection failed: ${error.message || 'Unknown error'}`,
+          lastChecked: now,
+          suggestions: [
+            'Check Supabase connection settings',
+            'Verify database is running',
+            'Check network connectivity',
+            'Review RLS policies'
+          ]
+        };
       }
 
-      // Check storage
-      try {
-        const { data: buckets } = await supabase.storage.listBuckets();
-        if (!buckets || buckets.length === 0) {
-          health.storage = 'warning';
-        }
-      } catch (error) {
-        health.storage = 'error';
-      }
-
-      // Check encryption functions
+      // Check edge functions
       try {
         const response = await fetch('https://ollbuhgghkporvzmrzau.supabase.co/functions/v1/encrypted-profile-fetch', {
           method: 'OPTIONS'
         });
+        
         if (!response.ok) {
           health.edge_functions = 'warning';
+          details.edge_functions = {
+            status: 'warning',
+            message: 'Edge functions may be unavailable',
+            technicalDetails: `HTTP ${response.status}: ${response.statusText}`,
+            lastChecked: now,
+            suggestions: [
+              'Check edge function deployment',
+              'Verify function is properly configured',
+              'Check Supabase function logs'
+            ]
+          };
+        } else {
+          health.edge_functions = 'healthy';
+          details.edge_functions = {
+            status: 'healthy',
+            message: 'Edge functions are responding',
+            technicalDetails: `Successfully connected to edge functions. HTTP ${response.status}`,
+            lastChecked: now,
+            suggestions: ['Edge functions are operating normally']
+          };
         }
-      } catch (error) {
+      } catch (error: any) {
         health.edge_functions = 'error';
+        details.edge_functions = {
+          status: 'error',
+          message: 'Cannot reach edge functions',
+          technicalDetails: `Connection failed: ${error.message || 'Network error'}`,
+          lastChecked: now,
+          suggestions: [
+            'Check network connectivity',
+            'Verify Supabase edge functions are deployed',
+            'Check function URLs and configuration'
+          ]
+        };
+      }
+
+      // Check storage
+      try {
+        const { data: buckets, error } = await supabase.storage.listBuckets();
+        if (error) throw error;
+        
+        if (!buckets || buckets.length === 0) {
+          health.storage = 'warning';
+          details.storage = {
+            status: 'warning',
+            message: 'No storage buckets found',
+            technicalDetails: 'Storage is accessible but no buckets are configured',
+            lastChecked: now,
+            suggestions: [
+              'Create storage buckets for file uploads',
+              'Configure logos and invoices buckets',
+              'Set up proper RLS policies for storage'
+            ]
+          };
+        } else {
+          health.storage = 'healthy';
+          details.storage = {
+            status: 'healthy',
+            message: `Storage is working with ${buckets.length} bucket(s)`,
+            technicalDetails: `Found buckets: ${buckets.map(b => b.name).join(', ')}`,
+            lastChecked: now,
+            suggestions: ['Storage is operating normally']
+          };
+        }
+      } catch (error: any) {
+        health.storage = 'error';
+        details.storage = {
+          status: 'error',
+          message: 'Cannot access storage system',
+          technicalDetails: `Storage error: ${error.message || 'Unknown error'}`,
+          lastChecked: now,
+          suggestions: [
+            'Check Supabase storage configuration',
+            'Verify storage policies',
+            'Check API permissions'
+          ]
+        };
       }
 
       // Check encryption key configuration
@@ -90,21 +223,75 @@ export function AdminSystem() {
             const errorMessage = error.message || '';
             if (errorMessage.includes('ENCRYPTION_KEY') || errorMessage.includes('Server configuration error')) {
               health.encryption = 'error';
+              details.encryption = {
+                status: 'error',
+                message: 'Encryption key not configured',
+                technicalDetails: `${errorMessage}`,
+                lastChecked: now,
+                suggestions: [
+                  'Configure ENCRYPTION_KEY in Supabase secrets',
+                  'Ensure key is 32-byte base64 encoded',
+                  'Restart edge functions after configuration',
+                  'Test encryption functionality'
+                ]
+              };
             } else {
               health.encryption = 'warning';
+              details.encryption = {
+                status: 'warning',
+                message: 'Encryption configuration issue',
+                technicalDetails: `Encryption test failed: ${errorMessage}`,
+                lastChecked: now,
+                suggestions: [
+                  'Check edge function logs',
+                  'Verify encryption key format',
+                  'Test manual encryption/decryption'
+                ]
+              };
             }
           } else {
             health.encryption = 'healthy';
+            details.encryption = {
+              status: 'healthy',
+              message: 'Encryption is properly configured',
+              technicalDetails: 'Successfully tested encryption/decryption cycle',
+              lastChecked: now,
+              suggestions: ['Encryption is operating normally']
+            };
           }
         } else {
           health.encryption = 'warning';
+          details.encryption = {
+            status: 'warning',
+            message: 'Cannot test encryption - authentication required',
+            technicalDetails: 'No valid session found for encryption testing',
+            lastChecked: now,
+            suggestions: [
+              'User must be logged in to test encryption',
+              'Check authentication status',
+              'Refresh session if needed'
+            ]
+          };
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Encryption check failed:', error);
         health.encryption = 'error';
+        details.encryption = {
+          status: 'error',
+          message: 'Encryption test failed',
+          technicalDetails: `Test error: ${error.message || 'Unknown error'}`,
+          lastChecked: now,
+          suggestions: [
+            'Check edge function deployment',
+            'Verify ENCRYPTION_KEY configuration',
+            'Check network connectivity',
+            'Review edge function logs'
+          ]
+        };
       }
 
       setSystemHealth(health);
+      setSystemHealthDetails(details);
 
       // Mock cron job status (in real implementation, these would come from monitoring)
       setCronJobs([
@@ -210,7 +397,10 @@ export function AdminSystem() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="flex items-center space-x-3 p-3 rounded-lg border">
+            <div 
+              className="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => setSelectedComponent('database')}
+            >
               <Database className="h-8 w-8 text-blue-600" />
               <div className="flex-1">
                 <div className="font-medium">Database</div>
@@ -219,9 +409,13 @@ export function AdminSystem() {
                   <span className="ml-1 capitalize">{systemHealth.database}</span>
                 </Badge>
               </div>
+              <Info className="h-4 w-4 text-muted-foreground" />
             </div>
 
-            <div className="flex items-center space-x-3 p-3 rounded-lg border">
+            <div 
+              className="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => setSelectedComponent('edge_functions')}
+            >
               <Server className="h-8 w-8 text-purple-600" />
               <div className="flex-1">
                 <div className="font-medium">Edge Functions</div>
@@ -230,9 +424,13 @@ export function AdminSystem() {
                   <span className="ml-1 capitalize">{systemHealth.edge_functions}</span>
                 </Badge>
               </div>
+              <Info className="h-4 w-4 text-muted-foreground" />
             </div>
 
-            <div className="flex items-center space-x-3 p-3 rounded-lg border">
+            <div 
+              className="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => setSelectedComponent('storage')}
+            >
               <Database className="h-8 w-8 text-green-600" />
               <div className="flex-1">
                 <div className="font-medium">Storage</div>
@@ -241,9 +439,13 @@ export function AdminSystem() {
                   <span className="ml-1 capitalize">{systemHealth.storage}</span>
                 </Badge>
               </div>
+              <Info className="h-4 w-4 text-muted-foreground" />
             </div>
 
-            <div className="flex items-center space-x-3 p-3 rounded-lg border">
+            <div 
+              className="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => setSelectedComponent('encryption')}
+            >
               <Key className="h-8 w-8 text-orange-600" />
               <div className="flex-1">
                 <div className="font-medium">Encryption</div>
@@ -252,6 +454,7 @@ export function AdminSystem() {
                   <span className="ml-1 capitalize">{systemHealth.encryption}</span>
                 </Badge>
               </div>
+              <Info className="h-4 w-4 text-muted-foreground" />
             </div>
           </div>
 
@@ -280,6 +483,70 @@ export function AdminSystem() {
           )}
         </CardContent>
       </Card>
+
+      {/* Component Details Dialog */}
+      <Dialog open={selectedComponent !== null} onOpenChange={() => setSelectedComponent(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {selectedComponent === 'database' && <Database className="h-5 w-5" />}
+              {selectedComponent === 'edge_functions' && <Server className="h-5 w-5" />}
+              {selectedComponent === 'storage' && <Database className="h-5 w-5" />}
+              {selectedComponent === 'encryption' && <Key className="h-5 w-5" />}
+              {selectedComponent?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} Details
+            </DialogTitle>
+            <DialogDescription>
+              Detailed information about the system component status
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedComponent && (
+            <div className="space-y-4">
+              {/* Status Badge */}
+              <div className="flex items-center gap-2">
+                <Badge className={getHealthColor(systemHealthDetails[selectedComponent].status)}>
+                  {getHealthIcon(systemHealthDetails[selectedComponent].status)}
+                  <span className="ml-1 capitalize">{systemHealthDetails[selectedComponent].status}</span>
+                </Badge>
+                <span className="text-sm text-muted-foreground">
+                  Last checked: {new Date(systemHealthDetails[selectedComponent].lastChecked).toLocaleString()}
+                </span>
+              </div>
+
+              {/* User-friendly Message */}
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Status:</strong> {systemHealthDetails[selectedComponent].message}
+                </AlertDescription>
+              </Alert>
+
+              {/* Technical Details */}
+              <div className="space-y-2">
+                <h4 className="font-medium flex items-center gap-2">
+                  <ExternalLink className="h-4 w-4" />
+                  Technical Details
+                </h4>
+                <div className="bg-muted p-3 rounded-md font-mono text-sm">
+                  {systemHealthDetails[selectedComponent].technicalDetails}
+                </div>
+              </div>
+
+              {/* Suggestions */}
+              {systemHealthDetails[selectedComponent].suggestions && (
+                <div className="space-y-2">
+                  <h4 className="font-medium">Recommendations</h4>
+                  <ul className="list-disc list-inside space-y-1 text-sm">
+                    {systemHealthDetails[selectedComponent].suggestions?.map((suggestion, index) => (
+                      <li key={index} className="text-muted-foreground">{suggestion}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Cron Jobs Status */}
       <Card>
