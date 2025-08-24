@@ -19,17 +19,24 @@ export default function Mfa() {
   const [loading, setLoading] = useState(false);
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [factorId, setFactorId] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const [rememberDevice, setRememberDevice] = useState(false);
 
   useEffect(() => {
-    initializeMfa();
-  }, []);
+    if (!initialized) {
+      initializeMfa();
+    }
+  }, [initialized]);
 
   const initializeMfa = async () => {
+    if (initialized) return; // Prevent multiple calls
+    
     try {
+      setInitialized(true);
+      
       // First check if MFA is already completed
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -79,14 +86,11 @@ export default function Mfa() {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) return false;
 
-      console.log('Checking trusted device...');
       const response = await supabase.functions.invoke('check-trusted-device', {
         headers: {
           'Authorization': `Bearer ${sessionData.session.access_token}`,
         },
       });
-
-      console.log('Trusted device response:', response);
 
       if (response.error) {
         console.error('Error checking trusted device:', response.error);
@@ -94,14 +98,11 @@ export default function Mfa() {
       }
 
       const { is_trusted } = response.data;
-      console.log('Device is trusted:', is_trusted);
       
       if (is_trusted) {
-        console.log('Device is trusted, navigating to dashboard');
         navigate('/dashboard', { replace: true });
         return true;
       } else {
-        console.log('Device is not trusted, continuing with MFA');
         return false;
       }
     } catch (error) {
