@@ -1,4 +1,5 @@
 import SystemCheck from '@/pages/SystemCheck';
+import SecurityCheck from '@/pages/SecurityCheck';
 import ClientDetail from "./pages/ClientDetail";
 import Invoices from "./pages/Invoices";
 import InvoiceNew from "./pages/InvoiceNew";
@@ -95,6 +96,7 @@ const App = () => (
             } />
             
               <Route path="/system-check" element={<ProtectedRoute><SystemCheck /></ProtectedRoute>} />
+              <Route path="/security-check" element={<ProtectedRoute><SecurityCheck /></ProtectedRoute>} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/imprint" element={<Imprint />} />
               <Route path="/success" element={<Success />} />
