@@ -5,6 +5,7 @@ import LeadForm from "./LeadForm";
 import { Link } from "react-router-dom";
 import { useCookieContext } from "@/components/CookieProvider";
 import { BrandLogo } from "./BrandLogo";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Accordion,
   AccordionContent,
@@ -14,6 +15,7 @@ import {
 
 const NewLandingPage = () => {
   const { openModal } = useCookieContext();
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-background">
@@ -29,6 +31,40 @@ const NewLandingPage = () => {
               <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
               <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
               <a href="#faq" className="text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
+              <div className="flex items-center space-x-4 ml-6">
+                {user ? (
+                  <Link to="/dashboard">
+                    <Button size="sm">Dashboard</Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link to="/register" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
+                      Sign Up
+                </Link>
+                    <Link to="/login">
+                      <Button size="sm">Sign In</Button>
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            {/* Mobile menu with auth buttons */}
+            <div className="md:hidden flex items-center space-x-3">
+              {user ? (
+                <Link to="/dashboard">
+                  <Button size="sm">Dashboard</Button>
+                </Link>
+              ) : (
+                <>
+                  <Link to="/register" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
+                    Sign Up
+                  </Link>
+                  <Link to="/login">
+                    <Button size="sm">Sign In</Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
