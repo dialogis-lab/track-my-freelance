@@ -25,15 +25,19 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
-  // Check if user completed TOTP by looking at AMR (Authentication Methods Reference)
+  // Check multiple sources for MFA completion  
+  const aal = (user as any).aal || 'aal1';
   const amr = (user as any).amr || [];
   const hasCompletedTotp = amr.some((method: any) => method.method === 'totp');
   
-  console.log('ProtectedRoute: AMR methods:', amr, 'Has completed TOTP:', hasCompletedTotp);
+  console.log('ProtectedRoute: AAL:', aal, 'AMR methods:', amr, 'Has completed TOTP:', hasCompletedTotp);
   
-  // Only redirect to MFA if we're not already on the MFA page, MFA is needed, and TOTP not completed
-  if (needsMfa && !hasCompletedTotp && window.location.pathname !== '/mfa') {
-    console.log('ProtectedRoute: MFA needed and TOTP not completed, redirecting to /mfa');
+  // Consider MFA completed if AAL is aal2 OR if TOTP is in AMR
+  const mfaCompleted = aal === 'aal2' || hasCompletedTotp;
+  
+  // Only redirect to MFA if we're not already on the MFA page, MFA is needed, and MFA not completed
+  if (needsMfa && !mfaCompleted && window.location.pathname !== '/mfa') {
+    console.log('ProtectedRoute: MFA needed and not completed, redirecting to /mfa');
     return <Navigate to="/mfa" replace />;
   }
 

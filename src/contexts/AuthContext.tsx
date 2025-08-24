@@ -82,19 +82,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      console.log('checkMfaRequired: User has MFA enabled, checking AAL level');
+      console.log('checkMfaRequired: User has MFA enabled, checking AAL and AMR');
       
-      // Check AAL level from the session - look at the AMR (Authentication Methods Reference)
+      // Check multiple sources for MFA completion
+      const aal = (session.user as any).aal || 'aal1';
       const amr = (session.user as any).amr || [];
       const hasTotp = amr.some((method: any) => method.method === 'totp');
       
-      console.log('checkMfaRequired: AMR methods:', amr, 'Has TOTP:', hasTotp);
+      console.log('checkMfaRequired: AAL:', aal, 'AMR methods:', amr, 'Has TOTP:', hasTotp);
       
-      if (hasTotp) {
-        console.log('checkMfaRequired: TOTP method found in AMR, MFA already completed');
+      // Consider MFA completed if AAL is aal2 OR if TOTP is in AMR
+      if (aal === 'aal2' || hasTotp) {
+        console.log('checkMfaRequired: MFA already completed (AAL2 or TOTP in AMR)');
         setNeedsMfa(false);
       } else {
-        console.log('checkMfaRequired: No TOTP in AMR, MFA challenge needed');
+        console.log('checkMfaRequired: MFA challenge needed');
         setNeedsMfa(true);
       }
       
@@ -126,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    const origin = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
     
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
