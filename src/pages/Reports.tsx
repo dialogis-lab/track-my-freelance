@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/components/ui/use-toast';
 import { Download, FileText, FileSpreadsheet } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { formatTime, calculateDurationMinutes, formatTimeForCSV } from '@/lib/timeUtils';
 
 interface TimeEntry {
   id: string;
@@ -173,15 +174,17 @@ export default function Reports() {
   };
 
   const exportToCSV = () => {
-    const headers = ['Date', 'Project', 'Client', 'Start Time', 'End Time', 'Duration (Hours)', 'Rate', 'Value', 'Notes'];
+    const headers = ['Date', 'Project', 'Client', 'Start Time', 'End Time', 'Duration (H:M)', 'Duration (Decimal Hours)', 'Rate', 'Value', 'Notes'];
     const rows = entries.map(entry => {
       if (!entry.stopped_at) return [];
       
       const start = new Date(entry.started_at);
       const end = new Date(entry.stopped_at);
-      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+      const minutes = calculateDurationMinutes(start, end);
+      const hours = minutes / 60;
       const rate = entry.projects.rate_hour || 0;
       const value = hours * rate;
+      const timeFormat = formatTimeForCSV(minutes);
 
       return [
         start.toLocaleDateString(),
@@ -189,7 +192,8 @@ export default function Reports() {
         entry.projects.clients?.name || 'No Client',
         start.toLocaleTimeString(),
         end.toLocaleTimeString(),
-        hours.toFixed(2),
+        timeFormat.duration_hm,
+        timeFormat.duration_decimal,
         rate.toFixed(2),
         value.toFixed(2),
         entry.notes || '',
@@ -366,7 +370,7 @@ export default function Reports() {
               <CardTitle>Total Hours</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{summary.totalHours.toFixed(1)}h</div>
+              <div className="text-3xl font-bold">{formatTime(Math.round(summary.totalHours * 60))} <span className="text-sm text-muted-foreground">({summary.totalHours.toFixed(2)}h)</span></div>
             </CardContent>
           </Card>
 
@@ -473,8 +477,8 @@ export default function Reports() {
                   <div key={project} className="flex justify-between items-center py-2 border-b border-border last:border-0">
                     <span className="font-medium">{project}</span>
                     <div className="text-right">
-                      <div className="text-sm">{data.hours.toFixed(1)}h</div>
-                      <div className="text-xs text-muted-foreground">${data.value.toFixed(2)}</div>
+                      <div className="text-sm">{formatTime(Math.round(data.hours * 60))}</div>
+                      <div className="text-xs text-muted-foreground">({data.hours.toFixed(2)}h) • ${data.value.toFixed(2)}</div>
                     </div>
                   </div>
                 ))}
@@ -495,8 +499,8 @@ export default function Reports() {
                   <div key={client} className="flex justify-between items-center py-2 border-b border-border last:border-0">
                     <span className="font-medium">{client}</span>
                     <div className="text-right">
-                      <div className="text-sm">{data.hours.toFixed(1)}h</div>
-                      <div className="text-xs text-muted-foreground">${data.value.toFixed(2)}</div>
+                      <div className="text-sm">{formatTime(Math.round(data.hours * 60))}</div>
+                      <div className="text-xs text-muted-foreground">({data.hours.toFixed(2)}h) • ${data.value.toFixed(2)}</div>
                     </div>
                   </div>
                 ))}
@@ -507,6 +511,58 @@ export default function Reports() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Time Entries Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Time Entries</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Date</th>
+                    <th className="text-left p-2">Project</th>
+                    <th className="text-left p-2">Client</th>
+                    <th className="text-left p-2">Duration</th>
+                    <th className="text-left p-2">Rate</th>
+                    <th className="text-left p-2">Value</th>
+                    <th className="text-left p-2">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map((entry) => {
+                    const start = new Date(entry.started_at);
+                    const end = entry.stopped_at ? new Date(entry.stopped_at) : null;
+                    const minutes = end ? calculateDurationMinutes(start, end) : 0;
+                    const hours = minutes / 60;
+                    const value = (entry.projects.rate_hour || 0) * hours;
+
+                    return (
+                      <tr key={entry.id} className="border-b">
+                        <td className="p-2">{start.toLocaleDateString()}</td>
+                        <td className="p-2">{entry.projects.name}</td>
+                        <td className="p-2">{entry.projects.clients?.name || 'No Client'}</td>
+                        <td className="p-2">
+                          <div className="font-mono">
+                            <div>{formatTime(minutes)}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {(minutes / 60).toFixed(2)}h
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-2">${(entry.projects.rate_hour || 0).toFixed(2)}/h</td>
+                        <td className="p-2">${value.toFixed(2)}</td>
+                        <td className="p-2">{entry.notes || '-'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </AppLayout>
   );

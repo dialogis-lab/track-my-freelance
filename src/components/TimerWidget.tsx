@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { Play, Pause, Square } from 'lucide-react';
+import { formatTime, hoursToMinutes, calculateDurationMinutes } from '@/lib/timeUtils';
 
 interface Project {
   id: string;
@@ -177,11 +178,9 @@ export function TimerWidget() {
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  const formatTimeDisplay = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    return formatTime(minutes);
   };
 
   const getProjectDisplay = (project: Project) => {
@@ -199,8 +198,8 @@ export function TimerWidget() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Time Tracker</span>
-          <div className={`text-2xl font-mono ${showLongRunningWarning ? 'text-destructive' : 'text-primary'}`}>
-            {formatTime(elapsedTime)}
+          <div className="text-4xl font-mono font-bold text-center py-4 text-primary">
+            {formatTimeDisplay(elapsedTime)}
           </div>
         </CardTitle>
       </CardHeader>

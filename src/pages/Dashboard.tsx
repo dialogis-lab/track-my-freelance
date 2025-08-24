@@ -5,6 +5,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { TimerWidget } from '@/components/TimerWidget';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, FolderOpen, Users, TrendingUp } from 'lucide-react';
+import { formatTime, hoursToMinutes, calculateDurationMinutes } from '@/lib/timeUtils';
 
 interface DashboardStats {
   totalProjects: number;
@@ -132,9 +133,9 @@ export default function Dashboard() {
     
     const startTime = new Date(start);
     const endTime = new Date(end);
-    const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+    const minutes = calculateDurationMinutes(startTime, endTime);
     
-    return `${hours.toFixed(1)}h`;
+    return formatTime(minutes, true);  // Show both formats
   };
 
   const formatDate = (dateString: string) => {
@@ -230,7 +231,10 @@ export default function Dashboard() {
                         </p>
                       </div>
                       <div className="text-sm font-mono">
-                        {formatDuration(entry.started_at, entry.stopped_at)}
+                        <div>{formatTime(calculateDurationMinutes(new Date(entry.started_at), entry.stopped_at ? new Date(entry.stopped_at) : undefined))}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {formatTime(calculateDurationMinutes(new Date(entry.started_at), entry.stopped_at ? new Date(entry.stopped_at) : undefined), true).split(' (')[1]?.replace(')', '') || '0.00h'}
+                        </div>
                       </div>
                     </div>
                   ))

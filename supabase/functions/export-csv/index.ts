@@ -1,142 +1,188 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+// Import time utility functions
+const formatTime = (minutes: number, showDecimal?: boolean): string => {
+  if (minutes === 0) {
+    return showDecimal ? "0m (0.00h)" : "0m";
+  }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  const totalMinutes = Math.round(minutes);
+  const hours = Math.floor(totalMinutes / 60);
+  const remainingMinutes = totalMinutes % 60;
+  
+  let timeString = "";
+  
+  if (hours > 0) {
+    timeString += `${hours}h`;
+    if (remainingMinutes > 0) {
+      timeString += ` ${remainingMinutes}m`;
+    }
+  } else {
+    timeString = `${remainingMinutes}m`;
+  }
+  
+  if (showDecimal) {
+    const decimalHours = (totalMinutes / 60).toFixed(2);
+    timeString += ` (${decimalHours}h)`;
+  }
+  
+  return timeString;
+};
+
+const calculateDurationMinutes = (startDate: Date, endDate?: Date): number => {
+  const end = endDate || new Date();
+  const diffMs = end.getTime() - startDate.getTime();
+  return Math.round(diffMs / (1000 * 60));
+};
+
+const formatTimeForCSV = (minutes: number): { duration_hm: string; duration_decimal: string } => {
+  return {
+    duration_hm: formatTime(minutes, false),
+    duration_decimal: `${(minutes / 60).toFixed(2)}h`
+  };
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface ExportRequest {
-  startDate: string;
-  endDate: string;
-  clientId?: string;
-  projectId?: string;
+interface TimeEntry {
+  id: string;
+  started_at: string;
+  stopped_at: string | null;
+  notes: string | null;
+  projects: {
+    name: string;
+    clients?: {
+      name: string;
+    } | null;
+  };
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { 
-      status: 405, 
-      headers: corsHeaders 
-    });
-  }
-
   try {
-    // Get user from Authorization header
-    const authHeader = req.headers.get('Authorization');
+    // Get authorization header
+    const authHeader = req.headers.get('authorization');
     if (!authHeader) {
-      return new Response('Unauthorized', { 
-        status: 401, 
-        headers: corsHeaders 
-      });
+      throw new Error('No authorization header');
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      global: {
+        headers: { Authorization: authHeader },
+      },
+    });
 
-    if (authError || !user) {
-      return new Response('Unauthorized', { 
-        status: 401, 
-        headers: corsHeaders 
-      });
+    // Get user from auth header
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('User not authenticated');
     }
 
-    const { startDate, endDate, clientId, projectId }: ExportRequest = await req.json();
+    // Parse query parameters
+    const url = new URL(req.url);
+    const fromDate = url.searchParams.get('from');
+    const toDate = url.searchParams.get('to');
 
-    // Build query
-    let query = supabase
+    if (!fromDate || !toDate) {
+      throw new Error('from and to date parameters are required');
+    }
+
+    console.log(`Generating CSV export for user ${user.id} from ${fromDate} to ${toDate}`);
+
+    // Fetch time entries for the date range
+    const { data: entries, error } = await supabase
       .from('time_entries')
       .select(`
-        id, started_at, stopped_at, notes,
+        id,
+        started_at,
+        stopped_at,
+        notes,
         projects:project_id (
-          name, rate_hour,
+          name,
           clients:client_id (name)
         )
       `)
       .eq('user_id', user.id)
-      .gte('started_at', `${startDate}T00:00:00.000Z`)
-      .lte('started_at', `${endDate}T23:59:59.999Z`)
-      .not('stopped_at', 'is', null)
-      .order('started_at', { ascending: false });
-
-    if (clientId) {
-      query = query.eq('projects.client_id', clientId);
-    }
-    
-    if (projectId) {
-      query = query.eq('project_id', projectId);
-    }
-
-    const { data: entries, error } = await query;
+      .gte('started_at', fromDate)
+      .lte('started_at', toDate)
+      .order('started_at', { ascending: true });
 
     if (error) {
       throw error;
     }
 
-    // Generate CSV
-    const headers = [
-      'Date', 
-      'Project', 
-      'Client', 
-      'Start Time', 
-      'End Time', 
-      'Duration (Hours)', 
-      'Rate', 
-      'Value', 
-      'Notes'
-    ];
+    // Generate CSV content with dual time format
+    const csvRows = ['Date,Client,Project,Start Time,End Time,Duration (H:M),Duration (Decimal Hours),Notes'];
+    
+    entries?.forEach((entry: TimeEntry) => {
+      const startDate = new Date(entry.started_at);
+      const endDate = entry.stopped_at ? new Date(entry.stopped_at) : null;
+      
+      const date = startDate.toLocaleDateString();
+      const client = entry.projects?.clients?.name || 'No Client';
+      const project = entry.projects?.name || 'Unknown Project';
+      const startTime = startDate.toLocaleTimeString();
+      const endTime = endDate ? endDate.toLocaleTimeString() : 'Running';
+      
+      const minutes = endDate ? calculateDurationMinutes(startDate, endDate) : 0;
+      const timeFormat = formatTimeForCSV(minutes);
+      const notes = entry.notes || '';
 
-    const rows = entries?.map(entry => {
-      const start = new Date(entry.started_at);
-      const end = new Date(entry.stopped_at!);
-      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-      const rate = entry.projects?.rate_hour || 0;
-      const value = hours * rate;
+      // Escape CSV values
+      const escapeCsv = (value: string) => {
+        if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value;
+      };
 
-      return [
-        start.toLocaleDateString(),
-        entry.projects?.name || '',
-        entry.projects?.clients?.name || 'No Client',
-        start.toLocaleTimeString(),
-        end.toLocaleTimeString(),
-        hours.toFixed(2),
-        rate.toFixed(2),
-        value.toFixed(2),
-        entry.notes || '',
-      ];
-    }) || [];
+      csvRows.push([
+        escapeCsv(date),
+        escapeCsv(client),
+        escapeCsv(project),
+        escapeCsv(startTime),
+        escapeCsv(endTime),
+        timeFormat.duration_hm,
+        timeFormat.duration_decimal,
+        escapeCsv(notes)
+      ].join(','));
+    });
 
-    const csvContent = [headers, ...rows]
-      .map(row => row.map(cell => `"${cell}"`).join(','))
-      .join('\n');
+    const csvContent = csvRows.join('\n');
 
     return new Response(csvContent, {
       status: 200,
       headers: {
-        'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="time-report-${startDate}-to-${endDate}.csv"`,
         ...corsHeaders,
+        'Content-Type': 'text/csv',
+        'Content-Disposition': `attachment; filename="time-entries-${fromDate}-${toDate}.csv"`,
       },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in export-csv function:', error);
-    
-    return new Response(JSON.stringify({ 
-      error: error.message 
-    }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    });
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        status: 500,
+        headers: { 
+          'Content-Type': 'application/json',
+          ...corsHeaders 
+        },
+      }
+    );
   }
 };
 
