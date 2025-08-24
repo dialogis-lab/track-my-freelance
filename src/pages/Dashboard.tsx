@@ -171,14 +171,14 @@ export default function Dashboard() {
     <AppLayout>
       <div className="p-6 space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+          <h1 className="text-3xl font-bold text-brand-gradient">Dashboard</h1>
           <p className="text-muted-foreground">Welcome back! Here's your time tracking overview.</p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card 
-            className="cursor-pointer hover:bg-muted/50 transition-colors duration-200 group relative"
+            className="cursor-pointer card-hover transition-smooth group relative rounded-2xl"
             onClick={() => handleCardClick('/reports?range=today')}
             onKeyDown={(e) => handleKeyDown(e, '/reports?range=today')}
             tabIndex={0}
@@ -188,17 +188,17 @@ export default function Dashboard() {
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Today's Hours</CardTitle>
               <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
+                <Clock className="h-4 w-4 text-brand-gradient" />
                 <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.todayHours.toFixed(1)}h</div>
+              <div className="text-2xl font-bold text-brand-gradient">{stats.todayHours.toFixed(1)}h</div>
             </CardContent>
           </Card>
 
           <Card 
-            className="cursor-pointer hover:bg-muted/50 transition-colors duration-200 group relative"
+            className="cursor-pointer card-hover transition-smooth group relative rounded-2xl"
             onClick={() => handleCardClick('/reports?range=week')}
             onKeyDown={(e) => handleKeyDown(e, '/reports?range=week')}
             tabIndex={0}
@@ -208,17 +208,17 @@ export default function Dashboard() {
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">This Week</CardTitle>
               <div className="flex items-center space-x-2">
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <TrendingUp className="h-4 w-4 text-brand-gradient" />
                 <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.weekHours.toFixed(1)}h</div>
+              <div className="text-2xl font-bold text-brand-gradient">{stats.weekHours.toFixed(1)}h</div>
             </CardContent>
           </Card>
 
           <Card 
-            className="cursor-pointer hover:bg-muted/50 transition-colors duration-200 group relative"
+            className="cursor-pointer card-hover transition-smooth group relative rounded-2xl"
             onClick={() => handleCardClick('/projects?status=active')}
             onKeyDown={(e) => handleKeyDown(e, '/projects?status=active')}
             tabIndex={0}
@@ -228,17 +228,17 @@ export default function Dashboard() {
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
               <div className="flex items-center space-x-2">
-                <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                <FolderOpen className="h-4 w-4 text-brand-gradient" />
                 <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalProjects}</div>
+              <div className="text-2xl font-bold text-brand-gradient">{stats.totalProjects}</div>
             </CardContent>
           </Card>
 
           <Card 
-            className="cursor-pointer hover:bg-muted/50 transition-colors duration-200 group relative"
+            className="cursor-pointer card-hover transition-smooth group relative rounded-2xl"
             onClick={() => handleCardClick('/clients?status=active')}
             onKeyDown={(e) => handleKeyDown(e, '/clients?status=active')}
             tabIndex={0}
@@ -248,12 +248,12 @@ export default function Dashboard() {
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Clients</CardTitle>
               <div className="flex items-center space-x-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <Users className="h-4 w-4 text-brand-gradient" />
                 <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalClients}</div>
+              <div className="text-2xl font-bold text-brand-gradient">{stats.totalClients}</div>
             </CardContent>
           </Card>
         </div>

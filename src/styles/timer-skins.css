@@ -60,7 +60,7 @@
 }
 
 .timer-digits.gradient {
-  background: linear-gradient(to right, #3b82f6, #10b981);
+  background: var(--gradient-brand);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
