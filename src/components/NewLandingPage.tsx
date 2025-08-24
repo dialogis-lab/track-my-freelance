@@ -19,7 +19,7 @@ const NewLandingPage = () => {
           <div className="flex items-center justify-between">
             <a href="/" className="flex items-center">
               <img 
-                src="/logo.png" 
+                src="/lovable-uploads/4ceff044-ed35-49b5-9c99-0420e1a45ea5.png" 
                 alt="Timehatch Logo" 
                 className="h-8 w-auto md:h-10 hover:opacity-90 transition-opacity"
               />
