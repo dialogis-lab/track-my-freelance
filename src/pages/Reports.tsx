@@ -48,8 +48,8 @@ export default function Reports() {
   const [endDate, setEndDate] = useState(() => {
     return new Date().toISOString().split('T')[0];
   });
-  const [clientFilter, setClientFilter] = useState('');
-  const [projectFilter, setProjectFilter] = useState('');
+  const [clientFilter, setClientFilter] = useState('all');
+  const [projectFilter, setProjectFilter] = useState('all');
   const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
   const [projects, setProjects] = useState<{ id: string; name: string; client_name?: string }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -105,11 +105,11 @@ export default function Reports() {
       .not('stopped_at', 'is', null)
       .order('started_at', { ascending: false });
 
-    if (clientFilter) {
+    if (clientFilter && clientFilter !== 'all') {
       query = query.eq('projects.client_id', clientFilter);
     }
     
-    if (projectFilter) {
+    if (projectFilter && projectFilter !== 'all') {
       query = query.eq('project_id', projectFilter);
     }
 
@@ -329,7 +329,7 @@ export default function Reports() {
                     <SelectValue placeholder="All clients" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All clients</SelectItem>
+                    <SelectItem value="all">All clients</SelectItem>
                     {clients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.name}
@@ -346,7 +346,7 @@ export default function Reports() {
                     <SelectValue placeholder="All projects" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All projects</SelectItem>
+                    <SelectItem value="all">All projects</SelectItem>
                     {projects.map((project) => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.client_name ? `${project.client_name} - ` : ''}{project.name}
