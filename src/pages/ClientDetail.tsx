@@ -309,8 +309,8 @@ export default function ClientDetail() {
             </div>
           </div>
           
-          <div className="space-x-2">
-            <Button variant="outline" onClick={() => setInvoiceWizardOpen(true)}>
+          <div className="flex space-x-2">
+            <Button onClick={() => navigate(`/invoices/new?clientId=${id}`)}>
               <FileText className="w-4 h-4 mr-2" />
               Create Invoice
             </Button>

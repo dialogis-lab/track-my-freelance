@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Clock, Users, FolderOpen, BarChart3, Settings, LogOut } from 'lucide-react';
+import { Clock, Users, FolderOpen, BarChart3, Receipt, Settings, LogOut } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 
 interface AppLayoutProps {
@@ -17,6 +17,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     { name: 'Projects', href: '/projects', icon: FolderOpen },
     { name: 'Clients', href: '/clients', icon: Users },
     { name: 'Reports', href: '/reports', icon: BarChart3 },
+    { name: 'Invoices', href: '/invoices', icon: Receipt },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 

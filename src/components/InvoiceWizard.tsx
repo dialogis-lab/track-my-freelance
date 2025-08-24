@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { formatDuration, calculateDurationMinutes } from '@/lib/timeUtils';
 import { formatMoney, Currency, CURRENCIES } from '@/lib/currencyUtils';
 import { Calendar, Download, Save } from 'lucide-react';
-import { InvoiceData, InvoiceLineItem } from '@/types/invoice';
+import { InvoiceLineItem } from '@/types/invoice';
 
 interface Project {
   id: string;
@@ -142,9 +142,9 @@ export function InvoiceWizard({ open, onOpenChange, clientId, clientName }: Invo
           projectTotals[projectId] = {
             project_id: projectId,
             project_name: projectName,
-            hours: 0,
-            rate_per_hour: ratePerHour,
-            total: 0,
+            minutes: 0,
+            rate_minor: Math.round(ratePerHour * 100),
+            amount_minor: 0,
           };
         }
 
@@ -154,8 +154,10 @@ export function InvoiceWizard({ open, onOpenChange, clientId, clientName }: Invo
         );
         const hours = minutes / 60;
 
-        projectTotals[projectId].hours += hours;
-        projectTotals[projectId].total = projectTotals[projectId].hours * ratePerHour;
+        projectTotals[projectId].minutes += minutes;
+        projectTotals[projectId].amount_minor = Math.round(
+          (projectTotals[projectId].minutes / 60) * (projectTotals[projectId].rate_minor / 100)
+        );
       }
 
       setLineItems(Object.values(projectTotals));
@@ -177,7 +179,7 @@ export function InvoiceWizard({ open, onOpenChange, clientId, clientName }: Invo
     setLoading(true);
 
     try {
-      const totalMinor = lineItems.reduce((sum, item) => sum + Math.round(item.total * 100), 0);
+      const totalMinor = lineItems.reduce((sum, item) => sum + item.amount_minor, 0);
 
       const { error } = await supabase
         .from('invoices')
@@ -222,7 +224,7 @@ export function InvoiceWizard({ open, onOpenChange, clientId, clientName }: Invo
     });
   };
 
-  const totalAmount = lineItems.reduce((sum, item) => sum + item.total, 0);
+  const totalAmount = lineItems.reduce((sum, item) => sum + item.amount_minor, 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -398,16 +400,16 @@ export function InvoiceWizard({ open, onOpenChange, clientId, clientName }: Invo
                       <div>
                         <div className="font-medium">{item.project_name}</div>
                         <div className="text-sm text-muted-foreground">
-                          {formatDuration(Math.round(item.hours * 60)).normal} 
-                          <span className="ml-1">= {formatDuration(Math.round(item.hours * 60)).industrial}h</span>
-                          {item.rate_per_hour > 0 && (
-                            <span className="ml-2">@ {formatMoney(Math.round(item.rate_per_hour * 100), currency)}/hour</span>
+                          {formatDuration(Math.round(item.minutes)).normal} 
+                          <span className="ml-1">= {formatDuration(Math.round(item.minutes)).industrial}h</span>
+                          {item.rate_minor > 0 && (
+                            <span className="ml-2">@ {formatMoney(item.rate_minor, currency)}/hour</span>
                           )}
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="font-bold">
-                          {formatMoney(Math.round(item.total * 100), currency)}
+                          {formatMoney(item.amount_minor, currency)}
                         </div>
                       </div>
                     </div>
@@ -415,7 +417,7 @@ export function InvoiceWizard({ open, onOpenChange, clientId, clientName }: Invo
                   
                   <div className="border-t pt-4 flex justify-between items-center text-lg font-bold">
                     <span>Total</span>
-                    <span>{formatMoney(Math.round(totalAmount * 100), currency)}</span>
+                    <span>{formatMoney(totalAmount, currency)}</span>
                   </div>
                 </div>
               </CardContent>

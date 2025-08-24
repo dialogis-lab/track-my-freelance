@@ -68,12 +68,78 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_items: {
+        Row: {
+          amount_minor: number
+          created_at: string
+          description: string | null
+          id: string
+          invoice_id: string
+          minutes: number
+          project_id: string | null
+          rate_minor: number
+        }
+        Insert: {
+          amount_minor?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          invoice_id: string
+          minutes?: number
+          project_id?: string | null
+          rate_minor?: number
+        }
+        Update: {
+          amount_minor?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          invoice_id?: string
+          minutes?: number
+          project_id?: string | null
+          rate_minor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_seq: {
+        Row: {
+          id: number
+          last_number: number
+        }
+        Insert: {
+          id?: number
+          last_number?: number
+        }
+        Update: {
+          id?: number
+          last_number?: number
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           client_id: string
           created_at: string
           currency: string
+          due_date: string | null
           id: string
+          issue_date: string | null
+          number: string | null
           project_ids: string[]
           status: string
           total_minor: number
@@ -84,7 +150,10 @@ export type Database = {
           client_id: string
           created_at?: string
           currency?: string
+          due_date?: string | null
           id?: string
+          issue_date?: string | null
+          number?: string | null
           project_ids?: string[]
           status?: string
           total_minor?: number
@@ -95,7 +164,10 @@ export type Database = {
           client_id?: string
           created_at?: string
           currency?: string
+          due_date?: string | null
           id?: string
+          issue_date?: string | null
+          number?: string | null
           project_ids?: string[]
           status?: string
           total_minor?: number
@@ -362,6 +434,10 @@ export type Database = {
       cleanup_old_rate_limits: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      generate_invoice_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
     }
     Enums: {
