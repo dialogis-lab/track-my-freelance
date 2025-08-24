@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Edit2, Archive, ArchiveRestore, Play, Square, BarChart3, Trash2 } from 'lucide-react';
-import { TimerWidget } from '@/components/TimerWidget';
 
 interface Project {
   id: string;
@@ -336,107 +335,92 @@ export default function ProjectDetail() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Project Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Project Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <h3 className="font-medium mb-2">Basic Information</h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <h3 className="font-medium mb-2">Basic Information</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Created:</span>
-                      <p>{new Date(project.created_at).toLocaleDateString()}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Hourly Rate:</span>
-                      <p>{project.rate_hour ? `$${project.rate_hour}/hour` : 'Not set'}</p>
-                    </div>
-                  </div>
+                  <span className="text-muted-foreground">Created:</span>
+                  <p>{new Date(project.created_at).toLocaleDateString()}</p>
                 </div>
-              </CardContent>
-            </Card>
+                <div>
+                  <span className="text-muted-foreground">Hourly Rate:</span>
+                  <p>{project.rate_hour ? `$${project.rate_hour}/hour` : 'Not set'}</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Time Entries</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {timeEntries.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4">
-                    No time entries yet. Start tracking time to see entries here.
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                     {timeEntries.map((entry) => (
-                       <div key={entry.id} className="flex justify-between items-center p-3 border border-border rounded-lg">
-                         <div className="flex-1">
-                           <p className="font-medium">
-                             {new Date(entry.started_at).toLocaleDateString()}
-                           </p>
-                           <p className="text-sm text-muted-foreground">
-                             {new Date(entry.started_at).toLocaleTimeString()} - {' '}
-                             {entry.stopped_at ? new Date(entry.stopped_at).toLocaleTimeString() : 'Running'}
-                           </p>
-                         </div>
-                         <div className="flex items-center space-x-3">
-                           <div className="text-right">
-                             <p className="font-medium">
-                               {formatDuration(entry.started_at, entry.stopped_at)}
-                             </p>
-                             {!entry.stopped_at && (
-                               <Badge variant="default" className="text-xs">
-                                 Running
-                               </Badge>
-                             )}
-                           </div>
-                           <AlertDialog>
-                             <AlertDialogTrigger asChild>
-                               <Button variant="ghost" size="sm">
-                                 <Trash2 className="w-4 h-4 text-destructive" />
-                               </Button>
-                             </AlertDialogTrigger>
-                             <AlertDialogContent>
-                               <AlertDialogHeader>
-                                 <AlertDialogTitle>Delete Time Entry</AlertDialogTitle>
-                                 <AlertDialogDescription>
-                                   Are you sure you want to permanently delete this time entry from {new Date(entry.started_at).toLocaleDateString()}? 
-                                   This action cannot be undone.
-                                 </AlertDialogDescription>
-                               </AlertDialogHeader>
-                               <AlertDialogFooter>
-                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                 <AlertDialogAction
-                                   onClick={() => deleteTimeEntry(entry)}
-                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                 >
-                                   Delete
-                                 </AlertDialogAction>
-                               </AlertDialogFooter>
-                             </AlertDialogContent>
-                           </AlertDialog>
-                         </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Time Entries</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {timeEntries.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">
+                No time entries yet. Start tracking time to see entries here.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                 {timeEntries.map((entry) => (
+                   <div key={entry.id} className="flex justify-between items-center p-3 border border-border rounded-lg">
+                     <div className="flex-1">
+                       <p className="font-medium">
+                         {new Date(entry.started_at).toLocaleDateString()}
+                       </p>
+                       <p className="text-sm text-muted-foreground">
+                         {new Date(entry.started_at).toLocaleTimeString()} - {' '}
+                         {entry.stopped_at ? new Date(entry.stopped_at).toLocaleTimeString() : 'Running'}
+                       </p>
+                     </div>
+                     <div className="flex items-center space-x-3">
+                       <div className="text-right">
+                         <p className="font-medium">
+                           {formatDuration(entry.started_at, entry.stopped_at)}
+                         </p>
+                         {!entry.stopped_at && (
+                           <Badge variant="default" className="text-xs">
+                             Running
+                           </Badge>
+                         )}
                        </div>
-                     ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Timer</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TimerWidget />
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+                       <AlertDialog>
+                         <AlertDialogTrigger asChild>
+                           <Button variant="ghost" size="sm">
+                             <Trash2 className="w-4 h-4 text-destructive" />
+                           </Button>
+                         </AlertDialogTrigger>
+                         <AlertDialogContent>
+                           <AlertDialogHeader>
+                             <AlertDialogTitle>Delete Time Entry</AlertDialogTitle>
+                             <AlertDialogDescription>
+                               Are you sure you want to permanently delete this time entry from {new Date(entry.started_at).toLocaleDateString()}? 
+                               This action cannot be undone.
+                             </AlertDialogDescription>
+                           </AlertDialogHeader>
+                           <AlertDialogFooter>
+                             <AlertDialogCancel>Cancel</AlertDialogCancel>
+                             <AlertDialogAction
+                               onClick={() => deleteTimeEntry(entry)}
+                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                             >
+                               Delete
+                             </AlertDialogAction>
+                           </AlertDialogFooter>
+                         </AlertDialogContent>
+                       </AlertDialog>
+                     </div>
+                   </div>
+                 ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </AppLayout>
   );

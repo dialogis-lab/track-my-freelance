@@ -1,36 +1,36 @@
 /* Timer Skins CSS Variables */
 
 .timer-skin-classic {
-  --timer-fg: #0f172a;
-  --timer-bg: #ffffff;
-  --timer-sub: #64748b;
+  --timer-fg: hsl(var(--foreground));
+  --timer-bg: hsl(var(--card));
+  --timer-sub: hsl(var(--muted-foreground));
   --timer-weight: 800;
   --timer-size: clamp(40px, 8vw, 72px);
   --timer-shadow: 0 0 0 transparent;
 }
 
 .timer-skin-minimal {
-  --timer-fg: #334155;
-  --timer-bg: #f8fafc;
-  --timer-sub: #94a3b8;
+  --timer-fg: hsl(var(--foreground));
+  --timer-bg: hsl(var(--muted));
+  --timer-sub: hsl(var(--muted-foreground));
   --timer-weight: 600;
   --timer-size: clamp(36px, 7vw, 64px);
   --timer-shadow: 0 0 0 transparent;
 }
 
 .timer-skin-digital {
-  --timer-fg: #00e676;
-  --timer-bg: #0b1220;
-  --timer-sub: #6ee7b7;
+  --timer-fg: hsl(var(--accent));
+  --timer-bg: hsl(var(--card));
+  --timer-sub: hsl(var(--accent-foreground));
   --timer-weight: 700;
   --timer-size: clamp(40px, 8vw, 72px);
-  --timer-shadow: inset 0 0 0 1px rgba(255,255,255,.06), 0 8px 30px rgba(0,0,0,.35);
+  --timer-shadow: inset 0 0 0 1px hsl(var(--border)), 0 8px 30px hsl(var(--foreground) / 0.1);
 }
 
 .timer-skin-gradient {
   --timer-fg: transparent;
-  --timer-bg: #ffffff;
-  --timer-sub: #22c55e;
+  --timer-bg: hsl(var(--card));
+  --timer-sub: hsl(var(--accent));
   --timer-weight: 800;
   --timer-size: clamp(40px, 8vw, 72px);
   --timer-shadow: 0 0 0 transparent;
