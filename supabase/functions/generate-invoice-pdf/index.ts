@@ -13,17 +13,41 @@ serve(async (req) => {
   }
 
   try {
-    const url = new URL(req.url);
-    const { invoiceId } = await req.json();
+    console.log('Request method:', req.method);
+    console.log('Request URL:', req.url);
+    
+    let invoiceId;
+    
+    if (req.method === 'POST') {
+      const body = await req.json();
+      console.log('Request body:', body);
+      invoiceId = body.invoiceId;
+    } else {
+      // Handle GET requests with invoice ID in URL path
+      const url = new URL(req.url);
+      invoiceId = url.pathname.split('/').pop();
+    }
+
+    console.log('Invoice ID:', invoiceId);
 
     if (!invoiceId) {
-      return new Response('Invoice ID required', { 
+      console.error('No invoice ID provided');
+      return new Response(JSON.stringify({ error: 'Invoice ID required' }), { 
         status: 400, 
-        headers: corsHeaders 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       });
     }
 
-    const authHeader = req.headers.get('Authorization')!;
+    const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    
+    if (!authHeader) {
+      console.error('No authorization header');
+      return new Response(JSON.stringify({ error: 'Authorization required' }), { 
+        status: 401, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -342,10 +366,14 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error generating invoice HTML:', error);
-    return new Response(`Error generating invoice: ${error.message}`, { 
+    console.error('Error generating invoice PDF:', error);
+    return new Response(JSON.stringify({ 
+      error: 'Error generating invoice', 
+      message: error.message,
+      stack: error.stack 
+    }), { 
       status: 500, 
-      headers: corsHeaders 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
     });
   }
 });

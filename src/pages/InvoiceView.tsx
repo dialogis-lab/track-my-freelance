@@ -181,12 +181,27 @@ export default function InvoiceView() {
         }
       });
 
+      console.log('PDF Response:', response);
+
       if (response.error) {
-        throw response.error;
+        console.error('PDF generation error:', response.error);
+        throw new Error(response.error.message || 'Failed to generate PDF');
       }
 
-      // The response.data should be the PDF bytes
+      // Check if the response data is actually PDF bytes
+      if (!response.data || typeof response.data === 'object') {
+        console.error('Invalid PDF response:', response.data);
+        throw new Error('Invalid PDF response from server');
+      }
+
+      // Create blob from PDF bytes
       const blob = new Blob([response.data], { type: 'application/pdf' });
+      
+      // Verify blob size
+      if (blob.size === 0) {
+        throw new Error('Generated PDF is empty');
+      }
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
