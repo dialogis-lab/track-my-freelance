@@ -132,25 +132,20 @@ export function MfaSetupCard() {
     setShowSetup(false);
     checkMfaStatus();
     
-    // Send email notification for MFA enabled
-    try {
-      const user = (await supabase.auth.getUser()).data.user;
-      if (user?.email) {
-        await fetch('/api/mfa-email-notifications', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          },
-          body: JSON.stringify({
-            event_type: 'mfa_enabled',
-            user_email: user.email
-          })
-        });
+      // Send email notification for MFA enabled
+      try {
+        const user = (await supabase.auth.getUser()).data.user;
+        if (user?.email) {
+          await supabase.functions.invoke('mfa-email-notifications', {
+            body: {
+              event_type: 'mfa_enabled',
+              user_email: user.email
+            },
+          });
+        }
+      } catch (error) {
+        console.error('Error sending MFA enabled email:', error);
       }
-    } catch (error) {
-      console.error('Error sending MFA enabled email:', error);
-    }
     
     toast({
       title: "2FA Enabled",
@@ -192,16 +187,11 @@ export function MfaSetupCard() {
       try {
         const user = (await supabase.auth.getUser()).data.user;
         if (user?.email) {
-          await fetch('/api/mfa-email-notifications', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-            },
-            body: JSON.stringify({
+          await supabase.functions.invoke('mfa-email-notifications', {
+            body: {
               event_type: 'mfa_disabled',
               user_email: user.email
-            })
+            },
           });
         }
       } catch (error) {
@@ -230,17 +220,11 @@ export function MfaSetupCard() {
     setLoading(true);
     try {
       // Generate new recovery codes via edge function
-      const response = await fetch('/api/generate-recovery-codes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        },
-      });
+      const response = await supabase.functions.invoke('generate-recovery-codes');
 
-      if (!response.ok) throw new Error('Failed to generate recovery codes');
+      if (response.error) throw new Error(response.error.message);
       
-      const { codes } = await response.json();
+      const { codes } = response.data;
       setRecoveryCodes(codes);
       
       toast({

@@ -33,21 +33,22 @@ export default function Mfa() {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session) return;
 
-      const response = await fetch('/api/check-trusted-device', {
-        method: 'POST',
+      const response = await supabase.functions.invoke('check-trusted-device', {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.session.access_token}`,
         },
       });
 
-      if (response.ok) {
-        const { is_trusted } = await response.json();
-        if (is_trusted) {
-          // Device is trusted, bypass MFA
-          navigate('/dashboard');
-          return;
-        }
+      if (response.error) {
+        console.error('Error checking trusted device:', response.error);
+        return;
+      }
+
+      const { is_trusted } = response.data;
+      if (is_trusted) {
+        // Device is trusted, bypass MFA
+        navigate('/dashboard');
+        return;
       }
     } catch (error) {
       console.error('Error checking trusted device:', error);
@@ -113,33 +114,29 @@ export default function Mfa() {
     try {
       const { data: session } = await supabase.auth.getSession();
       
-      const response = await fetch('/api/secure-mfa-verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.session?.access_token}`,
-        },
-        body: JSON.stringify({
+      const response = await supabase.functions.invoke('secure-mfa-verify', {
+        body: {
           factorId,
           challengeId,
           code: totpCode,
           type: 'totp',
           rememberDevice
-        })
+        },
+        headers: {
+          'Authorization': `Bearer ${session.session?.access_token}`,
+        },
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 429) {
+      if (response.error) {
+        if (response.error.message?.includes('rate_limited') || response.error.message?.includes('Too many')) {
           toast({
             title: "Rate Limited", 
-            description: result.error + (result.retry_after ? ` Try again in ${result.retry_after} seconds.` : ''),
+            description: "Too many failed attempts. Please wait before trying again.",
             variant: "destructive",
           });
           return;
         }
-        throw new Error(result.error);
+        throw new Error(response.error.message);
       }
 
       toast({
@@ -176,33 +173,29 @@ export default function Mfa() {
     try {
       const { data: session } = await supabase.auth.getSession();
       
-      const response = await fetch('/api/secure-mfa-verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.session?.access_token}`,
-        },
-        body: JSON.stringify({
+      const response = await supabase.functions.invoke('secure-mfa-verify', {
+        body: {
           factorId,
           challengeId,
           code: recoveryCode,
           type: 'recovery',
           rememberDevice
-        })
+        },
+        headers: {
+          'Authorization': `Bearer ${session.session?.access_token}`,
+        },
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 429) {
+      if (response.error) {
+        if (response.error.message?.includes('rate_limited') || response.error.message?.includes('Too many')) {
           toast({
             title: "Rate Limited",
-            description: result.error + (result.retry_after ? ` Try again in ${result.retry_after} seconds.` : ''),
+            description: "Too many failed attempts. Please wait before trying again.",
             variant: "destructive",
           });
           return;
         }
-        throw new Error(result.error);
+        throw new Error(response.error.message);
       }
 
       toast({
