@@ -250,8 +250,8 @@ const NewLandingPage = () => {
                   When will TimeHatch be available?
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  We're working hard to launch TimeHatch in early 2024. Waitlist members will get early access 
-                  before the public release. We'll send you an email as soon as your account is ready.
+                  Our team is finalizing the TimeHatch platform. Early access for waitlist members begins in Q4 2025, 
+                  with a wider rollout planned shortly after. Join the waitlist to be among the first to experience it.
                 </AccordionContent>
               </AccordionItem>
               

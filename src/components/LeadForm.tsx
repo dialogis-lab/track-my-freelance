@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useUtmParams } from "@/hooks/useUtmParams";
 import { Loader2, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LeadFormProps {
   className?: string;
@@ -26,12 +27,6 @@ const LeadForm = ({ className = "", variant = "hero" }: LeadFormProps) => {
   const utmParams = useUtmParams();
   const navigate = useNavigate();
 
-  // Check if form endpoint is configured
-  const formEndpoint = import.meta.env.VITE_FORM_ENDPOINT;
-  
-  if (!formEndpoint) {
-    console.warn('VITE_FORM_ENDPOINT environment variable is not set. Email capture is disabled.');
-  }
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -62,51 +57,25 @@ const LeadForm = ({ className = "", variant = "hero" }: LeadFormProps) => {
     if (honeypot) return;
     
     if (!validateForm()) return;
-    
-    if (!formEndpoint) {
-      toast({
-        title: "Configuration Error",
-        description: "Email capture is not properly configured. Please try again later.",
-        variant: "destructive",
-      });
-      return;
-    }
 
     setIsLoading(true);
     
     try {
-      const payload = {
-        email,
-        name: name || undefined,
-        consent,
-        utm: utmParams,
-        ts: new Date().toISOString(),
-        userAgent: navigator.userAgent,
-        page: window.location.href,
-      };
+      const { data, error } = await supabase
+        .from('leads')
+        .insert([{ email }]);
 
-      const response = await fetch(formEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+      if (error) throw error;
+      setIsSubmitted(true);
+      toast({
+        title: "Success!",
+        description: "You've been added to our waitlist. We'll notify you when TimeHatch is ready!",
       });
-
-      if (response.ok) {
-        setIsSubmitted(true);
-        toast({
-          title: "Success!",
-          description: "You've been added to our waitlist. We'll notify you when TimeHatch is ready!",
-        });
-        
-        // Redirect to success page after a short delay
-        setTimeout(() => {
-          navigate('/success');
-        }, 1500);
-      } else {
-        throw new Error(`HTTP ${response.status}`);
-      }
+      
+      // Redirect to success page after a short delay
+      setTimeout(() => {
+        navigate('/success');
+      }, 1500);
     } catch (error) {
       console.error('Form submission error:', error);
       toast({
@@ -163,7 +132,7 @@ const LeadForm = ({ className = "", variant = "hero" }: LeadFormProps) => {
           </div>
           <Button 
             type="submit" 
-            disabled={isLoading || !formEndpoint}
+            disabled={isLoading}
             className="h-12 px-8 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-md hover:shadow-lg transition-all duration-200"
             aria-describedby={isLoading ? "loading-status" : undefined}
           >
@@ -225,7 +194,7 @@ const LeadForm = ({ className = "", variant = "hero" }: LeadFormProps) => {
       {variant === "compact" && (
         <Button 
           type="submit" 
-          disabled={isLoading || !formEndpoint}
+          disabled={isLoading}
           className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
         >
           {isLoading ? (
