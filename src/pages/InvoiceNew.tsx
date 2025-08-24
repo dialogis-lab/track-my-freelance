@@ -194,7 +194,15 @@ export default function InvoiceNew() {
     try {
       const totalMinor = lineItems.reduce((sum, item) => sum + item.amount_minor, 0);
 
-      // Create invoice
+      // Generate invoice number automatically
+      const { data: invoiceNumber, error: numberError } = await supabase.rpc('generate_invoice_number');
+      
+      if (numberError) {
+        console.error('Error generating invoice number:', numberError);
+        // Continue without a number - user can generate it later
+      }
+
+      // Create invoice with generated number
       const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
         .insert({
@@ -204,6 +212,7 @@ export default function InvoiceNew() {
           currency,
           total_minor: totalMinor,
           status: 'draft',
+          number: invoiceNumber, // Automatically generated number
         })
         .select()
         .single();

@@ -164,10 +164,10 @@ export default function InvoiceView() {
   };
 
   const downloadPDF = async () => {
-    if (!invoice?.number) {
+    if (!invoice) {
       toast({
         title: "Cannot download PDF",
-        description: "Please generate an invoice number first.",
+        description: "Invoice not found.",
         variant: "destructive",
       });
       return;
@@ -212,7 +212,7 @@ export default function InvoiceView() {
       const url = window.URL.createObjectURL(pdfBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `invoice-${invoice.number}.pdf`;
+      a.download = `invoice-${invoice.number || 'draft'}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -291,20 +291,11 @@ export default function InvoiceView() {
             </div>
           </div>
           
-          <div className="flex space-x-2">
-            {!invoice.number && (
-              <Button variant="outline" onClick={generateInvoiceNumber}>
-                <FileText className="w-4 h-4 mr-2" />
-                Generate Number
-              </Button>
-            )}
-            
-            {invoice.number && (
-              <Button variant="outline" onClick={downloadPDF}>
-                <Download className="w-4 h-4 mr-2" />
-                Download PDF
-              </Button>
-            )}
+          <div className="flex space-x-2">            
+            <Button variant="outline" onClick={downloadPDF}>
+              <Download className="w-4 h-4 mr-2" />
+              Download PDF
+            </Button>
             
             {invoice.status === 'draft' && (
               <Button onClick={() => updateInvoiceStatus('sent')}>
