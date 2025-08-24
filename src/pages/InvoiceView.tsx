@@ -178,30 +178,30 @@ export default function InvoiceView() {
         body: { invoiceId: invoice.id }
       });
 
-      console.log('PDF Response status:', response.error ? 'error' : 'success');
-      console.log('PDF Response data type:', typeof response.data);
-      console.log('PDF Response data length:', response.data?.length);
+      console.log('PDF Response:', response);
 
       if (response.error) {
         console.error('PDF generation error:', response.error);
         throw new Error(response.error.message || 'Failed to generate PDF');
       }
 
-      if (!response.data) {
+      if (!response.data?.pdf) {
         throw new Error('No PDF data received from server');
       }
 
-      // Convert Uint8Array to Blob if needed
-      let pdfBlob;
-      if (response.data instanceof Uint8Array) {
-        pdfBlob = new Blob([response.data], { type: 'application/pdf' });
-      } else if (typeof response.data === 'string') {
-        // If it's a string, convert to bytes
-        const bytes = new Uint8Array(response.data.split('').map(char => char.charCodeAt(0)));
-        pdfBlob = new Blob([bytes], { type: 'application/pdf' });
-      } else {
-        pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+      // Decode base64 PDF data
+      const base64PDF = response.data.pdf;
+      const filename = response.data.filename || `invoice-${invoice.number || 'draft'}.pdf`;
+      
+      // Convert base64 to binary
+      const binaryString = atob(base64PDF);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
       }
+      
+      // Create blob
+      const pdfBlob = new Blob([bytes], { type: 'application/pdf' });
       
       console.log('Blob size:', pdfBlob.size);
       
@@ -209,10 +209,11 @@ export default function InvoiceView() {
         throw new Error('Generated PDF is empty');
       }
 
+      // Download the file
       const url = window.URL.createObjectURL(pdfBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `invoice-${invoice.number || 'draft'}.pdf`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);

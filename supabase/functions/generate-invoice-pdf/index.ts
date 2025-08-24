@@ -372,12 +372,17 @@ serve(async (req) => {
 
     // Generate PDF bytes
     const pdfBytes = await pdfDoc.save();
-
-    return new Response(pdfBytes, {
+    
+    // Convert to base64 for proper transmission via Functions API
+    const base64PDF = btoa(String.fromCharCode(...pdfBytes));
+    
+    return new Response(JSON.stringify({ 
+      pdf: base64PDF,
+      filename: `invoice-${invoice.number || 'draft'}.pdf`
+    }), {
       headers: {
         ...corsHeaders,
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="invoice-${invoice.number || 'draft'}.pdf"`,
+        'Content-Type': 'application/json',
       },
     });
 
