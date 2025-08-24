@@ -65,14 +65,14 @@ const LandingPage = () => {
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div className="text-left">
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-                  Effortless time tracking for{" "}
+                  The simplest{" "}
                   <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                    freelancers
+                    freelance time tracker
                   </span>
                 </h1>
                 <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-                  Simple start/stop timer, seamless project and client management, 
-                  and clean reports that help you focus on what matters most.
+                  Track work hours effortlessly. Manage freelance projects with ease. 
+                  Create professional reports that help you get paid faster.
                 </p>
                 
                 {/* Email Signup Above the Fold */}
@@ -109,7 +109,7 @@ const LandingPage = () => {
                 
                 <p className="text-sm text-muted-foreground mt-4">
                   <Timer className="w-4 h-4 inline mr-2" />
-                  Be the first to know when we launch
+                  Join 1,000+ freelancers waiting for the simplest time tracking app
                 </p>
               </div>
               
@@ -131,11 +131,11 @@ const LandingPage = () => {
           <div className="container mx-auto px-4">
             <div className="text-center mb-16">
               <h2 id="features-heading" className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Everything you need to track time efficiently
+                Freelance productivity tools that actually work
               </h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                TimeHatch is designed specifically for freelancers who want to focus on their work, 
-                not on complicated time-tracking software.
+                Built specifically for freelancers who need simple project management 
+                and reliable time tracking without the complexity.
               </p>
             </div>
           
@@ -145,9 +145,9 @@ const LandingPage = () => {
                 <div className="w-16 h-16 bg-gradient-to-r from-primary/10 to-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300" aria-hidden="true">
                   <Clock className="w-8 h-8 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-3 text-foreground">Intuitive Time Tracking</h3>
+                <h3 className="text-xl font-semibold mb-3 text-foreground">Simple Time Tracking</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  One-click start/stop timer that works seamlessly across all your devices.
+                  Track work hours with one-click timer. Perfect for freelancers who need accurate time tracking.
                 </p>
               </CardContent>
             </Card>
@@ -157,9 +157,9 @@ const LandingPage = () => {
                 <div className="w-16 h-16 bg-gradient-to-r from-accent/10 to-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300" aria-hidden="true">
                   <Users className="w-8 h-8 text-accent" />
                 </div>
-                <h3 className="text-xl font-semibold mb-3 text-foreground">Project Management</h3>
+                <h3 className="text-xl font-semibold mb-3 text-foreground">Project Management for Freelancers</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Organize your work by projects and clients with clear, visual dashboards.
+                  Organize client projects effortlessly. Visual dashboards that make freelance project management simple.
                 </p>
               </CardContent>
             </Card>
@@ -169,9 +169,9 @@ const LandingPage = () => {
                 <div className="w-16 h-16 bg-gradient-to-r from-primary/10 to-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300" aria-hidden="true">
                   <FileText className="w-8 h-8 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-3 text-foreground">Smart Reporting</h3>
+                <h3 className="text-xl font-semibold mb-3 text-foreground">Professional Reports</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Generate professional reports and invoices with detailed time breakdowns.
+                  Generate client invoices with detailed work hours breakdown. Perfect for freelance billing.
                 </p>
               </CardContent>
             </Card>
@@ -181,9 +181,9 @@ const LandingPage = () => {
                 <div className="w-16 h-16 bg-gradient-to-r from-accent/10 to-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300" aria-hidden="true">
                   <Smartphone className="w-8 h-8 text-accent" />
                 </div>
-                <h3 className="text-xl font-semibold mb-3 text-foreground">Modern UI/UX</h3>
+                <h3 className="text-xl font-semibold mb-3 text-foreground">Freelance-Friendly Design</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Beautiful, responsive design that works perfectly on desktop and mobile.
+                  Clean, intuitive interface designed specifically for freelance productivity and efficiency.
                 </p>
               </CardContent>
             </Card>
@@ -196,21 +196,21 @@ const LandingPage = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h2 id="cta-heading" className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-              Ready to transform your freelance productivity?
+              Ready for the best freelance time tracker?
             </h2>
             <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-              Join thousands of freelancers who are already excited about TimeHatch. 
-              Get early access and help shape the future of time tracking.
+              Join 1,000+ freelancers waiting for TimeHatch. Get early access to the simplest 
+              time tracking app designed for freelance productivity.
             </p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
               <div className="flex items-center text-muted-foreground">
                 <CheckCircle className="w-5 h-5 text-accent mr-2" />
-                <span>Simple project management</span>
+                <span>Track work hours easily</span>
               </div>
               <div className="flex items-center text-muted-foreground">
                 <CheckCircle className="w-5 h-5 text-accent mr-2" />
-                <span>Beautiful reports</span>
+                <span>Professional freelance reports</span>
               </div>
               <div className="flex items-center text-muted-foreground">
                 <CheckCircle className="w-5 h-5 text-accent mr-2" />
@@ -234,12 +234,12 @@ const LandingPage = () => {
                 Coming Soon
               </h2>
               <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-                TimeHatch is currently in active development. We're building something special – 
-                a time-tracking tool that actually makes your freelance life easier, not more complicated.
+                TimeHatch is the freelance time tracker you've been waiting for. We're building 
+                the simplest time tracking app that helps freelancers boost productivity and track work hours effortlessly.
               </p>
               <p className="text-muted-foreground mb-8">
-                We respect your privacy and will never share your email with third parties. 
-                You can unsubscribe at any time.
+                Join freelancers worldwide who trust TimeHatch for project management and time tracking. 
+                We respect your privacy and will never share your email.
               </p>
               
               <div className="border-t border-border/50 pt-8 mt-8">
