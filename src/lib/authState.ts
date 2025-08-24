@@ -33,9 +33,9 @@ export async function getAuthState(): Promise<AuthState> {
     // If session AMR already includes 'mfa' (AAL2), no challenge needed
     const amr = ((session.user as any)?.amr ?? []).map((a: any) => a.method || a).flat();
     const aal = (session.user as any)?.aal;
-    const strong = amr.includes('mfa') || aal === 'aal2';
+    const hasMfaAmr = amr.includes('mfa') || aal === 'aal2';
     
-    if (strong) {
+    if (hasMfaAmr) {
       return { session, user, mfa: { needsMfa: false } };
     }
 

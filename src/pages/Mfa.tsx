@@ -30,6 +30,19 @@ export default function Mfa() {
 
   const initializeMfa = async () => {
     try {
+      // First check if MFA is already completed
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const amr = ((session.user as any)?.amr ?? []).map((a: any) => a.method || a).flat();
+        const aal = (session.user as any)?.aal;
+        const hasMfaAmr = amr.includes('mfa') || aal === 'aal2';
+        
+        if (hasMfaAmr) {
+          navigate('/dashboard', { replace: true });
+          return;
+        }
+      }
+
       const { mfa } = await getAuthState();
       
       if (!mfa.needsMfa) {
@@ -158,21 +171,8 @@ export default function Mfa() {
         description: "Authentication successful.",
       });
       
-      // Force complete session refresh and wait for it
-      console.log('Forcing session refresh after MFA...');
-      const { data: refreshedSession, error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) {
-        console.error('Session refresh error:', refreshError);
-      } else {
-        console.log('Session refreshed successfully:', {
-          aal: (refreshedSession.session?.user as any)?.aal,
-          amr: (refreshedSession.session?.user as any)?.amr
-        });
-      }
-      
-      // Wait a moment for auth state to propagate
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      // Get fresh session to include amr: ["mfa"]
+      await supabase.auth.getSession();
       navigate('/dashboard', { replace: true });
     } catch (error: any) {
       console.error('Error verifying TOTP:', error);
@@ -254,21 +254,8 @@ export default function Mfa() {
         description: "Authentication successful using recovery code.",
       });
       
-      // Force complete session refresh and wait for it
-      console.log('Forcing session refresh after recovery code...');
-      const { data: refreshedSession, error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) {
-        console.error('Session refresh error:', refreshError);
-      } else {
-        console.log('Session refreshed successfully:', {
-          aal: (refreshedSession.session?.user as any)?.aal,
-          amr: (refreshedSession.session?.user as any)?.amr
-        });
-      }
-      
-      // Wait a moment for auth state to propagate
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      // Get fresh session to include amr: ["mfa"]
+      await supabase.auth.getSession();
       navigate('/dashboard', { replace: true });
     } catch (error: any) {
       console.error('Error using recovery code:', error);

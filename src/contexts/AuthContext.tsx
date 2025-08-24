@@ -24,17 +24,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth state change:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Check if MFA is required after successful login, but don't block loading
-        if (session?.user && event === 'SIGNED_IN') {
-          // Don't await this - let it run in background
-          setTimeout(() => {
-            checkMfaRequired(session).catch(console.error);
-          }, 100);
+        // Synchronously check MFA requirements
+        if (session?.user) {
+          const mfaRequired = checkMfaRequiredSync(session);
+          setNeedsMfa(mfaRequired);
         } else {
           setNeedsMfa(false);
         }
@@ -45,17 +43,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Initial session check:', session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       
-      // Check if MFA is required for existing session, but don't block loading
+      // Synchronously check MFA requirements
       if (session?.user) {
-        // Don't await this - let it run in background  
-        setTimeout(() => {
-          checkMfaRequired(session).catch(console.error);
-        }, 100);
+        const mfaRequired = checkMfaRequiredSync(session);
+        setNeedsMfa(mfaRequired);
       } else {
         setNeedsMfa(false);
       }
@@ -67,33 +63,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const checkMfaRequired = async (session: Session) => {
+  const checkMfaRequiredSync = (session: Session): boolean => {
     try {
-      const { data: factors } = await supabase.auth.mfa.listFactors();
-      const hasTotp = !!factors?.all?.find((f: any) => f.factor_type === 'totp' && f.status === 'verified');
-      
-      if (!hasTotp) {
-        setNeedsMfa(false);
-        return;
-      }
-
       // Check if session AMR already includes 'mfa' (AAL2)
       const amr = ((session.user as any)?.amr ?? []).map((a: any) => a.method || a).flat();
       const aal = (session.user as any)?.aal;
-      const strong = amr.includes('mfa') || aal === 'aal2';
+      const hasMfaAmr = amr.includes('mfa') || aal === 'aal2';
       
-      console.log('checkMfaRequired: AAL:', aal, 'AMR methods:', amr, 'Has MFA:', strong);
+      console.log('checkMfaRequiredSync: AAL:', aal, 'AMR methods:', amr, 'Has MFA AMR:', hasMfaAmr);
       
-      if (strong) {
-        console.log('checkMfaRequired: MFA completed - setting needsMfa to false');
-        setNeedsMfa(false);
-      } else {
-        console.log('checkMfaRequired: MFA challenge needed - setting needsMfa to true');
-        setNeedsMfa(true);
+      // If session already has MFA authentication, no need for additional challenge
+      if (hasMfaAmr) {
+        console.log('checkMfaRequiredSync: MFA completed - no challenge needed');
+        return false;
       }
+      
+      // For now, we'll assume MFA is required if user exists but no MFA AMR
+      // The actual factor checking will be done in the MFA page itself
+      console.log('checkMfaRequiredSync: MFA challenge needed');
+      return true;
     } catch (error) {
       console.error('Error checking MFA requirements:', error);
-      setNeedsMfa(false);
+      return false;
     }
   };
 
