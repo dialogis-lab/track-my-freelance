@@ -78,10 +78,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
       
-      // For now, we'll assume MFA is required if user exists but no MFA AMR
-      // The actual factor checking will be done in the MFA page itself
-      console.log('checkMfaRequiredSync: MFA challenge needed');
-      return true;
+      // Don't require MFA here - let the MFA page handle trusted device checks
+      // This prevents infinite loops between AuthContext and MFA page
+      console.log('checkMfaRequiredSync: Deferring MFA check to MFA page');
+      return false;
     } catch (error) {
       console.error('Error checking MFA requirements:', error);
       return false;

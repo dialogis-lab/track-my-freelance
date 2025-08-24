@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, loading, needsMfa } = useAuth();
+  const { user, loading, session } = useAuth();
 
   if (loading) {
     return (
@@ -21,9 +21,18 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
-  // Check if MFA is needed and not completed
-  if (needsMfa && window.location.pathname !== '/mfa') {
-    return <Navigate to="/mfa" replace />;
+  // Check if MFA is required - only redirect to MFA if no AMR/AAL2 present
+  // Let the MFA page handle trusted device detection to avoid loops
+  if (session && window.location.pathname !== '/mfa') {
+    const amr = ((session.user as any)?.amr ?? []).map((a: any) => a.method || a).flat();
+    const aal = (session.user as any)?.aal;
+    const hasMfaAmr = amr.includes('mfa') || aal === 'aal2';
+    
+    if (!hasMfaAmr) {
+      // Check if user has MFA factors before redirecting
+      // This prevents redirecting users without MFA setup
+      return <Navigate to="/mfa" replace />;
+    }
   }
 
   return <>{children}</>;

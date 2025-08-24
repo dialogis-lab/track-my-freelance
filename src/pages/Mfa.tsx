@@ -43,17 +43,7 @@ export default function Mfa() {
         }
       }
 
-      const { mfa } = await getAuthState();
-      
-      if (!mfa.needsMfa) {
-        navigate('/dashboard', { replace: true });
-        return;
-      }
-
-      // Check trusted device first
-      await checkTrustedDevice();
-
-      // Start MFA challenge
+      // Check if user has MFA factors enrolled
       const { data: factors } = await supabase.auth.mfa.listFactors();
       const verifiedFactor = factors?.all?.find((f: any) => f.factor_type === 'totp' && f.status === 'verified');
       
@@ -62,6 +52,13 @@ export default function Mfa() {
         return;
       }
 
+      // Check trusted device ONCE
+      const deviceIsTrusted = await checkTrustedDevice();
+      if (deviceIsTrusted) {
+        return; // checkTrustedDevice already handles navigation
+      }
+
+      // Start MFA challenge if device is not trusted
       setFactorId(verifiedFactor.id);
       
       const { data: challenge } = await supabase.auth.mfa.challenge({
@@ -77,10 +74,10 @@ export default function Mfa() {
     }
   };
 
-  const checkTrustedDevice = async () => {
+  const checkTrustedDevice = async (): Promise<boolean> => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) return;
+      if (!sessionData.session) return false;
 
       console.log('Checking trusted device...');
       const response = await supabase.functions.invoke('check-trusted-device', {
@@ -93,7 +90,7 @@ export default function Mfa() {
 
       if (response.error) {
         console.error('Error checking trusted device:', response.error);
-        return;
+        return false;
       }
 
       const { is_trusted } = response.data;
@@ -102,12 +99,14 @@ export default function Mfa() {
       if (is_trusted) {
         console.log('Device is trusted, navigating to dashboard');
         navigate('/dashboard', { replace: true });
-        return;
+        return true;
       } else {
         console.log('Device is not trusted, continuing with MFA');
+        return false;
       }
     } catch (error) {
       console.error('Error checking trusted device:', error);
+      return false;
     }
   };
 
