@@ -26,6 +26,7 @@ export default function Invoices() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<InvoiceWithClient[]>([]);
+  const [allClients, setAllClients] = useState<{id: string, name: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -39,6 +40,7 @@ export default function Invoices() {
   useEffect(() => {
     if (user) {
       loadInvoices();
+      loadAllClients();
     }
   }, [user]);
 
@@ -73,6 +75,24 @@ export default function Invoices() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAllClients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, name')
+        .eq('archived', false)
+        .order('name');
+
+      if (error) {
+        throw error;
+      }
+
+      setAllClients(data || []);
+    } catch (error: any) {
+      console.error('Error loading clients:', error);
     }
   };
 
@@ -112,8 +132,6 @@ export default function Invoices() {
     
     return matchesSearch && matchesStatus && matchesClient && matchesDateFrom && matchesDateTo && matchesMinAmount && matchesMaxAmount;
   });
-
-  const uniqueClients = Array.from(new Set(invoices.map(i => i.client_name))).sort();
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -259,8 +277,8 @@ export default function Invoices() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All Clients</SelectItem>
-                          {uniqueClients.map(client => (
-                            <SelectItem key={client} value={client}>{client}</SelectItem>
+                          {allClients.map(client => (
+                            <SelectItem key={client.id} value={client.name}>{client.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
