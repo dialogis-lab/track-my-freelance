@@ -174,16 +174,19 @@ export default function InvoiceView() {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
-        body: { invoiceId: invoice.id }
+      const response = await supabase.functions.invoke('generate-invoice-pdf', {
+        body: { invoiceId: invoice.id },
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
 
-      if (error) {
-        throw error;
+      if (response.error) {
+        throw response.error;
       }
 
-      // Create blob and download
-      const blob = new Blob([data], { type: 'application/pdf' });
+      // The response.data should be the PDF bytes
+      const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -192,10 +195,16 @@ export default function InvoiceView() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      
+      toast({
+        title: "PDF downloaded",
+        description: "Invoice PDF has been downloaded successfully.",
+      });
     } catch (error: any) {
+      console.error('PDF download error:', error);
       toast({
         title: "Error downloading PDF",
-        description: error.message,
+        description: error.message || "Could not generate PDF",
         variant: "destructive",
       });
     }
