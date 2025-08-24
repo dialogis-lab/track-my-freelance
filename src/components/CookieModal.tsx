@@ -10,6 +10,8 @@ export function CookieModal() {
   const modalRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
+  console.log('Cookie modal render - showModal:', showModal);
+
   // Focus trap and ESC key handling
   useEffect(() => {
     if (!showModal) return;
@@ -78,7 +80,7 @@ export function CookieModal() {
     >
       <div
         ref={modalRef}
-        className="bg-background rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto"
+        className="bg-background border border-border rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto relative z-51"
       >
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">

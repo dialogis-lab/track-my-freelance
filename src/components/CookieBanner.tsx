@@ -5,6 +5,8 @@ import { Cookie, Settings } from 'lucide-react';
 export function CookieBanner() {
   const { showBanner, acceptAll, rejectNonEssential, openModal } = useCookieConsent();
 
+  console.log('Cookie banner render - showBanner:', showBanner);
+
   if (!showBanner) return null;
 
   return (

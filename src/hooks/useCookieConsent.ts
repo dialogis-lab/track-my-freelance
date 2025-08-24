@@ -95,6 +95,7 @@ export function useCookieConsent() {
   };
 
   const openModal = () => {
+    console.log('Opening cookie modal');
     setShowModal(true);
     setShowBanner(false);
   };
