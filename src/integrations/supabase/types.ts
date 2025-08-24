@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      clients: {
+        Row: {
+          archived: boolean
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          archived?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           created_at: string
@@ -31,6 +55,115 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      projects: {
+        Row: {
+          archived: boolean
+          client_id: string | null
+          created_at: string
+          id: string
+          name: string
+          rate_hour: number | null
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          rate_hour?: number | null
+          user_id: string
+        }
+        Update: {
+          archived?: boolean
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          rate_hour?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reminders: {
+        Row: {
+          cadence: string
+          created_at: string
+          enabled: boolean
+          hour_local: number
+          id: string
+          user_id: string
+        }
+        Insert: {
+          cadence: string
+          created_at?: string
+          enabled?: boolean
+          hour_local: number
+          id?: string
+          user_id: string
+        }
+        Update: {
+          cadence?: string
+          created_at?: string
+          enabled?: boolean
+          hour_local?: number
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      time_entries: {
+        Row: {
+          created_at: string
+          id: string
+          minutes_manual: number | null
+          notes: string | null
+          project_id: string
+          started_at: string
+          stopped_at: string | null
+          tags: string[] | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          minutes_manual?: number | null
+          notes?: string | null
+          project_id: string
+          started_at: string
+          stopped_at?: string | null
+          tags?: string[] | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          minutes_manual?: number | null
+          notes?: string | null
+          project_id?: string
+          started_at?: string
+          stopped_at?: string | null
+          tags?: string[] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
