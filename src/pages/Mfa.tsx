@@ -66,12 +66,12 @@ export default function Mfa() {
 
   const checkTrustedDevice = async () => {
     try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) return;
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) return;
 
       const response = await supabase.functions.invoke('check-trusted-device', {
         headers: {
-          'Authorization': `Bearer ${session.session.access_token}`,
+          'Authorization': `Bearer ${sessionData.session.access_token}`,
         },
       });
 
@@ -104,23 +104,16 @@ export default function Mfa() {
 
     setLoading(true);
     try {
-      const { data: session } = await supabase.auth.getSession();
-      
-      const response = await supabase.functions.invoke('secure-mfa-verify', {
-        body: {
-          factorId,
-          challengeId,
-          code: totpCode,
-          type: 'totp',
-          rememberDevice
-        },
-        headers: {
-          'Authorization': `Bearer ${session.session?.access_token}`,
-        },
+      // Use native Supabase MFA verification instead of edge function
+      const { data, error } = await supabase.auth.mfa.verify({
+        factorId,
+        challengeId,
+        code: totpCode,
       });
 
-      if (response.error) {
-        if (response.error.message?.includes('rate_limited') || response.error.message?.includes('Too many')) {
+      if (error) {
+        console.error('MFA verification error:', error);
+        if (error.message?.includes('rate_limited') || error.message?.includes('Too many')) {
           toast({
             title: "Rate Limited", 
             description: "Too many failed attempts. Please wait before trying again.",
@@ -128,7 +121,22 @@ export default function Mfa() {
           });
           return;
         }
-        throw new Error(response.error.message);
+        throw error;
+      }
+
+      // Handle trusted device if selected
+      if (rememberDevice && data) {
+        try {
+          await supabase.functions.invoke('check-trusted-device', {
+            body: { action: 'add' },
+            headers: {
+              'Authorization': `Bearer ${data.access_token}`,
+            },
+          });
+        } catch (trustedDeviceError) {
+          console.error('Error adding trusted device:', trustedDeviceError);
+          // Don't fail the whole flow if trusted device fails
+        }
       }
 
       toast({
@@ -165,7 +173,8 @@ export default function Mfa() {
 
     setLoading(true);
     try {
-      const { data: session } = await supabase.auth.getSession();
+      // For recovery codes, we still need the edge function to validate the recovery code
+      const { data: sessionData } = await supabase.auth.getSession();
       
       const response = await supabase.functions.invoke('secure-mfa-verify', {
         body: {
@@ -176,7 +185,7 @@ export default function Mfa() {
           rememberDevice
         },
         headers: {
-          'Authorization': `Bearer ${session.session?.access_token}`,
+          'Authorization': `Bearer ${sessionData.session?.access_token}`,
         },
       });
 
