@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          created_at: string
+          details: Json | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           archived: boolean
@@ -56,6 +86,30 @@ export type Database = {
         }
         Relationships: []
       }
+      mfa_rate_limits: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       mfa_recovery_codes: {
         Row: {
           code_hash: string
@@ -76,6 +130,36 @@ export type Database = {
           created_at?: string
           id?: string
           used?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mfa_trusted_devices: {
+        Row: {
+          created_at: string
+          device_hash: string
+          device_name: string | null
+          expires_at: string
+          id: string
+          last_used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_hash: string
+          device_name?: string | null
+          expires_at: string
+          id?: string
+          last_used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_hash?: string
+          device_name?: string | null
+          expires_at?: string
+          id?: string
+          last_used_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -194,7 +278,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_expired_trusted_devices: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_old_rate_limits: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
