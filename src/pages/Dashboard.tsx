@@ -77,24 +77,24 @@ export default function Dashboard() {
     weekStart.setDate(today.getDate() - today.getDay());
 
     const [projectsData, clientsData, todayData, weekData] = await Promise.all([
-      supabase.from('projects').select('id').eq('archived', false),
-      supabase.from('clients').select('id').eq('archived', false),
+      supabase.from('projects').select('id').eq('archived', false).eq('user_id', user!.id),
+      supabase.from('clients').select('id').eq('archived', false).eq('user_id', user!.id),
       supabase
         .from('time_entries')
         .select('started_at, stopped_at')
-        .gte('started_at', today.toISOString())
-        .not('stopped_at', 'is', null),
+        .eq('user_id', user!.id)
+        .gte('started_at', today.toISOString()),
       supabase
         .from('time_entries')
         .select('started_at, stopped_at')
-        .gte('started_at', weekStart.toISOString())
-        .not('stopped_at', 'is', null),
+        .eq('user_id', user!.id)
+        .gte('started_at', weekStart.toISOString()),
     ]);
 
     const calculateHours = (entries: any[]) => {
       return entries.reduce((total, entry) => {
         const start = new Date(entry.started_at);
-        const end = new Date(entry.stopped_at);
+        const end = entry.stopped_at ? new Date(entry.stopped_at) : new Date();
         return total + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
       }, 0);
     };
