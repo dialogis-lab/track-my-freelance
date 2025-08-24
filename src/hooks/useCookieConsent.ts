@@ -31,13 +31,16 @@ export function useCookieConsent() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
+      console.log('Stored consent:', stored);
       if (stored) {
         const parsedConsent = JSON.parse(stored);
         setConsent({ ...DEFAULT_CONSENT, ...parsedConsent });
         setHasConsented(true);
         setShowBanner(false);
+        console.log('Loaded consent from storage:', parsedConsent);
       } else {
         // First visit - show banner
+        console.log('No stored consent, showing banner');
         setShowBanner(true);
       }
     } catch (error) {
@@ -56,12 +59,15 @@ export function useCookieConsent() {
       setShowBanner(false);
       setShowModal(false);
       
-      // Trigger analytics initialization if analytics consent is given
-      if (consentToSave.analytics && window.gtag) {
+      // Update Google Analytics consent based on user choice
+      if (window.gtag) {
         window.gtag('consent', 'update', {
-          analytics_storage: 'granted',
+          analytics_storage: consentToSave.analytics ? 'granted' : 'denied',
+          ad_storage: consentToSave.marketing ? 'granted' : 'denied',
         });
       }
+      
+      console.log('Cookie consent saved:', consentToSave);
     } catch (error) {
       console.error('Error saving cookie consent:', error);
     }
