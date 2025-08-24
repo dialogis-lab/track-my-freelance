@@ -127,12 +127,18 @@ export default function Mfa() {
       // Handle trusted device if selected
       if (rememberDevice && data) {
         try {
-          await supabase.functions.invoke('check-trusted-device', {
-            body: { action: 'add' },
-            headers: {
-              'Authorization': `Bearer ${data.access_token}`,
-            },
-          });
+          // Get fresh session for the request
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData.session) {
+            console.log('Adding trusted device...');
+            await supabase.functions.invoke('check-trusted-device', {
+              body: { action: 'add' },
+              headers: {
+                'Authorization': `Bearer ${sessionData.session.access_token}`,
+              },
+            });
+            console.log('Trusted device added successfully');
+          }
         } catch (trustedDeviceError) {
           console.error('Error adding trusted device:', trustedDeviceError);
           // Don't fail the whole flow if trusted device fails
@@ -203,6 +209,27 @@ export default function Mfa() {
           return;
         }
         throw new Error(response.error.message);
+      }
+
+      // Handle trusted device if selected for recovery codes too
+      if (rememberDevice) {
+        try {
+          // Get fresh session for the request
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData.session) {
+            console.log('Adding trusted device after recovery code...');
+            await supabase.functions.invoke('check-trusted-device', {
+              body: { action: 'add' },
+              headers: {
+                'Authorization': `Bearer ${sessionData.session.access_token}`,
+              },
+            });
+            console.log('Trusted device added successfully');
+          }
+        } catch (trustedDeviceError) {
+          console.error('Error adding trusted device:', trustedDeviceError);
+          // Don't fail the whole flow if trusted device fails
+        }
       }
 
       toast({

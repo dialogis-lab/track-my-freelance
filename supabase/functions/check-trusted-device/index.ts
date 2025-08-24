@@ -36,7 +36,58 @@ serve(async (req) => {
     // Generate device hash
     const deviceHash = await generateDeviceHash(userAgent, clientIP)
     
-    // Check if device is trusted and not expired
+    // Parse request body to check for action
+    const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {}
+    const action = body.action || 'check'
+    
+    if (action === 'add') {
+      // Add device as trusted
+      const expiresAt = new Date()
+      expiresAt.setDate(expiresAt.getDate() + 30) // 30 days from now
+      
+      const { error: insertError } = await supabase
+        .from('mfa_trusted_devices')
+        .upsert({
+          user_id: user.id,
+          device_hash: deviceHash,
+          device_name: `Device - ${new Date().toLocaleDateString()}`,
+          expires_at: expiresAt.toISOString(),
+          last_used_at: new Date().toISOString()
+        })
+      
+      if (insertError) {
+        console.error('Error adding trusted device:', insertError)
+        throw insertError
+      }
+      
+      // Log the trusted device addition
+      await supabase
+        .from('audit_logs')
+        .insert({
+          user_id: user.id,
+          event_type: 'trusted_device_added',
+          details: { 
+            device_hash: deviceHash.substring(0, 8) + '...',
+            expires_at: expiresAt.toISOString()
+          },
+          ip_address: clientIP,
+          user_agent: userAgent
+        })
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          message: 'Device added as trusted',
+          expires_at: expiresAt.toISOString()
+        }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+    
+    // Default: Check if device is trusted
     const { data: trustedDevice, error } = await supabase
       .from('mfa_trusted_devices')
       .select('id, expires_at, last_used_at')
@@ -82,9 +133,9 @@ serve(async (req) => {
     )
 
   } catch (error: any) {
-    console.error('Error checking trusted device:', error)
+    console.error('Error in trusted device function:', error)
     return new Response(
-      JSON.stringify({ error: 'Failed to check trusted device status' }),
+      JSON.stringify({ error: 'Failed to process trusted device request' }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
