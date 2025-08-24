@@ -20,6 +20,7 @@ export default function Mfa() {
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [factorId, setFactorId] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
+  const [initializing, setInitializing] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -75,6 +76,8 @@ export default function Mfa() {
       if (challenge) {
         setChallengeId(challenge.id);
       }
+      
+      setInitializing(false);
     } catch (error: any) {
       console.error('Error initializing MFA:', error);
       navigate('/login', { replace: true });
@@ -120,8 +123,8 @@ export default function Mfa() {
   }, []);
 
   const isFormReady = useMemo(() => {
-    return challengeId && factorId && initialized;
-  }, [challengeId, factorId, initialized]);
+    return !initializing && challengeId && factorId;
+  }, [initializing, challengeId, factorId]);
 
   const handleTotpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -284,12 +287,19 @@ export default function Mfa() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <BrandLogo size="lg" />
-          <p className="text-muted-foreground mt-4">Two-factor authentication required</p>
-        </div>
+        {initializing ? (
+          <div className="text-center">
+            <BrandLogo size="lg" />
+            <p className="text-muted-foreground mt-4">Loading...</p>
+          </div>
+        ) : (
+          <>
+            <div className="text-center mb-8">
+              <BrandLogo size="lg" />
+              <p className="text-muted-foreground mt-4">Two-factor authentication required</p>
+            </div>
 
-        <Card>
+            <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="w-5 h-5" />
@@ -318,7 +328,7 @@ export default function Mfa() {
                       onChange={(e) => handleTotpChange(e.target.value)}
                       maxLength={6}
                       className="text-center text-lg tracking-widest font-mono"
-                      disabled={loading || !isFormReady}
+                      disabled={loading}
                       autoComplete="off"
                       autoCorrect="off"
                       spellCheck="false"
@@ -330,7 +340,7 @@ export default function Mfa() {
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    disabled={loading || totpCode.length !== 6 || !isFormReady}
+                    disabled={loading || totpCode.length !== 6}
                   >
                     {loading ? "Verifying..." : "Verify"}
                   </Button>
@@ -355,7 +365,7 @@ export default function Mfa() {
                       value={recoveryCode}
                       onChange={(e) => handleRecoveryChange(e.target.value)}
                       className="text-center font-mono"
-                      disabled={loading || !isFormReady}
+                      disabled={loading}
                       autoComplete="off"
                       autoCorrect="off"
                       spellCheck="false"
@@ -367,7 +377,7 @@ export default function Mfa() {
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    disabled={loading || !recoveryCode || !isFormReady}
+                    disabled={loading || !recoveryCode}
                   >
                     {loading ? "Verifying..." : "Use Recovery Code"}
                   </Button>
@@ -393,7 +403,9 @@ export default function Mfa() {
               Skip 2FA on this device until the trust expires.
             </p>
           </CardContent>
-        </Card>
+            </Card>
+          </>
+        )}
       </div>
     </div>
   );
