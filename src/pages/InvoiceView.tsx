@@ -175,34 +175,41 @@ export default function InvoiceView() {
 
     try {
       const response = await supabase.functions.invoke('generate-invoice-pdf', {
-        body: { invoiceId: invoice.id },
-        headers: {
-          'Content-Type': 'application/json',
-        }
+        body: { invoiceId: invoice.id }
       });
 
-      console.log('PDF Response:', response);
+      console.log('PDF Response status:', response.error ? 'error' : 'success');
+      console.log('PDF Response data type:', typeof response.data);
+      console.log('PDF Response data length:', response.data?.length);
 
       if (response.error) {
         console.error('PDF generation error:', response.error);
         throw new Error(response.error.message || 'Failed to generate PDF');
       }
 
-      // Check if the response data is actually PDF bytes
-      if (!response.data || typeof response.data === 'object') {
-        console.error('Invalid PDF response:', response.data);
-        throw new Error('Invalid PDF response from server');
+      if (!response.data) {
+        throw new Error('No PDF data received from server');
       }
 
-      // Create blob from PDF bytes
-      const blob = new Blob([response.data], { type: 'application/pdf' });
+      // Convert Uint8Array to Blob if needed
+      let pdfBlob;
+      if (response.data instanceof Uint8Array) {
+        pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+      } else if (typeof response.data === 'string') {
+        // If it's a string, convert to bytes
+        const bytes = new Uint8Array(response.data.split('').map(char => char.charCodeAt(0)));
+        pdfBlob = new Blob([bytes], { type: 'application/pdf' });
+      } else {
+        pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+      }
       
-      // Verify blob size
-      if (blob.size === 0) {
+      console.log('Blob size:', pdfBlob.size);
+      
+      if (pdfBlob.size === 0) {
         throw new Error('Generated PDF is empty');
       }
 
-      const url = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(pdfBlob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `invoice-${invoice.number}.pdf`;
