@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { Plus, Archive, Edit2, ArchiveRestore, FolderOpen, Clock, ExternalLink } from 'lucide-react';
 import { formatDuration, calculateDurationMinutes } from '@/lib/timeUtils';
@@ -17,8 +19,21 @@ import { formatDuration, calculateDurationMinutes } from '@/lib/timeUtils';
 interface Client {
   id: string;
   name: string;
+  company_name?: string;
+  contact_person?: string;
+  email?: string;
+  phone?: string;
+  address_street?: string;
+  address_city?: string;
+  address_postal_code?: string;
+  address_country?: string;
+  vat_id?: string;
+  tax_number?: string;
+  website?: string;
+  notes?: string;
   archived: boolean;
   created_at: string;
+  updated_at?: string;
   projects?: { id: string; name: string; archived: boolean }[];
   totalHours?: number;
 }
@@ -27,7 +42,21 @@ export default function Clients() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [clientName, setClientName] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    company_name: '',
+    contact_person: '',
+    email: '',
+    phone: '',
+    address_street: '',
+    address_city: '',
+    address_postal_code: '',
+    address_country: 'Germany',
+    vat_id: '',
+    tax_number: '',
+    website: '',
+    notes: ''
+  });
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -43,7 +72,9 @@ export default function Clients() {
     const { data: clientsData, error } = await supabase
       .from('clients')
       .select(`
-        id, name, archived, created_at,
+        id, name, company_name, contact_person, email, phone, 
+        address_street, address_city, address_postal_code, address_country,
+        vat_id, tax_number, website, notes, archived, created_at, updated_at,
         projects:projects!client_id (id, name, archived)
       `)
       .order('created_at', { ascending: false });
@@ -94,7 +125,19 @@ export default function Clients() {
     setLoading(true);
 
     const clientData = {
-      name: clientName,
+      name: formData.name,
+      company_name: formData.company_name || null,
+      contact_person: formData.contact_person || null,
+      email: formData.email || null,
+      phone: formData.phone || null,
+      address_street: formData.address_street || null,
+      address_city: formData.address_city || null,
+      address_postal_code: formData.address_postal_code || null,
+      address_country: formData.address_country || 'Germany',
+      vat_id: formData.vat_id || null,
+      tax_number: formData.tax_number || null,
+      website: formData.website || null,
+      notes: formData.notes || null,
       user_id: user!.id,
     };
 
@@ -152,14 +195,42 @@ export default function Clients() {
   };
 
   const resetForm = () => {
-    setClientName('');
+    setFormData({
+      name: '',
+      company_name: '',
+      contact_person: '',
+      email: '',
+      phone: '',
+      address_street: '',
+      address_city: '',
+      address_postal_code: '',
+      address_country: 'Germany',
+      vat_id: '',
+      tax_number: '',
+      website: '',
+      notes: ''
+    });
     setEditingClient(null);
     setIsDialogOpen(false);
   };
 
   const startEdit = (client: Client) => {
     setEditingClient(client);
-    setClientName(client.name);
+    setFormData({
+      name: client.name,
+      company_name: client.company_name || '',
+      contact_person: client.contact_person || '',
+      email: client.email || '',
+      phone: client.phone || '',
+      address_street: client.address_street || '',
+      address_city: client.address_city || '',
+      address_postal_code: client.address_postal_code || '',
+      address_country: client.address_country || 'Germany',
+      vat_id: client.vat_id || '',
+      tax_number: client.tax_number || '',
+      website: client.website || '',
+      notes: client.notes || ''
+    });
     setIsDialogOpen(true);
   };
 
@@ -187,8 +258,8 @@ export default function Clients() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Clients</h1>
-            <p className="text-muted-foreground">Manage your clients and their projects.</p>
+            <h1 className="text-3xl font-bold text-brand-gradient">Clients</h1>
+            <p className="text-muted-foreground">Manage your clients and their invoicing information.</p>
           </div>
           
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -198,26 +269,178 @@ export default function Clients() {
                 New Client
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {editingClient ? 'Edit Client' : 'Create New Client'}
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Client Name</Label>
-                  <Input
-                    id="name"
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    required
-                    placeholder="Enter client name"
-                  />
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Basic Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-brand-gradient">Basic Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Client Name *</Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        required
+                        placeholder="Enter client name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="company_name">Company Name</Label>
+                      <Input
+                        id="company_name"
+                        value={formData.company_name}
+                        onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                        placeholder="Enter company name"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contact_person">Contact Person</Label>
+                    <Input
+                      id="contact_person"
+                      value={formData.contact_person}
+                      onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
+                      placeholder="Enter contact person name"
+                    />
+                  </div>
                 </div>
 
-                <div className="flex space-x-2">
-                  <Button type="submit" disabled={loading}>
+                <Separator />
+
+                {/* Contact Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-brand-gradient">Contact Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        placeholder="client@example.com"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        placeholder="+49 123 456789"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="website">Website (Optional)</Label>
+                    <Input
+                      id="website"
+                      type="url"
+                      value={formData.website}
+                      onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                      placeholder="https://example.com"
+                    />
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Address Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-brand-gradient">Address Information</h3>
+                  <div className="space-y-2">
+                    <Label htmlFor="address_street">Street Address</Label>
+                    <Input
+                      id="address_street"
+                      value={formData.address_street}
+                      onChange={(e) => setFormData({ ...formData, address_street: e.target.value })}
+                      placeholder="Musterstraße 123"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="address_city">City</Label>
+                      <Input
+                        id="address_city"
+                        value={formData.address_city}
+                        onChange={(e) => setFormData({ ...formData, address_city: e.target.value })}
+                        placeholder="Berlin"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="address_postal_code">Postal Code</Label>
+                      <Input
+                        id="address_postal_code"
+                        value={formData.address_postal_code}
+                        onChange={(e) => setFormData({ ...formData, address_postal_code: e.target.value })}
+                        placeholder="10115"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="address_country">Country</Label>
+                      <Input
+                        id="address_country"
+                        value={formData.address_country}
+                        onChange={(e) => setFormData({ ...formData, address_country: e.target.value })}
+                        placeholder="Germany"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Tax Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-brand-gradient">Tax Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="vat_id">VAT ID</Label>
+                      <Input
+                        id="vat_id"
+                        value={formData.vat_id}
+                        onChange={(e) => setFormData({ ...formData, vat_id: e.target.value })}
+                        placeholder="DE123456789"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="tax_number">Tax Number</Label>
+                      <Input
+                        id="tax_number"
+                        value={formData.tax_number}
+                        onChange={(e) => setFormData({ ...formData, tax_number: e.target.value })}
+                        placeholder="123/456/78901"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Additional Notes */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-brand-gradient">Additional Notes</h3>
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Notes (Optional)</Label>
+                    <Textarea
+                      id="notes"
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      placeholder="Add any additional notes about this client..."
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex space-x-2 pt-4">
+                  <Button type="submit" disabled={loading} variant="gradient">
                     {editingClient ? 'Update' : 'Create'} Client
                   </Button>
                   <Button type="button" variant="outline" onClick={resetForm}>
@@ -248,7 +471,7 @@ export default function Clients() {
                 {activeClients.map((client) => (
                   <Card 
                     key={client.id}
-                    className="cursor-pointer hover:bg-muted/50 transition-colors duration-200 group"
+                    className="cursor-pointer card-hover transition-smooth group rounded-2xl"
                     onClick={() => handleClientClick(client.id)}
                     onKeyDown={(e) => handleKeyDown(e, client.id)}
                     tabIndex={0}
@@ -257,7 +480,12 @@ export default function Clients() {
                   >
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
-                        <span className="truncate">{client.name}</span>
+                        <div className="flex flex-col items-start">
+                          <span className="truncate text-brand-gradient">{client.name}</span>
+                          {client.company_name && (
+                            <span className="text-sm text-muted-foreground truncate">{client.company_name}</span>
+                          )}
+                        </div>
                         <div className="flex items-center space-x-2">
                           <div className="flex space-x-1">
                             <Button
@@ -286,9 +514,21 @@ export default function Clients() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
+                      {client.contact_person && (
+                        <div className="mb-2">
+                          <span className="text-sm text-muted-foreground">Contact: {client.contact_person}</span>
+                        </div>
+                      )}
+                      
+                      {client.email && (
+                        <div className="mb-2">
+                          <span className="text-xs text-muted-foreground">{client.email}</span>
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-2">
-                          <FolderOpen className="w-4 h-4 text-muted-foreground" />
+                          <FolderOpen className="w-4 h-4 text-brand-gradient" />
                           <span className="text-sm text-muted-foreground">
                             {getProjectCount(client)} projects
                           </span>
@@ -303,11 +543,11 @@ export default function Clients() {
                       {client.totalHours !== undefined && client.totalHours > 0 && (
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center space-x-2">
-                            <Clock className="w-4 h-4 text-muted-foreground" />
+                            <Clock className="w-4 h-4 text-brand-gradient" />
                             <span className="text-sm text-muted-foreground">Total hours</span>
                           </div>
                           <div className="text-right">
-                            <div className="text-sm font-bold">{formatDuration(Math.round(client.totalHours * 60)).normal}</div>
+                            <div className="text-sm font-bold text-brand-gradient">{formatDuration(Math.round(client.totalHours * 60)).normal}</div>
                             <div className="text-xs text-muted-foreground">= {formatDuration(Math.round(client.totalHours * 60)).industrial}h</div>
                           </div>
                         </div>
@@ -332,9 +572,12 @@ export default function Clients() {
                         </div>
                       )}
                       
-                      <p className="text-xs text-muted-foreground">
-                        Created: {new Date(client.created_at).toLocaleDateString()}
-                      </p>
+                      <div className="flex justify-between items-center text-xs text-muted-foreground">
+                        <span>Created: {new Date(client.created_at).toLocaleDateString()}</span>
+                        {client.vat_id && (
+                          <span className="text-xs bg-accent/10 text-accent px-2 py-1 rounded">VAT: {client.vat_id}</span>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 ))}

@@ -14,7 +14,20 @@ import { formatDuration, calculateDurationMinutes } from '@/lib/timeUtils';
 interface Client {
   id: string;
   name: string;
+  company_name?: string;
+  contact_person?: string;
+  email?: string;
+  phone?: string;
+  address_street?: string;
+  address_city?: string;
+  address_postal_code?: string;
+  address_country?: string;
+  vat_id?: string;
+  tax_number?: string;
+  website?: string;
+  notes?: string;
   created_at: string;
+  updated_at?: string;
 }
 
 interface Project {
@@ -79,7 +92,11 @@ export default function ClientDetail() {
     // Load client info
     const { data: clientData, error: clientError } = await supabase
       .from('clients')
-      .select('*')
+      .select(`
+        id, name, company_name, contact_person, email, phone,
+        address_street, address_city, address_postal_code, address_country,
+        vat_id, tax_number, website, notes, created_at, updated_at
+      `)
       .eq('id', id)
       .single();
 
@@ -304,7 +321,10 @@ export default function ClientDetail() {
               Back to Clients
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">{client.name}</h1>
+              <h1 className="text-3xl font-bold text-brand-gradient">{client.name}</h1>
+              {client.company_name && (
+                <p className="text-xl text-muted-foreground">{client.company_name}</p>
+              )}
               <p className="text-muted-foreground">Client overview and project management</p>
             </div>
           </div>
@@ -320,6 +340,103 @@ export default function ClientDetail() {
             </Button>
           </div>
         </div>
+
+        {/* Client Information Card */}
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle className="text-brand-gradient">Client Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Contact Information */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-foreground">Contact Details</h3>
+                {client.contact_person && (
+                  <div>
+                    <span className="text-sm text-muted-foreground">Contact Person:</span>
+                    <p className="font-medium">{client.contact_person}</p>
+                  </div>
+                )}
+                {client.email && (
+                  <div>
+                    <span className="text-sm text-muted-foreground">Email:</span>
+                    <p className="font-medium">
+                      <a href={`mailto:${client.email}`} className="link-gradient">
+                        {client.email}
+                      </a>
+                    </p>
+                  </div>
+                )}
+                {client.phone && (
+                  <div>
+                    <span className="text-sm text-muted-foreground">Phone:</span>
+                    <p className="font-medium">
+                      <a href={`tel:${client.phone}`} className="link-gradient">
+                        {client.phone}
+                      </a>
+                    </p>
+                  </div>
+                )}
+                {client.website && (
+                  <div>
+                    <span className="text-sm text-muted-foreground">Website:</span>
+                    <p className="font-medium">
+                      <a href={client.website} target="_blank" rel="noopener noreferrer" className="link-gradient">
+                        {client.website}
+                      </a>
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Address Information */}
+              {(client.address_street || client.address_city || client.address_postal_code || client.address_country) && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-foreground">Address</h3>
+                  <div>
+                    <span className="text-sm text-muted-foreground">Address:</span>
+                    <div className="font-medium">
+                      {client.address_street && <p>{client.address_street}</p>}
+                      {(client.address_postal_code || client.address_city) && (
+                        <p>
+                          {client.address_postal_code} {client.address_city}
+                        </p>
+                      )}
+                      {client.address_country && <p>{client.address_country}</p>}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tax Information */}
+              {(client.vat_id || client.tax_number) && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-foreground">Tax Information</h3>
+                  {client.vat_id && (
+                    <div>
+                      <span className="text-sm text-muted-foreground">VAT ID:</span>
+                      <p className="font-medium">{client.vat_id}</p>
+                    </div>
+                  )}
+                  {client.tax_number && (
+                    <div>
+                      <span className="text-sm text-muted-foreground">Tax Number:</span>
+                      <p className="font-medium">{client.tax_number}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Notes */}
+            {client.notes && (
+              <div className="pt-4 border-t">
+                <h3 className="font-semibold text-foreground mb-2">Notes</h3>
+                <p className="text-muted-foreground whitespace-pre-wrap">{client.notes}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
