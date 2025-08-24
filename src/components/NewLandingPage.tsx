@@ -294,7 +294,7 @@ const NewLandingPage = () => {
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
                   TimeHatch works perfectly in your mobile browser with a responsive design optimized for 
-                  freelance productivity on the go. A native mobile app is planned for later in 2024.
+                  freelance productivity on the go. A native mobile app is planned in 2026.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
