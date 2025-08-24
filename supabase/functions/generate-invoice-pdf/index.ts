@@ -19,9 +19,25 @@ serve(async (req) => {
     let invoiceId;
     
     if (req.method === 'POST') {
-      const body = await req.json();
-      console.log('Request body:', body);
-      invoiceId = body.invoiceId;
+      try {
+        const text = await req.text();
+        console.log('Raw request body:', text);
+        
+        if (text) {
+          const body = JSON.parse(text);
+          console.log('Parsed request body:', body);
+          invoiceId = body.invoiceId;
+        }
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        return new Response(JSON.stringify({ 
+          error: 'Invalid JSON in request body',
+          details: parseError.message
+        }), { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        });
+      }
     } else {
       // Handle GET requests with invoice ID in URL path
       const url = new URL(req.url);
