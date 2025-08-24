@@ -2,14 +2,18 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTimerContext } from '@/contexts/TimerContext';
 import { useTimerSkin } from '@/hooks/useTimerSkin';
+import { usePomodoro } from '@/hooks/usePomodoro';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Play, Pause, Square } from 'lucide-react';
+import { Play, Pause, Square, Timer } from 'lucide-react';
 import { formatTime, hoursToMinutes, calculateDurationMinutes, formatDuration } from '@/lib/timeUtils';
+import { PomodoroControls } from '@/components/PomodoroControls';
 
 interface Project {
   id: string;
@@ -35,6 +39,7 @@ export function TimerWidget() {
   const { user } = useAuth();
   const { triggerTimerUpdate } = useTimerContext();
   const { timerSkin } = useTimerSkin();
+  const { isEnabled: pomodoroEnabled, setIsEnabled: setPomodoroEnabled } = usePomodoro();
   const { toast } = useToast();
 
   // Load projects and active entry
@@ -206,89 +211,109 @@ export function TimerWidget() {
   return (
     <Card data-skin={timerSkin} className={`timer-skin-${timerSkin}`}>
       <CardHeader className="pb-4">
-        <CardTitle className="text-xl font-semibold">Time Tracker</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-xl font-semibold">Time Tracker</CardTitle>
+          <Tabs value={pomodoroEnabled ? 'pomodoro' : 'standard'} onValueChange={(value) => setPomodoroEnabled(value === 'pomodoro')}>
+            <TabsList className="grid w-[200px] grid-cols-2">
+              <TabsTrigger value="standard">Standard</TabsTrigger>
+              <TabsTrigger value="pomodoro">
+                <Timer className="w-4 h-4 mr-1" />
+                Pomodoro
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Timer Display with Skin Support */}
-        <div className="flex flex-col items-center justify-center py-12">
-          {/* Main Timer Display */}
-          <div className="timer-display">
-            <div className={`timer-digits ${timerSkin === 'gradient' ? 'gradient' : ''} ${showLongRunningWarning ? 'warning' : ''}`}>
-              {formatTimeDisplay(elapsedTime)}
-            </div>
-          </div>
-        </div>
-
-        {/* Long Running Warning */}
-        {showLongRunningWarning && (
-          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-destructive rounded-full" />
-              <p className="text-sm text-destructive font-medium">
-                Timer has been running for more than 8 hours. Consider stopping and reviewing your entry.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Project Selection */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Project</label>
-          <Select
-            value={selectedProjectId}
-            onValueChange={setSelectedProjectId}
-            disabled={!!activeEntry || loading}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select a project" />
-            </SelectTrigger>
-            <SelectContent>
-              {projects.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
-                  {getProjectDisplay(project)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Notes Section */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Notes</label>
-          <Textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            onBlur={updateNotes}
-            placeholder="What are you working on?"
-            rows={3}
+        {pomodoroEnabled ? (
+          <PomodoroControls
+            projects={projects}
+            selectedProjectId={selectedProjectId}
+            onProjectChange={setSelectedProjectId}
           />
-        </div>
+        ) : (
+          <>
+            {/* Standard Timer Display */}
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="timer-display">
+                <div className={`timer-digits ${timerSkin === 'gradient' ? 'gradient' : ''} ${showLongRunningWarning ? 'warning' : ''}`}>
+                  {formatTimeDisplay(elapsedTime)}
+                </div>
+              </div>
+            </div>
 
-        {/* Control Buttons */}
-        <div className="pt-2">
-          {!activeEntry ? (
-            <Button
-              onClick={startTimer}
-              disabled={loading || !selectedProjectId}
-              size="lg"
-              className="w-full"
-            >
-              <Play className="w-4 h-4 mr-2" />
-              Start Timer
-            </Button>
-          ) : (
-            <Button
-              onClick={stopTimer}
-              disabled={loading}
-              size="lg"
-              variant="destructive"
-              className="w-full"
-            >
-              <Square className="w-4 h-4 mr-2" />
-              Stop Timer
-            </Button>
-          )}
-        </div>
+            {/* Long Running Warning */}
+            {showLongRunningWarning && (
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-destructive rounded-full" />
+                  <p className="text-sm text-destructive font-medium">
+                    Timer has been running for more than 8 hours. Consider stopping and reviewing your entry.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Project Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Project</label>
+              <Select
+                value={selectedProjectId}
+                onValueChange={setSelectedProjectId}
+                disabled={!!activeEntry || loading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {getProjectDisplay(project)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Notes Section */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Notes</label>
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                onBlur={updateNotes}
+                placeholder="What are you working on?"
+                rows={3}
+              />
+            </div>
+
+            {/* Control Buttons */}
+            <div className="pt-2">
+              {!activeEntry ? (
+                <Button
+                  onClick={startTimer}
+                  disabled={loading || !selectedProjectId}
+                  size="lg"
+                  className="w-full"
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Start Timer
+                </Button>
+              ) : (
+                <Button
+                  onClick={stopTimer}
+                  disabled={loading}
+                  size="lg"
+                  variant="destructive"
+                  className="w-full"
+                >
+                  <Square className="w-4 h-4 mr-2" />
+                  Stop Timer
+                </Button>
+              )}
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

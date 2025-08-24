@@ -68,6 +68,36 @@ export type Database = {
         }
         Relationships: []
       }
+      focus_stats: {
+        Row: {
+          created_at: string
+          date: string
+          focus_minutes: number
+          id: string
+          sessions: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          focus_minutes?: number
+          id?: string
+          sessions?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          focus_minutes?: number
+          id?: string
+          sessions?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       invoice_items: {
         Row: {
           amount_minor: number
@@ -288,6 +318,7 @@ export type Database = {
           created_at: string
           id: string
           logo_url: string | null
+          pomodoro_settings: Json | null
           timer_skin: string
           updated_at: string
           vat_id: string | null
@@ -299,6 +330,7 @@ export type Database = {
           created_at?: string
           id: string
           logo_url?: string | null
+          pomodoro_settings?: Json | null
           timer_skin?: string
           updated_at?: string
           vat_id?: string | null
@@ -310,6 +342,7 @@ export type Database = {
           created_at?: string
           id?: string
           logo_url?: string | null
+          pomodoro_settings?: Json | null
           timer_skin?: string
           updated_at?: string
           vat_id?: string | null

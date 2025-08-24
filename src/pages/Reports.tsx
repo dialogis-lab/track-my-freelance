@@ -17,6 +17,7 @@ interface TimeEntry {
   started_at: string;
   stopped_at: string | null;
   notes: string;
+  tags?: string[] | null;
   projects: {
     name: string;
     rate_hour: number | null;
@@ -28,6 +29,8 @@ interface ReportSummary {
   totalHours: number;
   totalValue: number;
   entriesCount: number;
+  pomodoroHours: number;
+  pomodoroSessions: number;
   byProject: Record<string, { hours: number; value: number; entries: number }>;
   byClient: Record<string, { hours: number; value: number; entries: number }>;
 }
@@ -38,6 +41,8 @@ export default function Reports() {
     totalHours: 0,
     totalValue: 0,
     entriesCount: 0,
+    pomodoroHours: 0,
+    pomodoroSessions: 0,
     byProject: {},
     byClient: {},
   });
@@ -51,6 +56,7 @@ export default function Reports() {
   });
   const [clientFilter, setClientFilter] = useState('all');
   const [projectFilter, setProjectFilter] = useState('all');
+  const [tagFilter, setTagFilter] = useState('all');
   const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
   const [projects, setProjects] = useState<{ id: string; name: string; client_name?: string }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -89,7 +95,7 @@ export default function Reports() {
     if (user) {
       loadReport();
     }
-  }, [startDate, endDate, clientFilter, projectFilter, user]);
+  }, [startDate, endDate, clientFilter, projectFilter, tagFilter, user]);
 
   const loadFiltersData = async () => {
     const [clientsData, projectsData] = await Promise.all([
@@ -116,7 +122,7 @@ export default function Reports() {
     let query = supabase
       .from('time_entries')
       .select(`
-        id, started_at, stopped_at, notes,
+        id, started_at, stopped_at, notes, tags,
         projects:project_id (
           name, rate_hour,
           clients:client_id (name)
@@ -149,6 +155,15 @@ export default function Reports() {
       query = query.eq('project_id', projectFilter);
     }
 
+    // Apply tag filter
+    if (tagFilter && tagFilter !== 'all') {
+      if (tagFilter === 'pomodoro') {
+        query = query.contains('tags', ['pomodoro']);
+      } else if (tagFilter === 'non-pomodoro') {
+        query = query.or('tags.is.null,not.tags.cs.{pomodoro}');
+      }
+    }
+
     const { data, error } = await query;
 
     if (error) {
@@ -171,6 +186,8 @@ export default function Reports() {
       totalHours: 0,
       totalValue: 0,
       entriesCount: entries.length,
+      pomodoroHours: 0,
+      pomodoroSessions: 0,
       byProject: {},
       byClient: {},
     };
@@ -185,6 +202,12 @@ export default function Reports() {
 
       summary.totalHours += hours;
       summary.totalValue += value;
+
+      // Track Pomodoro sessions
+      if (entry.tags?.includes('pomodoro')) {
+        summary.pomodoroHours += hours;
+        summary.pomodoroSessions += 1;
+      }
 
       // By project
       const projectKey = entry.projects.name;
@@ -340,7 +363,7 @@ export default function Reports() {
             <CardTitle>Filters</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="startDate">Start Date</Label>
                 <Input
@@ -394,12 +417,26 @@ export default function Reports() {
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="space-y-2">
+                <Label>Tag Filter</Label>
+                <Select value={tagFilter} onValueChange={setTagFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All entries" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All entries</SelectItem>
+                    <SelectItem value="pomodoro">Pomodoro only</SelectItem>
+                    <SelectItem value="non-pomodoro">Non-Pomodoro only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Total Hours</CardTitle>
@@ -425,6 +462,28 @@ export default function Reports() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{summary.entriesCount}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Pomodoro Focus</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatDuration(Math.round(summary.pomodoroHours * 60)).normal}</div>
+              <div className="text-sm text-muted-foreground">{summary.pomodoroSessions} sessions</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Focus Ratio</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {summary.totalHours > 0 ? Math.round((summary.pomodoroHours / summary.totalHours) * 100) : 0}%
+              </div>
+              <div className="text-sm text-muted-foreground">of total time</div>
             </CardContent>
           </Card>
         </div>
@@ -564,6 +623,7 @@ export default function Reports() {
                     <th className="text-left p-2">Duration</th>
                     <th className="text-left p-2">Rate</th>
                     <th className="text-left p-2">Value</th>
+                    <th className="text-left p-2">Tags</th>
                     <th className="text-left p-2">Notes</th>
                   </tr>
                 </thead>
@@ -590,6 +650,19 @@ export default function Reports() {
                         </td>
                         <td className="p-2">${(entry.projects.rate_hour || 0).toFixed(2)}/h</td>
                         <td className="p-2">${value.toFixed(2)}</td>
+                        <td className="p-2">
+                          {entry.tags?.length ? (
+                            <div className="flex flex-wrap gap-1">
+                              {entry.tags.map((tag, index) => (
+                                <span key={index} className="bg-primary/10 text-primary px-2 py-1 rounded text-xs">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
                         <td className="p-2">{entry.notes || '-'}</td>
                       </tr>
                     );
