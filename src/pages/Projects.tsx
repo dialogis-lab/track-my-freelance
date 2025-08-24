@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
-import { Plus, Archive, Edit2, ArchiveRestore, Play, Square } from 'lucide-react';
+import { Plus, Archive, Edit2, ArchiveRestore, Play, Square, BarChart3 } from 'lucide-react';
 
 interface Client {
   id: string;
@@ -43,6 +43,7 @@ export default function Projects() {
   const { user } = useAuth();
   const { toast } = useToast();
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
@@ -255,6 +256,16 @@ export default function Projects() {
     }
   };
 
+  const handleCardClick = (projectId: string, event: React.MouseEvent) => {
+    // Prevent navigation if clicking on action buttons
+    if (event.target !== event.currentTarget && (event.target as HTMLElement).closest('button')) {
+      return;
+    }
+    
+    // Navigate to reports page with project filter
+    navigate(`/reports?project=${projectId}`);
+  };
+
   const activeProjects = projects.filter(p => !p.archived);
   const archivedProjects = projects.filter(p => p.archived);
 
@@ -357,11 +368,15 @@ export default function Projects() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {activeProjects.map((project) => (
-                  <Card key={project.id}>
+                  <Card 
+                    key={project.id} 
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={(e) => handleCardClick(project.id, e)}
+                  >
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
                         <span className="truncate">{project.name}</span>
-                        <div className="flex space-x-1">
+                        <div className="flex space-x-1" onClick={(e) => e.stopPropagation()}>
                           {activeTimer === project.id ? (
                             <Button
                               variant="destructive"
@@ -411,6 +426,14 @@ export default function Projects() {
                       <p className="text-xs text-muted-foreground mt-2">
                         Created: {new Date(project.created_at).toLocaleDateString()}
                       </p>
+                      
+                      {/* Click to view reports hint */}
+                      <div className="flex items-center justify-center mt-3 pt-3 border-t border-border/50">
+                        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                          <BarChart3 className="w-3 h-3" />
+                          <span>Click to view reports</span>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -428,17 +451,23 @@ export default function Projects() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {archivedProjects.map((project) => (
-                  <Card key={project.id} className="opacity-75">
+                  <Card 
+                    key={project.id} 
+                    className="opacity-75 cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={(e) => handleCardClick(project.id, e)}
+                  >
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
                         <span className="truncate">{project.name}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleArchive(project)}
-                        >
-                          <ArchiveRestore className="w-4 h-4" />
-                        </Button>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleArchive(project)}
+                          >
+                            <ArchiveRestore className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -452,6 +481,14 @@ export default function Projects() {
                           Rate: ${project.rate_hour}/hour
                         </p>
                       )}
+                      
+                      {/* Click to view reports hint */}
+                      <div className="flex items-center justify-center mt-3 pt-3 border-t border-border/50">
+                        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                          <BarChart3 className="w-3 h-3" />
+                          <span>Click to view reports</span>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}

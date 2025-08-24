@@ -68,10 +68,11 @@ export default function Reports() {
       loadFiltersData();
       loadReport();
       
-      // Handle URL parameters for range and client
+      // Handle URL parameters for range, client, and project
       const params = new URLSearchParams(window.location.search);
       const range = params.get('range');
       const client = params.get('client');
+      const project = params.get('project');
       
       if (range === 'today') {
         const today = new Date().toISOString().split('T')[0];
@@ -83,10 +84,19 @@ export default function Reports() {
         weekStart.setDate(today.getDate() - today.getDay());
         setStartDate(weekStart.toISOString().split('T')[0]);
         setEndDate(today.toISOString().split('T')[0]);
+      } else if (range === 'month') {
+        const today = new Date();
+        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+        setStartDate(monthStart.toISOString().split('T')[0]);
+        setEndDate(today.toISOString().split('T')[0]);
       }
       
       if (client) {
         setClientFilter(client);
+      }
+      
+      if (project) {
+        setProjectFilter(project);
       }
     }
   }, [user]);
@@ -150,7 +160,7 @@ export default function Reports() {
         return;
       }
     }
-    
+    // Apply project filter if provided
     if (projectFilter && projectFilter !== 'all') {
       query = query.eq('project_id', projectFilter);
     }
