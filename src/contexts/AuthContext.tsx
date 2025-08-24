@@ -65,12 +65,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkMfaRequired = async (session: Session) => {
     try {
-      console.log('Checking MFA requirements for session:', {
-        userId: session.user.id,
-        sessionInfo: session,
-        userMetadata: session.user.app_metadata,
-        userAal: session.user.app_metadata?.aal
-      });
+      // Get AAL directly from the JWT token
+      const currentAal = (session as any).aal || session.user.app_metadata?.aal || 'aal1';
+      console.log('checkMfaRequired: Current AAL from token:', currentAal);
+      
+      // If already AAL2, no MFA needed
+      if (currentAal === 'aal2') {
+        console.log('checkMfaRequired: AAL2 detected, no MFA needed');
+        setNeedsMfa(false);
+        return;
+      }
       
       // Check if user has MFA enabled
       const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
@@ -81,29 +85,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      console.log('MFA factors:', factors);
       const verifiedFactor = factors?.totp?.find(f => f.status === 'verified');
       
       if (verifiedFactor) {
-        console.log('User has verified MFA factor:', verifiedFactor);
-        
-        // For Supabase, check if we need to create an MFA challenge
-        // If user has MFA enabled but session doesn't have AAL2, they need to verify
-        const currentAal = session.user.app_metadata?.aal || 'aal1';
-        console.log('Current AAL level:', currentAal);
-        
-        if (currentAal !== 'aal2') {
-          console.log('MFA challenge required - setting needsMfa to true');
-          setNeedsMfa(true);
-          return;
-        } else {
-          console.log('MFA already completed - AAL2 detected');
-        }
+        console.log('checkMfaRequired: User has MFA enabled but AAL is not 2, MFA challenge needed');
+        setNeedsMfa(true);
       } else {
-        console.log('No verified MFA factors found');
+        console.log('checkMfaRequired: No MFA factors, no challenge needed');
+        setNeedsMfa(false);
       }
       
-      setNeedsMfa(false);
     } catch (error) {
       console.error('Error checking MFA requirements:', error);
       setNeedsMfa(false);

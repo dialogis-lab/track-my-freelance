@@ -25,9 +25,13 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
-  // Only redirect to MFA if we're not already on the MFA page and MFA is needed
-  if (needsMfa && window.location.pathname !== '/mfa') {
-    console.log('ProtectedRoute: MFA needed, redirecting to /mfa');
+  // Check AAL level directly from the session
+  const currentAal = (user as any).aal || user.app_metadata?.aal || 'aal1';
+  console.log('ProtectedRoute: Current AAL level:', currentAal);
+  
+  // Only redirect to MFA if we're not already on the MFA page, MFA is needed, and AAL is not 2
+  if (needsMfa && currentAal !== 'aal2' && window.location.pathname !== '/mfa') {
+    console.log('ProtectedRoute: MFA needed and AAL not 2, redirecting to /mfa');
     return <Navigate to="/mfa" replace />;
   }
 
