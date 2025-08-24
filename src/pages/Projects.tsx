@@ -34,7 +34,7 @@ export default function Projects() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    client_id: '',
+    client_id: 'none',
     rate_hour: ''
   });
   const [loading, setLoading] = useState(false);
@@ -103,7 +103,7 @@ export default function Projects() {
 
     const projectData = {
       name: formData.name,
-      client_id: formData.client_id || null,
+      client_id: formData.client_id === 'none' ? null : formData.client_id,
       rate_hour: formData.rate_hour ? parseFloat(formData.rate_hour) : null,
       user_id: user!.id,
     };
@@ -162,7 +162,7 @@ export default function Projects() {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', client_id: '', rate_hour: '' });
+    setFormData({ name: '', client_id: 'none', rate_hour: '' });
     setEditingProject(null);
     setIsDialogOpen(false);
   };
@@ -171,7 +171,7 @@ export default function Projects() {
     setEditingProject(project);
     setFormData({
       name: project.name,
-      client_id: project.client_id || '',
+      client_id: project.client_id || 'none',
       rate_hour: project.rate_hour ? project.rate_hour.toString() : ''
     });
     setIsDialogOpen(true);
@@ -280,7 +280,7 @@ export default function Projects() {
                       <SelectValue placeholder="Select a client" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No client</SelectItem>
+                      <SelectItem value="none">No client</SelectItem>
                       {clients.map((client) => (
                         <SelectItem key={client.id} value={client.id}>
                           {client.name}
