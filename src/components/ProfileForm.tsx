@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, X, Building2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Upload, X, Building2, Lock, AlertTriangle } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -28,6 +29,7 @@ export function ProfileForm() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [originalProfile, setOriginalProfile] = useState<Profile | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [encryptionError, setEncryptionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -50,59 +52,115 @@ export function ProfileForm() {
   }, [profile, originalProfile]);
 
   const loadProfile = async () => {
+    setEncryptionError(null);
+    
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user!.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
+      // Use the encrypted profile fetch endpoint
+      const { data: session } = await supabase.auth.getSession();
+      const token = session?.session?.access_token;
+      
+      if (!token) {
+        throw new Error('No authentication token available');
       }
 
-      if (data) {
-        setProfile(data);
-        setOriginalProfile(data); // Store original state
-        if (data.logo_url) {
-          // If we have a logo URL, create a fresh signed URL
-          try {
-            const urlParts = data.logo_url.split('/');
-            const fileName = urlParts[urlParts.length - 1];
-            const filePath = `${user!.id}/${fileName}`;
-            
-            const { data: signedUrlData, error: urlError } = await supabase.storage
-              .from('logos')
-              .createSignedUrl(filePath, 60 * 60 * 24 * 365);
+      const response = await fetch('https://ollbuhgghkporvzmrzau.supabase.co/functions/v1/encrypted-profile-fetch', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-            if (!urlError && signedUrlData) {
-              setLogoPreview(signedUrlData.signedUrl);
-            } else {
-              setLogoPreview(data.logo_url);
-            }
-          } catch {
+      const result = await response.json();
+      
+      if (!response.ok) {
+        if (result.adminAction) {
+          setEncryptionError(result.message);
+        }
+        throw new Error(result.message || 'Failed to load profile');
+      }
+
+      const data = result.profile;
+      setProfile(data);
+      setOriginalProfile(data);
+      
+      if (data.logo_url) {
+        // If we have a logo URL, try to create a fresh signed URL
+        try {
+          const urlParts = data.logo_url.split('/');
+          const fileName = urlParts[urlParts.length - 1];
+          const filePath = `${user!.id}/${fileName}`;
+          
+          const { data: signedUrlData, error: urlError } = await supabase.storage
+            .from('logos')
+            .createSignedUrl(filePath, 60 * 60 * 24 * 365);
+
+          if (!urlError && signedUrlData) {
+            setLogoPreview(signedUrlData.signedUrl);
+          } else {
             setLogoPreview(data.logo_url);
           }
+        } catch {
+          setLogoPreview(data.logo_url);
         }
-      } else {
-        // Create empty profile
-        const emptyProfile = {
-          id: user!.id,
-          company_name: null,
-          address: null,
-          vat_id: null,
-          bank_details: null,
-          logo_url: null,
-        };
-        setProfile(emptyProfile);
-        setOriginalProfile(emptyProfile);
       }
     } catch (error: any) {
-      toast({
-        title: "Error loading profile",
-        description: error.message,
-        variant: "destructive",
-      });
+      console.error('Error loading profile:', error);
+      
+      // Fallback to direct database access for non-encrypted fields only
+      try {
+        const { data, error: dbError } = await supabase
+          .from('profiles')
+          .select('id, company_name, address, logo_url')
+          .eq('id', user!.id)
+          .single();
+
+        if (!dbError && data) {
+          const fallbackProfile = {
+            ...data,
+            vat_id: null,
+            bank_details: null,
+          };
+          setProfile(fallbackProfile);
+          setOriginalProfile(fallbackProfile);
+          
+          if (data.logo_url) {
+            try {
+              const urlParts = data.logo_url.split('/');
+              const fileName = urlParts[urlParts.length - 1];
+              const filePath = `${user!.id}/${fileName}`;
+              
+              const { data: signedUrlData, error: urlError } = await supabase.storage
+                .from('logos')
+                .createSignedUrl(filePath, 60 * 60 * 24 * 365);
+
+              if (!urlError && signedUrlData) {
+                setLogoPreview(signedUrlData.signedUrl);
+              }
+            } catch {
+              // Fallback to original URL
+            }
+          }
+        } else {
+          // Create empty profile
+          const emptyProfile = {
+            id: user!.id,
+            company_name: null,
+            address: null,
+            vat_id: null,
+            bank_details: null,
+            logo_url: null,
+          };
+          setProfile(emptyProfile);
+          setOriginalProfile(emptyProfile);
+        }
+      } catch (fallbackError: any) {
+        toast({
+          title: "Error loading profile",
+          description: fallbackError.message,
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -210,32 +268,50 @@ export function ProfileForm() {
     if (!profile || !user) return;
 
     setSaving(true);
+    setEncryptionError(null);
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
+      const { data: session } = await supabase.auth.getSession();
+      const token = session?.session?.access_token;
+      
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
+
+      const response = await fetch('https://ollbuhgghkporvzmrzau.supabase.co/functions/v1/encrypted-profile-save', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           company_name: profile.company_name,
           address: profile.address,
           vat_id: profile.vat_id,
           bank_details: profile.bank_details,
-          logo_url: profile.logo_url,
-        });
+          logo_url: profile.logo_url?.startsWith('https://') ? null : profile.logo_url
+        }),
+      });
 
-      if (error) {
-        throw error;
+      const result = await response.json();
+      
+      if (!response.ok) {
+        if (result.adminAction) {
+          setEncryptionError(result.message);
+        }
+        throw new Error(result.message || 'Failed to save profile');
       }
 
       toast({
         title: "Profile saved",
-        description: "Your profile has been updated successfully.",
+        description: "Your profile has been updated securely.",
       });
       
       // Update original profile to current state
       setOriginalProfile({ ...profile });
       setHasChanges(false);
     } catch (error: any) {
+      console.error('Error saving profile:', error);
       toast({
         title: "Error saving profile",
         description: error.message,
@@ -272,6 +348,15 @@ export function ProfileForm() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {encryptionError && (
+          <Alert className="border-orange-200 bg-orange-50">
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-orange-800">
+              <strong>Admin Configuration Required:</strong> {encryptionError}
+            </AlertDescription>
+          </Alert>
+        )}
+        
         {/* Logo Upload */}
         <div className="space-y-2">
           <Label>Company Logo</Label>
@@ -336,13 +421,20 @@ export function ProfileForm() {
 
           {/* VAT ID */}
           <div className="space-y-2">
-            <Label htmlFor="vat-id">VAT ID</Label>
+            <div className="flex items-center space-x-2">
+              <Lock className="w-4 h-4 text-green-600" />
+              <Label htmlFor="vat-id">VAT ID</Label>
+              <span className="text-xs text-muted-foreground bg-green-50 px-2 py-1 rounded-full">
+                🔒 Encrypted
+              </span>
+            </div>
             <Input
               id="vat-id"
               value={profile.vat_id || ''}
               onChange={(e) => setProfile({ ...profile, vat_id: e.target.value })}
               placeholder="VAT123456789"
               className="text-sm"
+              disabled={!!encryptionError}
             />
           </div>
         </div>
@@ -362,7 +454,13 @@ export function ProfileForm() {
 
         {/* Bank Details */}
         <div className="space-y-2">
-          <Label htmlFor="bank-details">Bank Details</Label>
+          <div className="flex items-center space-x-2">
+            <Lock className="w-4 h-4 text-green-600" />
+            <Label htmlFor="bank-details">Bank Details</Label>
+            <span className="text-xs text-muted-foreground bg-green-50 px-2 py-1 rounded-full">
+              🔒 Encrypted
+            </span>
+          </div>
           <Textarea
             id="bank-details"
             value={profile.bank_details || ''}
@@ -370,7 +468,11 @@ export function ProfileForm() {
             placeholder="Bank name, account details, etc."
             rows={2}
             className="text-sm"
+            disabled={!!encryptionError}
           />
+          <p className="text-xs text-muted-foreground">
+            Bank details are encrypted before storage and never transmitted in plaintext.
+          </p>
         </div>
 
         <Button onClick={saveProfile} disabled={saving || !hasChanges} className="w-full">

@@ -362,6 +362,7 @@ export type Database = {
         Row: {
           address: string | null
           bank_details: string | null
+          bank_details_enc: Json | null
           company_name: string | null
           created_at: string
           id: string
@@ -370,10 +371,12 @@ export type Database = {
           timer_skin: string
           updated_at: string
           vat_id: string | null
+          vat_id_enc: Json | null
         }
         Insert: {
           address?: string | null
           bank_details?: string | null
+          bank_details_enc?: Json | null
           company_name?: string | null
           created_at?: string
           id: string
@@ -382,10 +385,12 @@ export type Database = {
           timer_skin?: string
           updated_at?: string
           vat_id?: string | null
+          vat_id_enc?: Json | null
         }
         Update: {
           address?: string | null
           bank_details?: string | null
+          bank_details_enc?: Json | null
           company_name?: string | null
           created_at?: string
           id?: string
@@ -394,6 +399,7 @@ export type Database = {
           timer_skin?: string
           updated_at?: string
           vat_id?: string | null
+          vat_id_enc?: Json | null
         }
         Relationships: []
       }
@@ -466,8 +472,10 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_private: boolean | null
           minutes_manual: number | null
           notes: string | null
+          private_notes_enc: Json | null
           project_id: string
           started_at: string
           stopped_at: string | null
@@ -477,8 +485,10 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_private?: boolean | null
           minutes_manual?: number | null
           notes?: string | null
+          private_notes_enc?: Json | null
           project_id: string
           started_at: string
           stopped_at?: string | null
@@ -488,8 +498,10 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_private?: boolean | null
           minutes_manual?: number | null
           notes?: string | null
+          private_notes_enc?: Json | null
           project_id?: string
           started_at?: string
           stopped_at?: string | null
