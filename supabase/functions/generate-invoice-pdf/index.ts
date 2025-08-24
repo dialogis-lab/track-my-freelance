@@ -373,8 +373,8 @@ serve(async (req) => {
     // Generate PDF bytes
     const pdfBytes = await pdfDoc.save();
     
-    // Convert to base64 for proper transmission via Functions API
-    const base64PDF = btoa(String.fromCharCode(...pdfBytes));
+    // Convert to base64 using chunk-based approach to avoid stack overflow
+    const base64PDF = await convertBytesToBase64(pdfBytes);
     
     return new Response(JSON.stringify({ 
       pdf: base64PDF,
@@ -398,3 +398,23 @@ serve(async (req) => {
     });
   }
 });
+
+// Helper function to convert bytes to base64 without stack overflow
+function convertBytesToBase64(bytes: Uint8Array): string {
+  // Convert bytes to binary string in chunks to avoid stack overflow
+  let binaryString = '';
+  const chunkSize = 8192;
+  
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.slice(i, i + chunkSize);
+    // Convert chunk to string safely without spread operator
+    let chunkString = '';
+    for (let j = 0; j < chunk.length; j++) {
+      chunkString += String.fromCharCode(chunk[j]);
+    }
+    binaryString += chunkString;
+  }
+  
+  // Now convert the complete binary string to base64
+  return btoa(binaryString);
+}

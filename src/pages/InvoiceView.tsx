@@ -189,12 +189,19 @@ export default function InvoiceView() {
         throw new Error('No PDF data received from server');
       }
 
-      // Decode base64 PDF data
+      // Decode base64 PDF data properly  
       const base64PDF = response.data.pdf;
       const filename = response.data.filename || `invoice-${invoice.number || 'draft'}.pdf`;
       
-      // Convert base64 to binary
-      const binaryString = atob(base64PDF);
+      // Decode the complete base64 string at once
+      let binaryString = '';
+      try {
+        binaryString = atob(base64PDF);
+      } catch (error) {
+        console.error('Base64 decode error:', error);
+        throw new Error('Failed to decode PDF data');
+      }
+      
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
