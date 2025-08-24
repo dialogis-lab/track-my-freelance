@@ -6,7 +6,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Clock, CheckCircle, Users, FileText, Smartphone, Timer } from "lucide-react";
 import heroImage from "@/assets/freelancer-hero.jpg";
-import timehatchLogo from "@/assets/timehatch-logo.png";
 
 const LandingPage = () => {
   const [email, setEmail] = useState("");
@@ -59,32 +58,12 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation Header */}
-      <nav className="bg-background/95 backdrop-blur-sm border-b border-border/50 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <img 
-            src={timehatchLogo} 
-            alt="TimeHatch – Simple Time Tracking for Freelancers"
-            className="h-8 w-auto"
-          />
-        </div>
-      </nav>
-
       <header>
         {/* Hero Section */}
         <section className="relative overflow-hidden bg-gradient-to-br from-muted/30 to-background">
           <div className="container mx-auto px-4 py-16 lg:py-24">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div className="text-left">
-                {/* Logo in Hero */}
-                <div className="mb-8 flex justify-center lg:justify-start">
-                  <img 
-                    src={timehatchLogo} 
-                    alt="TimeHatch – Simple Time Tracking for Freelancers"
-                    className="h-16 w-auto"
-                  />
-                </div>
-                
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
                   The simplest{" "}
                   <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
@@ -248,12 +227,8 @@ const LandingPage = () => {
         <section className="py-20 bg-muted/20 border-t border-border/50" aria-labelledby="about-heading">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center">
-              <div className="mb-6 flex justify-center">
-                <img 
-                  src={timehatchLogo} 
-                  alt="TimeHatch – Simple Time Tracking for Freelancers"
-                  className="h-12 w-auto opacity-80"
-                />
+              <div className="w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Timer className="w-8 h-8 text-white" />
               </div>
               <h2 id="about-heading" className="text-3xl font-bold text-foreground mb-6">
                 Coming Soon
