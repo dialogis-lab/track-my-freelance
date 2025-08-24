@@ -32,7 +32,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Check if MFA is required after successful login, but don't block loading
         if (session?.user && event === 'SIGNED_IN') {
           // Don't await this - let it run in background
-          checkMfaRequired(session).catch(console.error);
+          setTimeout(() => {
+            checkMfaRequired(session).catch(console.error);
+          }, 100);
         } else {
           setNeedsMfa(false);
         }
@@ -51,7 +53,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Check if MFA is required for existing session, but don't block loading
       if (session?.user) {
         // Don't await this - let it run in background  
-        checkMfaRequired(session).catch(console.error);
+        setTimeout(() => {
+          checkMfaRequired(session).catch(console.error);
+        }, 100);
       } else {
         setNeedsMfa(false);
       }
@@ -81,10 +85,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('checkMfaRequired: AAL:', aal, 'AMR methods:', amr, 'Has MFA:', strong);
       
       if (strong) {
-        console.log('checkMfaRequired: MFA completed');
+        console.log('checkMfaRequired: MFA completed - setting needsMfa to false');
         setNeedsMfa(false);
       } else {
-        console.log('checkMfaRequired: MFA challenge needed');
+        console.log('checkMfaRequired: MFA challenge needed - setting needsMfa to true');
         setNeedsMfa(true);
       }
     } catch (error) {

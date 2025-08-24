@@ -150,11 +150,20 @@ export default function Mfa() {
         description: "Authentication successful.",
       });
       
-      // Force session refresh and trigger auth state change
-      const { data: refreshedSession } = await supabase.auth.refreshSession();
-      if (refreshedSession.session) {
-        console.log('Session refreshed after MFA:', (refreshedSession.session.user as any).aal);
+      // Force complete session refresh and wait for it
+      console.log('Forcing session refresh after MFA...');
+      const { data: refreshedSession, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.error('Session refresh error:', refreshError);
+      } else {
+        console.log('Session refreshed successfully:', {
+          aal: (refreshedSession.session?.user as any)?.aal,
+          amr: (refreshedSession.session?.user as any)?.amr
+        });
       }
+      
+      // Wait a moment for auth state to propagate
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       navigate('/dashboard', { replace: true });
     } catch (error: any) {
@@ -237,11 +246,20 @@ export default function Mfa() {
         description: "Authentication successful using recovery code.",
       });
       
-      // Force session refresh and trigger auth state change
-      const { data: refreshedSession } = await supabase.auth.refreshSession();
-      if (refreshedSession.session) {
-        console.log('Session refreshed after recovery code:', (refreshedSession.session.user as any).aal);
+      // Force complete session refresh and wait for it
+      console.log('Forcing session refresh after recovery code...');
+      const { data: refreshedSession, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.error('Session refresh error:', refreshError);
+      } else {
+        console.log('Session refreshed successfully:', {
+          aal: (refreshedSession.session?.user as any)?.aal,
+          amr: (refreshedSession.session?.user as any)?.amr
+        });
       }
+      
+      // Wait a moment for auth state to propagate
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       navigate('/dashboard', { replace: true });
     } catch (error: any) {
