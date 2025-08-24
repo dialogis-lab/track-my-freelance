@@ -6,8 +6,9 @@ import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Edit2, Archive, ArchiveRestore, Play, Square, BarChart3 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { ArrowLeft, Edit2, Archive, ArchiveRestore, Play, Square, BarChart3, Trash2 } from 'lucide-react';
 import { TimerWidget } from '@/components/TimerWidget';
 
 interface Project {
@@ -198,6 +199,40 @@ export default function ProjectDetail() {
     return `${hours}h ${minutes}m`;
   };
 
+  const deleteTimeEntry = async (entry: TimeEntry) => {
+    try {
+      const { error } = await supabase
+        .from('time_entries')
+        .delete()
+        .eq('id', entry.id);
+
+      if (error) {
+        toast({
+          title: "Error deleting time entry",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Time entry deleted",
+          description: "Time entry has been permanently deleted.",
+        });
+        loadProjectData(); // Refresh data
+        
+        // If we deleted the running timer, update activeTimer state
+        if (!entry.stopped_at && activeTimer === project?.id) {
+          setActiveTimer(null);
+        }
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error deleting time entry",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <AppLayout>
@@ -325,29 +360,56 @@ export default function ProjectDetail() {
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    {timeEntries.map((entry) => (
-                      <div key={entry.id} className="flex justify-between items-center p-3 border border-border rounded-lg">
-                        <div>
-                          <p className="font-medium">
-                            {new Date(entry.started_at).toLocaleDateString()}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(entry.started_at).toLocaleTimeString()} - {' '}
-                            {entry.stopped_at ? new Date(entry.stopped_at).toLocaleTimeString() : 'Running'}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium">
-                            {formatDuration(entry.started_at, entry.stopped_at)}
-                          </p>
-                          {!entry.stopped_at && (
-                            <Badge variant="default" className="text-xs">
-                              Running
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                     {timeEntries.map((entry) => (
+                       <div key={entry.id} className="flex justify-between items-center p-3 border border-border rounded-lg">
+                         <div className="flex-1">
+                           <p className="font-medium">
+                             {new Date(entry.started_at).toLocaleDateString()}
+                           </p>
+                           <p className="text-sm text-muted-foreground">
+                             {new Date(entry.started_at).toLocaleTimeString()} - {' '}
+                             {entry.stopped_at ? new Date(entry.stopped_at).toLocaleTimeString() : 'Running'}
+                           </p>
+                         </div>
+                         <div className="flex items-center space-x-3">
+                           <div className="text-right">
+                             <p className="font-medium">
+                               {formatDuration(entry.started_at, entry.stopped_at)}
+                             </p>
+                             {!entry.stopped_at && (
+                               <Badge variant="default" className="text-xs">
+                                 Running
+                               </Badge>
+                             )}
+                           </div>
+                           <AlertDialog>
+                             <AlertDialogTrigger asChild>
+                               <Button variant="ghost" size="sm">
+                                 <Trash2 className="w-4 h-4 text-destructive" />
+                               </Button>
+                             </AlertDialogTrigger>
+                             <AlertDialogContent>
+                               <AlertDialogHeader>
+                                 <AlertDialogTitle>Delete Time Entry</AlertDialogTitle>
+                                 <AlertDialogDescription>
+                                   Are you sure you want to permanently delete this time entry from {new Date(entry.started_at).toLocaleDateString()}? 
+                                   This action cannot be undone.
+                                 </AlertDialogDescription>
+                               </AlertDialogHeader>
+                               <AlertDialogFooter>
+                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                 <AlertDialogAction
+                                   onClick={() => deleteTimeEntry(entry)}
+                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                 >
+                                   Delete
+                                 </AlertDialogAction>
+                               </AlertDialogFooter>
+                             </AlertDialogContent>
+                           </AlertDialog>
+                         </div>
+                       </div>
+                     ))}
                   </div>
                 )}
               </CardContent>

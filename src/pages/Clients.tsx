@@ -8,12 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
-import { Plus, Archive, Edit2, ArchiveRestore, FolderOpen, Clock, ExternalLink } from 'lucide-react';
+import { Plus, Archive, Edit2, ArchiveRestore, FolderOpen, Clock, ExternalLink, Trash2 } from 'lucide-react';
 import { formatDuration, calculateDurationMinutes } from '@/lib/timeUtils';
 
 interface Client {
@@ -171,6 +172,74 @@ export default function Clients() {
     }
 
     setLoading(false);
+  };
+
+  const deleteClient = async (client: Client) => {
+    try {
+      // Check if client has projects or time entries
+      const { data: projects } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('client_id', client.id);
+
+      if (projects && projects.length > 0) {
+        // Check for time entries
+        const { data: timeEntries } = await supabase
+          .from('time_entries')
+          .select('id')
+          .in('project_id', projects.map(p => p.id));
+
+        if (timeEntries && timeEntries.length > 0) {
+          toast({
+            title: "Cannot delete client",
+            description: "This client has time entries. Archive instead of deleting to preserve data.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Delete projects first
+        const { error: projectsError } = await supabase
+          .from('projects')
+          .delete()
+          .eq('client_id', client.id);
+
+        if (projectsError) {
+          toast({
+            title: "Error deleting client",
+            description: projectsError.message,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      // Delete the client
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', client.id);
+
+      if (error) {
+        toast({
+          title: "Error deleting client",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Client deleted",
+          description: "Client has been permanently deleted.",
+        });
+        loadClients();
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error deleting client",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const toggleArchive = async (client: Client) => {
@@ -508,6 +577,35 @@ export default function Clients() {
                             >
                               <Archive className="w-4 h-4" />
                             </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Client</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to permanently delete "{client.name}"? This action cannot be undone.
+                                    If the client has time entries, consider archiving instead.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteClient(client)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                           <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                         </div>

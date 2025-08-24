@@ -10,8 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Search, Eye, Download, Receipt, Filter, X, Calendar as CalendarIcon, DollarSign, ChevronDown } from 'lucide-react';
+import { Plus, Search, Eye, Download, Receipt, Filter, X, Calendar as CalendarIcon, DollarSign, ChevronDown, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatMoney, fromMinor } from '@/lib/currencyUtils';
 import { format } from 'date-fns';
@@ -132,6 +133,59 @@ export default function Invoices() {
     
     return matchesSearch && matchesStatus && matchesClient && matchesDateFrom && matchesDateTo && matchesMinAmount && matchesMaxAmount;
   });
+
+  const deleteInvoice = async (invoice: InvoiceWithClient) => {
+    try {
+      // Check if invoice has any invoice items
+      const { data: invoiceItems } = await supabase
+        .from('invoice_items')
+        .select('id')
+        .eq('invoice_id', invoice.id);
+
+      if (invoiceItems && invoiceItems.length > 0) {
+        // Delete invoice items first
+        const { error: itemsError } = await supabase
+          .from('invoice_items')
+          .delete()
+          .eq('invoice_id', invoice.id);
+
+        if (itemsError) {
+          toast({
+            title: "Error deleting invoice",
+            description: itemsError.message,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      // Delete the invoice
+      const { error } = await supabase
+        .from('invoices')
+        .delete()
+        .eq('id', invoice.id);
+
+      if (error) {
+        toast({
+          title: "Error deleting invoice",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Invoice deleted",
+          description: "Invoice has been permanently deleted.",
+        });
+        loadInvoices();
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error deleting invoice",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -432,6 +486,36 @@ export default function Invoices() {
                             <Download className="w-4 h-4" />
                           </Button>
                         )}
+
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to permanently delete invoice "{invoice.number || 'Draft'}" for {invoice.client_name}? 
+                                This action cannot be undone and will also delete all associated invoice items.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteInvoice(invoice)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                   </div>
