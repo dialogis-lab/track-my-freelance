@@ -233,15 +233,18 @@ export default function SystemCheck() {
       fromDate.setDate(fromDate.getDate() - 7);
       const toDate = new Date();
       
-      const response = await fetch(`/api/report/csv?from=${fromDate.toISOString()}&to=${toDate.toISOString()}`);
+      const { data, error } = await supabase.functions.invoke('export-csv', {
+        body: { 
+          from: fromDate.toISOString(), 
+          to: toDate.toISOString() 
+        },
+      });
       
-      if (response.ok) {
-        const contentType = response.headers.get('content-type');
-        const contentLength = response.headers.get('content-length');
-        updateCheck('CSV Export', 'success', 'CSV export working', 
-          `Content-Type: ${contentType}\nContent-Length: ${contentLength}`);
+      if (error) {
+        updateCheck('CSV Export', 'error', `CSV export failed: ${error.message}`);
       } else {
-        updateCheck('CSV Export', 'error', `CSV export failed: ${response.status}`, await response.text());
+        updateCheck('CSV Export', 'success', 'CSV export working', 
+          `Response received successfully`);
       }
     } catch (error: any) {
       updateCheck('CSV Export', 'error', 'CSV export request failed', error.message);
@@ -342,11 +345,17 @@ export default function SystemCheck() {
       fromDate.setDate(fromDate.getDate() - 7);
       const toDate = new Date();
       
-      const response = await fetch(`/api/report/csv?from=${fromDate.toISOString()}&to=${toDate.toISOString()}`);
+      const { data, error } = await supabase.functions.invoke('export-csv', {
+        body: { 
+          from: fromDate.toISOString(), 
+          to: toDate.toISOString() 
+        },
+      });
       
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (error) throw error;
       
-      const blob = await response.blob();
+      // Convert the response to a blob and download
+      const blob = new Blob([data], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';

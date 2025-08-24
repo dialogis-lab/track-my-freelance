@@ -94,6 +94,27 @@ export function AppLayout({ children }: AppLayoutProps) {
       <main className="flex-1">
         {children}
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border bg-card">
+        <div className="flex items-center justify-between px-6 py-4">
+          {(import.meta.env.DEV || import.meta.env.VITE_ENABLE_SYSTEM_CHECK === 'true') && user && (
+            <Link 
+              to="/system-check" 
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Dev
+            </Link>
+          )}
+          <div className="flex-1 flex justify-center">
+            <p className="text-sm text-muted-foreground">
+              &copy; 2024 TimeHatch. All rights reserved.
+            </p>
+          </div>
+          {/* Spacer for layout balance */}
+          <div className="w-8"></div>
+        </div>
+      </footer>
     </div>
   );
 }
