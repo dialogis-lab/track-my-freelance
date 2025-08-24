@@ -42,19 +42,6 @@ export function MfaSetupCard() {
       
       if (listError) throw listError;
       
-      // If there's an existing unverified factor, unenroll it first
-      const existingTotp = existingFactors?.totp?.find(f => f.status === 'unverified');
-      if (existingTotp) {
-        console.log('Found existing unverified factor, removing it first');
-        const { error: unenrollError } = await supabase.auth.mfa.unenroll({
-          factorId: existingTotp.id,
-        });
-        if (unenrollError) {
-          console.warn('Could not unenroll existing factor:', unenrollError);
-          // Continue anyway, might be able to use the existing factor
-        }
-      }
-      
       // If there's already a verified factor, show appropriate message
       const verifiedFactor = existingFactors?.totp?.find(f => f.status === 'verified');
       if (verifiedFactor) {
@@ -66,6 +53,18 @@ export function MfaSetupCard() {
         setFactors(existingFactors.totp || []);
         setLoading(false);
         return;
+      }
+      
+      // Clean up ALL existing unverified factors to prevent conflicts
+      const unverifiedFactors = existingFactors?.totp?.filter(f => f.status === 'unverified') || [];
+      for (const factor of unverifiedFactors) {
+        console.log('Removing existing unverified factor:', factor.id);
+        const { error: unenrollError } = await supabase.auth.mfa.unenroll({
+          factorId: factor.id,
+        });
+        if (unenrollError) {
+          console.warn('Could not unenroll existing factor:', unenrollError);
+        }
       }
 
       const { data, error } = await supabase.auth.mfa.enroll({
