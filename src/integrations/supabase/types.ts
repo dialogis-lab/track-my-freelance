@@ -288,6 +288,7 @@ export type Database = {
           created_at: string
           id: string
           logo_url: string | null
+          timer_skin: string
           updated_at: string
           vat_id: string | null
         }
@@ -298,6 +299,7 @@ export type Database = {
           created_at?: string
           id: string
           logo_url?: string | null
+          timer_skin?: string
           updated_at?: string
           vat_id?: string | null
         }
@@ -308,6 +310,7 @@ export type Database = {
           created_at?: string
           id?: string
           logo_url?: string | null
+          timer_skin?: string
           updated_at?: string
           vat_id?: string | null
         }

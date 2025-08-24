@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+import './styles/timer-skins.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { TimerProvider } from '@/contexts/TimerContext'
 import { CookieProvider } from '@/components/CookieProvider'

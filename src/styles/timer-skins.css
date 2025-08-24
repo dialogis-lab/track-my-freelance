@@ -1,0 +1,106 @@
+/* Timer Skins CSS Variables */
+
+.timer-skin-classic {
+  --timer-fg: #0f172a;
+  --timer-bg: #ffffff;
+  --timer-sub: #64748b;
+  --timer-weight: 800;
+  --timer-size: clamp(40px, 8vw, 72px);
+  --timer-shadow: 0 0 0 transparent;
+}
+
+.timer-skin-minimal {
+  --timer-fg: #334155;
+  --timer-bg: #f8fafc;
+  --timer-sub: #94a3b8;
+  --timer-weight: 600;
+  --timer-size: clamp(36px, 7vw, 64px);
+  --timer-shadow: 0 0 0 transparent;
+}
+
+.timer-skin-digital {
+  --timer-fg: #00e676;
+  --timer-bg: #0b1220;
+  --timer-sub: #6ee7b7;
+  --timer-weight: 700;
+  --timer-size: clamp(40px, 8vw, 72px);
+  --timer-shadow: inset 0 0 0 1px rgba(255,255,255,.06), 0 8px 30px rgba(0,0,0,.35);
+}
+
+.timer-skin-gradient {
+  --timer-fg: transparent;
+  --timer-bg: #ffffff;
+  --timer-sub: #22c55e;
+  --timer-weight: 800;
+  --timer-size: clamp(40px, 8vw, 72px);
+  --timer-shadow: 0 0 0 transparent;
+}
+
+/* Timer Display Styles */
+.timer-display {
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: var(--timer-shadow);
+  background-color: var(--timer-bg);
+}
+
+@media (min-width: 768px) {
+  .timer-display {
+    padding: 2rem;
+  }
+}
+
+.timer-digits {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-weight: var(--timer-weight);
+  letter-spacing: -0.025em;
+  font-size: var(--timer-size);
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.1)) drop-shadow(0 1px 1px rgb(0 0 0 / 0.06));
+  color: var(--timer-fg);
+}
+
+.timer-digits.gradient {
+  background: linear-gradient(to right, #3b82f6, #10b981);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.timer-subtext {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--timer-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.timer-subtext-small {
+  font-size: 0.75rem;
+  color: var(--timer-sub);
+  opacity: 0.8;
+}
+
+/* Accessibility - Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .timer-display {
+    transition: none;
+  }
+  
+  .timer-digits {
+    filter: none;
+  }
+}
+
+/* Warning state for 8+ hours */
+.timer-digits.warning {
+  color: #dc2626 !important;
+}
+
+.timer-digits.warning.gradient {
+  background: linear-gradient(to right, #dc2626, #ea580c);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}

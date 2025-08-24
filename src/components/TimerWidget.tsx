@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTimerContext } from '@/contexts/TimerContext';
+import { useTimerSkin } from '@/hooks/useTimerSkin';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Play, Pause, Square } from 'lucide-react';
 import { formatTime, hoursToMinutes, calculateDurationMinutes, formatDuration } from '@/lib/timeUtils';
 
@@ -33,6 +34,7 @@ export function TimerWidget() {
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { triggerTimerUpdate } = useTimerContext();
+  const { timerSkin } = useTimerSkin();
   const { toast } = useToast();
 
   // Load projects and active entry
@@ -190,6 +192,11 @@ export function TimerWidget() {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const getIndustrialHours = (seconds: number) => {
+    const hours = seconds / 3600;
+    return hours.toFixed(2);
+  };
+
 
   const getProjectDisplay = (project: Project) => {
     if (project.clients?.name) {
@@ -202,18 +209,29 @@ export function TimerWidget() {
   const showLongRunningWarning = elapsedTime > 8 * 60 * 60;
 
   return (
-    <Card>
+    <Card data-skin={timerSkin} className={`timer-skin-${timerSkin}`}>
       <CardHeader className="pb-4">
         <CardTitle className="text-xl font-semibold">Time Tracker</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Clean Timer Display */}
-        <div className="flex flex-col items-center justify-center py-12 space-y-3">
+        {/* Timer Display with Skin Support */}
+        <div className="flex flex-col items-center justify-center py-12 space-y-4">
           {/* Main Timer Display */}
-          <div className="font-mono font-bold tracking-wider text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-primary">
-            {formatTimeDisplay(elapsedTime)}
+          <div className="timer-display">
+            <div className={`timer-digits ${timerSkin === 'gradient' ? 'gradient' : ''} ${showLongRunningWarning ? 'warning' : ''}`}>
+              {formatTimeDisplay(elapsedTime)}
+            </div>
           </div>
           
+          {/* Subtext */}
+          <div className="flex flex-col items-center space-y-1">
+            <div className="timer-subtext">
+              Elapsed Time
+            </div>
+            <div className="timer-subtext-small">
+              = {getIndustrialHours(elapsedTime)}h
+            </div>
+          </div>
         </div>
 
         {/* Long Running Warning */}
