@@ -248,7 +248,7 @@ export function ProfileForm() {
           Company Profile
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         {/* Logo Upload */}
         <div className="space-y-2">
           <Label>Company Logo</Label>
@@ -258,20 +258,20 @@ export function ProfileForm() {
                 <img
                   src={logoPreview}
                   alt="Company logo"
-                  className="w-16 h-16 object-contain bg-muted rounded-lg p-2"
+                  className="w-12 h-12 object-contain bg-muted rounded p-1"
                 />
                 <Button
                   variant="destructive"
                   size="sm"
-                  className="absolute -top-1 -right-1 w-5 h-5 p-0"
+                  className="absolute -top-1 -right-1 w-4 h-4 p-0"
                   onClick={removeLogo}
                 >
-                  <X className="w-3 h-3" />
+                  <X className="w-2 h-2" />
                 </Button>
               </div>
             ) : (
-              <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-muted-foreground" />
+              <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-muted-foreground" />
               </div>
             )}
             
@@ -286,10 +286,10 @@ export function ProfileForm() {
               />
               <Label
                 htmlFor="logo-upload"
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 py-2 cursor-pointer"
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 cursor-pointer"
               >
-                <Upload className="w-4 h-4 mr-2" />
-                {uploading ? 'Uploading...' : 'Upload Logo'}
+                <Upload className="w-3 h-3 mr-1" />
+                {uploading ? 'Uploading...' : 'Upload'}
               </Label>
               <p className="text-xs text-muted-foreground mt-1">
                 PNG, JPG or SVG, max 1MB
@@ -298,15 +298,30 @@ export function ProfileForm() {
           </div>
         </div>
 
-        {/* Company Name */}
-        <div className="space-y-2">
-          <Label htmlFor="company-name">Company Name</Label>
-          <Input
-            id="company-name"
-            value={profile.company_name || ''}
-            onChange={(e) => setProfile({ ...profile, company_name: e.target.value })}
-            placeholder="Your Company Name"
-          />
+        <div className="grid grid-cols-2 gap-3">
+          {/* Company Name */}
+          <div className="space-y-2">
+            <Label htmlFor="company-name">Company Name</Label>
+            <Input
+              id="company-name"
+              value={profile.company_name || ''}
+              onChange={(e) => setProfile({ ...profile, company_name: e.target.value })}
+              placeholder="Your Company Name"
+              className="text-sm"
+            />
+          </div>
+
+          {/* VAT ID */}
+          <div className="space-y-2">
+            <Label htmlFor="vat-id">VAT ID</Label>
+            <Input
+              id="vat-id"
+              value={profile.vat_id || ''}
+              onChange={(e) => setProfile({ ...profile, vat_id: e.target.value })}
+              placeholder="VAT123456789"
+              className="text-sm"
+            />
+          </div>
         </div>
 
         {/* Address */}
@@ -322,17 +337,6 @@ export function ProfileForm() {
           />
         </div>
 
-        {/* VAT ID */}
-        <div className="space-y-2">
-          <Label htmlFor="vat-id">VAT ID</Label>
-          <Input
-            id="vat-id"
-            value={profile.vat_id || ''}
-            onChange={(e) => setProfile({ ...profile, vat_id: e.target.value })}
-            placeholder="VAT123456789"
-          />
-        </div>
-
         {/* Bank Details */}
         <div className="space-y-2">
           <Label htmlFor="bank-details">Bank Details</Label>
@@ -340,7 +344,7 @@ export function ProfileForm() {
             id="bank-details"
             value={profile.bank_details || ''}
             onChange={(e) => setProfile({ ...profile, bank_details: e.target.value })}
-            placeholder="Bank name, account number, routing information, etc."
+            placeholder="Bank name, account details, etc."
             rows={2}
             className="text-sm"
           />
