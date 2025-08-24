@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ProfileForm } from '@/components/ProfileForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/AppLayout';
 import { MfaSetupCard } from '@/components/MfaSetupCard';
@@ -136,6 +137,12 @@ export default function Settings() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Profile */}
+          <div className="lg:col-span-2">
+            <h2 className="text-xl font-semibold mb-4">Company Profile</h2>
+            <ProfileForm />
+          </div>
+
           {/* Account Information */}
           <Card>
             <CardHeader>

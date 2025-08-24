@@ -208,6 +208,39 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          address: string | null
+          bank_details: string | null
+          company_name: string | null
+          created_at: string
+          id: string
+          logo_url: string | null
+          updated_at: string
+          vat_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          bank_details?: string | null
+          company_name?: string | null
+          created_at?: string
+          id: string
+          logo_url?: string | null
+          updated_at?: string
+          vat_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          bank_details?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          updated_at?: string
+          vat_id?: string | null
+        }
+        Relationships: []
+      }
       projects: {
         Row: {
           archived: boolean

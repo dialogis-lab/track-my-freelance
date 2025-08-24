@@ -31,6 +31,14 @@ interface TimeEntry {
   };
 }
 
+interface Profile {
+  company_name: string | null;
+  address: string | null;
+  vat_id: string | null;
+  bank_details: string | null;
+  logo_url: string | null;
+}
+
 interface InvoiceWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -51,10 +59,12 @@ export function InvoiceWizard({ open, onOpenChange, clientId, clientName }: Invo
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'setup' | 'preview'>('setup');
+  const [profile, setProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
     if (open && user) {
       loadProjects();
+      loadProfile();
     }
   }, [open, user, clientId]);
 
@@ -75,6 +85,20 @@ export function InvoiceWizard({ open, onOpenChange, clientId, clientName }: Invo
     }
 
     setProjects(data || []);
+  };
+
+  const loadProfile = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('company_name, address, vat_id, bank_details, logo_url')
+      .eq('id', user!.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error loading profile:', error);
+    } else if (data) {
+      setProfile(data);
+    }
   };
 
   const generatePreview = async () => {
@@ -305,10 +329,60 @@ export function InvoiceWizard({ open, onOpenChange, clientId, clientName }: Invo
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-lg font-semibold">To: {clientName}</div>
-                <div className="text-sm text-muted-foreground">
-                  Period: {dateRange.start} to {dateRange.end}
+                <div className="flex justify-between items-start mb-6">
+                  {/* Company Info */}
+                  <div className="flex items-start space-x-4">
+                    {profile?.logo_url ? (
+                      <img
+                        src={profile.logo_url}
+                        alt="Company logo"
+                        className="w-16 h-10 object-contain"
+                      />
+                    ) : (
+                      <div className="w-16 h-10 bg-muted rounded flex items-center justify-center">
+                        <span className="text-xs font-bold text-muted-foreground">LOGO</span>
+                      </div>
+                    )}
+                    <div>
+                      <div className="font-bold text-lg">{profile?.company_name || 'Your Company'}</div>
+                      {profile?.address && (
+                        <div className="text-sm text-muted-foreground whitespace-pre-line">
+                          {profile.address}
+                        </div>
+                      )}
+                      {profile?.vat_id && (
+                        <div className="text-sm text-muted-foreground">VAT: {profile.vat_id}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Invoice Details */}
+                  <div className="text-right">
+                    <div className="text-lg font-semibold">INVOICE</div>
+                    <div className="text-sm text-muted-foreground">
+                      Date: {new Date().toLocaleDateString()}
+                    </div>
+                  </div>
                 </div>
+
+                {/* Client Info */}
+                <div className="border-t pt-4">
+                  <div className="text-lg font-semibold">Bill To:</div>
+                  <div className="text-lg">{clientName}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Period: {dateRange.start} to {dateRange.end}
+                  </div>
+                </div>
+
+                {/* Bank Details */}
+                {profile?.bank_details && (
+                  <div className="mt-4 p-3 bg-muted rounded-lg">
+                    <div className="text-sm font-medium">Payment Details:</div>
+                    <div className="text-sm text-muted-foreground whitespace-pre-line">
+                      {profile.bank_details}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
