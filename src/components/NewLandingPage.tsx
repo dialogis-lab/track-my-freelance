@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import LeadForm from "./LeadForm";
 import { Link } from "react-router-dom";
+import { useCookieContext } from "@/components/CookieProvider";
 import {
   Accordion,
   AccordionContent,
@@ -11,6 +12,8 @@ import {
 } from "@/components/ui/accordion";
 
 const NewLandingPage = () => {
+  const { openModal } = useCookieContext();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation Header */}
@@ -361,6 +364,12 @@ const NewLandingPage = () => {
               <Link to="/imprint" className="text-muted-foreground hover:text-foreground transition-colors">
                 Legal Notice
               </Link>
+              <button 
+                onClick={openModal}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Cookie Settings
+              </button>
               <a href="mailto:hello@timehatch.app" className="text-muted-foreground hover:text-foreground transition-colors">
                 Contact
               </a>

@@ -65,7 +65,17 @@
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
 
-      gtag('config', 'G-FR7BLPXQRQ');
+      // Initialize with consent mode
+      gtag('consent', 'default', {
+        'analytics_storage': 'denied',
+        'ad_storage': 'denied',
+        'functionality_storage': 'granted'
+      });
+
+      gtag('config', 'G-FR7BLPXQRQ', {
+        'anonymize_ip': true,
+        'cookie_flags': 'samesite=strict;secure'
+      });
     </script>
   </head>
 
