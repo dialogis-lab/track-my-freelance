@@ -12,7 +12,8 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Bell, Clock, User, Shield } from 'lucide-react';
+import { Bell, Clock, User, Shield, DollarSign } from 'lucide-react';
+import { Currency, CURRENCIES, formatMoney, toMinor } from '@/lib/currencyUtils';
 
 interface Reminder {
   id: string;
@@ -28,6 +29,7 @@ export default function Settings() {
     hour_local: 9,
     enabled: true,
   });
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>('USD');
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -35,8 +37,25 @@ export default function Settings() {
   useEffect(() => {
     if (user) {
       loadReminder();
+      loadCurrency();
     }
   }, [user]);
+
+  const loadCurrency = () => {
+    const stored = localStorage.getItem('timehatch-currency');
+    if (stored && CURRENCIES.includes(stored as Currency)) {
+      setSelectedCurrency(stored as Currency);
+    }
+  };
+
+  const saveCurrency = (currency: Currency) => {
+    setSelectedCurrency(currency);
+    localStorage.setItem('timehatch-currency', currency);
+    toast({
+      title: "Currency updated",
+      description: `Currency has been changed to ${currency}`,
+    });
+  };
 
   const loadReminder = async () => {
     const { data, error } = await supabase
@@ -229,6 +248,46 @@ export default function Settings() {
               <Button onClick={saveReminder} disabled={loading} className="w-full">
                 Save Reminder Settings
               </Button>
+            </CardContent>
+          </Card>
+
+          {/* Currency Settings */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <DollarSign className="w-5 h-5" />
+                <CardTitle>Currency Settings</CardTitle>
+              </div>
+              <CardDescription>
+                Choose your preferred currency for reports and invoicing.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Preferred Currency</Label>
+                <Select
+                  value={selectedCurrency}
+                  onValueChange={(value: Currency) => saveCurrency(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CURRENCIES.map((currency) => (
+                      <SelectItem key={currency} value={currency}>
+                        {currency} - {formatMoney(toMinor(100, currency), currency)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="bg-muted/50 rounded-lg p-3">
+                <p className="text-sm text-muted-foreground">
+                  <DollarSign className="w-4 h-4 inline mr-2" />
+                  Example: {formatMoney(toMinor(85.50, selectedCurrency), selectedCurrency)} for 1.5 hours at {formatMoney(toMinor(57, selectedCurrency), selectedCurrency)}/hour
+                </p>
+              </div>
             </CardContent>
           </Card>
 
