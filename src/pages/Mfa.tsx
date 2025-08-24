@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -110,6 +110,18 @@ export default function Mfa() {
       return false;
     }
   };
+
+  const handleTotpChange = useCallback((value: string) => {
+    setTotpCode(value.replace(/\D/g, '').slice(0, 6));
+  }, []);
+
+  const handleRecoveryChange = useCallback((value: string) => {
+    setRecoveryCode(value.toUpperCase().replace(/[^A-Z0-9]/g, ''));
+  }, []);
+
+  const isFormReady = useMemo(() => {
+    return challengeId && factorId && initialized;
+  }, [challengeId, factorId, initialized]);
 
   const handleTotpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -303,10 +315,13 @@ export default function Mfa() {
                       type="text"
                       placeholder="Enter 6-digit code"
                       value={totpCode}
-                      onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      onChange={(e) => handleTotpChange(e.target.value)}
                       maxLength={6}
                       className="text-center text-lg tracking-widest font-mono"
-                      disabled={loading}
+                      disabled={loading || !isFormReady}
+                      autoComplete="off"
+                      autoCorrect="off"
+                      spellCheck="false"
                     />
                     <p className="text-xs text-muted-foreground text-center">
                       Open your authenticator app and enter the 6-digit code.
@@ -315,7 +330,7 @@ export default function Mfa() {
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    disabled={loading || totpCode.length !== 6}
+                    disabled={loading || totpCode.length !== 6 || !isFormReady}
                   >
                     {loading ? "Verifying..." : "Verify"}
                   </Button>
@@ -338,9 +353,12 @@ export default function Mfa() {
                       type="text"
                       placeholder="Enter recovery code"
                       value={recoveryCode}
-                      onChange={(e) => setRecoveryCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                      onChange={(e) => handleRecoveryChange(e.target.value)}
                       className="text-center font-mono"
-                      disabled={loading}
+                      disabled={loading || !isFormReady}
+                      autoComplete="off"
+                      autoCorrect="off"
+                      spellCheck="false"
                     />
                     <p className="text-xs text-muted-foreground text-center">
                       Each recovery code can only be used once.
@@ -349,7 +367,7 @@ export default function Mfa() {
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    disabled={loading || !recoveryCode}
+                    disabled={loading || !recoveryCode || !isFormReady}
                   >
                     {loading ? "Verifying..." : "Use Recovery Code"}
                   </Button>
