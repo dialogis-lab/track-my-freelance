@@ -5,7 +5,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { TimerWidget } from '@/components/TimerWidget';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, FolderOpen, Users, TrendingUp } from 'lucide-react';
-import { formatTime, hoursToMinutes, calculateDurationMinutes } from '@/lib/timeUtils';
+import { formatTime, hoursToMinutes, calculateDurationMinutes, formatDuration } from '@/lib/timeUtils';
 
 interface DashboardStats {
   totalProjects: number;
@@ -128,7 +128,7 @@ export default function Dashboard() {
     }
   };
 
-  const formatDuration = (start: string, end: string | null) => {
+  const formatEntryDuration = (start: string, end: string | null) => {
     if (!end) return "Running...";
     
     const startTime = new Date(start);
@@ -231,10 +231,16 @@ export default function Dashboard() {
                         </p>
                       </div>
                       <div className="text-sm font-mono">
-                        <div>{formatTime(calculateDurationMinutes(new Date(entry.started_at), entry.stopped_at ? new Date(entry.stopped_at) : undefined))}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {formatTime(calculateDurationMinutes(new Date(entry.started_at), entry.stopped_at ? new Date(entry.stopped_at) : undefined), true).split(' (')[1]?.replace(')', '') || '0.00h'}
-                        </div>
+                        {(() => {
+                          const minutes = calculateDurationMinutes(new Date(entry.started_at), entry.stopped_at ? new Date(entry.stopped_at) : undefined);
+                          const duration = formatDuration(minutes);
+                          return (
+                            <>
+                              <div className="font-bold">{duration.normal}</div>
+                              <div className="text-xs text-muted-foreground">= {duration.industrial}h</div>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                   ))

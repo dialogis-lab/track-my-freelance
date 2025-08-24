@@ -1,3 +1,11 @@
+export function formatDuration(minutes: number) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  const normal = h > 0 ? `${h}h ${m}m` : `${m}m`;
+  const industrial = (minutes / 60).toFixed(2); // e.g. 1.75
+  return { normal, industrial };
+}
+
 /**
  * Formats time duration with dual display options
  * @param minutes - Duration in minutes

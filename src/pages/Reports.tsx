@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/components/ui/use-toast';
 import { Download, FileText, FileSpreadsheet } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { formatTime, calculateDurationMinutes, formatTimeForCSV } from '@/lib/timeUtils';
+import { formatTime, calculateDurationMinutes, formatTimeForCSV, formatDuration } from '@/lib/timeUtils';
 
 interface TimeEntry {
   id: string;
@@ -370,7 +370,8 @@ export default function Reports() {
               <CardTitle>Total Hours</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{formatTime(Math.round(summary.totalHours * 60))} <span className="text-sm text-muted-foreground">({summary.totalHours.toFixed(2)}h)</span></div>
+              <div className="text-3xl font-bold">{formatDuration(Math.round(summary.totalHours * 60)).normal}</div>
+              <div className="text-sm text-muted-foreground">= {formatDuration(Math.round(summary.totalHours * 60)).industrial}h</div>
             </CardContent>
           </Card>
 
@@ -477,8 +478,8 @@ export default function Reports() {
                   <div key={project} className="flex justify-between items-center py-2 border-b border-border last:border-0">
                     <span className="font-medium">{project}</span>
                     <div className="text-right">
-                      <div className="text-sm">{formatTime(Math.round(data.hours * 60))}</div>
-                      <div className="text-xs text-muted-foreground">({data.hours.toFixed(2)}h) • ${data.value.toFixed(2)}</div>
+                      <div className="text-sm font-bold">{formatDuration(Math.round(data.hours * 60)).normal}</div>
+                      <div className="text-xs text-muted-foreground">= {formatDuration(Math.round(data.hours * 60)).industrial}h • ${data.value.toFixed(2)}</div>
                     </div>
                   </div>
                 ))}
@@ -499,8 +500,8 @@ export default function Reports() {
                   <div key={client} className="flex justify-between items-center py-2 border-b border-border last:border-0">
                     <span className="font-medium">{client}</span>
                     <div className="text-right">
-                      <div className="text-sm">{formatTime(Math.round(data.hours * 60))}</div>
-                      <div className="text-xs text-muted-foreground">({data.hours.toFixed(2)}h) • ${data.value.toFixed(2)}</div>
+                      <div className="text-sm font-bold">{formatDuration(Math.round(data.hours * 60)).normal}</div>
+                      <div className="text-xs text-muted-foreground">= {formatDuration(Math.round(data.hours * 60)).industrial}h • ${data.value.toFixed(2)}</div>
                     </div>
                   </div>
                 ))}
@@ -546,9 +547,9 @@ export default function Reports() {
                         <td className="p-2">{entry.projects.clients?.name || 'No Client'}</td>
                         <td className="p-2">
                           <div className="font-mono">
-                            <div>{formatTime(minutes)}</div>
+                            <div className="font-bold">{formatDuration(minutes).normal}</div>
                             <div className="text-xs text-muted-foreground">
-                              {(minutes / 60).toFixed(2)}h
+                              = {formatDuration(minutes).industrial}h
                             </div>
                           </div>
                         </td>

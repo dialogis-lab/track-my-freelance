@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { Play, Pause, Square } from 'lucide-react';
-import { formatTime, hoursToMinutes, calculateDurationMinutes } from '@/lib/timeUtils';
+import { formatTime, hoursToMinutes, calculateDurationMinutes, formatDuration } from '@/lib/timeUtils';
 
 interface Project {
   id: string;

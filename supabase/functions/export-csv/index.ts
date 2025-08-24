@@ -36,10 +36,20 @@ const calculateDurationMinutes = (startDate: Date, endDate?: Date): number => {
   return Math.round(diffMs / (1000 * 60));
 };
 
+// Add formatDuration function for dual time format display
+const formatDuration = (minutes: number) => {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  const normal = h > 0 ? `${h}h ${m}m` : `${m}m`;
+  const industrial = (minutes / 60).toFixed(2); // e.g. 1.75
+  return { normal, industrial };
+};
+
 const formatTimeForCSV = (minutes: number): { duration_hm: string; duration_decimal: string } => {
+  const duration = formatDuration(minutes);
   return {
-    duration_hm: formatTime(minutes, false),
-    duration_decimal: `${(minutes / 60).toFixed(2)}h`
+    duration_hm: duration.normal,
+    duration_decimal: `${duration.industrial}h`
   };
 };
 
