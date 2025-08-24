@@ -124,17 +124,21 @@ export function TotpQr({ setupData, onVerified, onCancel }: TotpQrProps) {
 
       <div className="text-center">
         <div className="bg-white p-4 rounded-lg inline-block border">
-          {setupData.qr_code.startsWith('data:') ? (
+          {setupData.qr_code && setupData.qr_code.startsWith('data:') ? (
             <img 
               src={setupData.qr_code}
               alt="QR Code for TOTP setup"
               className="w-48 h-48"
             />
-          ) : (
+          ) : setupData.qr_code ? (
             <div 
               dangerouslySetInnerHTML={{ __html: setupData.qr_code }}
               className="w-48 h-48 flex items-center justify-center"
             />
+          ) : (
+            <div className="w-48 h-48 flex items-center justify-center bg-gray-100 text-gray-500">
+              QR Code not available
+            </div>
           )}
         </div>
       </div>

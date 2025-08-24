@@ -75,6 +75,7 @@ export function MfaSetupCard() {
 
       if (error) throw error;
 
+      console.log('MFA enrollment data:', data); // Debug log
       setSetupData(data);
       setShowSetup(true);
       
