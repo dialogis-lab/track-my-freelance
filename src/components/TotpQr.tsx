@@ -22,12 +22,30 @@ export function TotpQr({ setupData, onVerified, onCancel }: TotpQrProps) {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  // Add comprehensive null safety checks
+  if (!setupData || !setupData.id || !setupData.secret) {
+    return (
+      <div className="space-y-6">
+        <Alert>
+          <AlertDescription>
+            Unable to load MFA setup data. Please try again.
+          </AlertDescription>
+        </Alert>
+        <Button onClick={onCancel} className="w-full">
+          Go Back
+        </Button>
+      </div>
+    );
+  }
+
   const handleCopySecret = () => {
-    navigator.clipboard.writeText(setupData.secret);
-    toast({
-      title: "Copied",
-      description: "Secret key copied to clipboard.",
-    });
+    if (setupData?.secret) {
+      navigator.clipboard.writeText(setupData.secret);
+      toast({
+        title: "Copied",
+        description: "Secret key copied to clipboard.",
+      });
+    }
   };
 
   const generateRecoveryCodes = (): string[] => {
@@ -124,19 +142,21 @@ export function TotpQr({ setupData, onVerified, onCancel }: TotpQrProps) {
 
       <div className="text-center">
         <div className="bg-white p-4 rounded-lg inline-block border">
-          {setupData.qr_code && setupData.qr_code.startsWith('data:') ? (
-            <img 
-              src={setupData.qr_code}
-              alt="QR Code for TOTP setup"
-              className="w-48 h-48"
-            />
-          ) : setupData.qr_code ? (
-            <div 
-              dangerouslySetInnerHTML={{ __html: setupData.qr_code }}
-              className="w-48 h-48 flex items-center justify-center"
-            />
+          {setupData.qr_code ? (
+            setupData.qr_code.includes('data:') ? (
+              <img 
+                src={setupData.qr_code}
+                alt="QR Code for TOTP setup"
+                className="w-48 h-48"
+              />
+            ) : (
+              <div 
+                dangerouslySetInnerHTML={{ __html: setupData.qr_code }}
+                className="w-48 h-48 flex items-center justify-center"
+              />
+            )
           ) : (
-            <div className="w-48 h-48 flex items-center justify-center bg-gray-100 text-gray-500">
+            <div className="w-48 h-48 flex items-center justify-center bg-gray-100 text-gray-500 border rounded">
               QR Code not available
             </div>
           )}
@@ -148,7 +168,7 @@ export function TotpQr({ setupData, onVerified, onCancel }: TotpQrProps) {
         <div className="flex gap-2">
           <Input
             id="secret"
-            value={setupData.secret}
+            value={setupData.secret || ''}
             readOnly
             className="font-mono text-sm"
           />

@@ -76,7 +76,21 @@ export function MfaSetupCard() {
       if (error) throw error;
 
       console.log('MFA enrollment data:', data); // Debug log
-      setSetupData(data);
+      
+      // Validate the enrollment data before proceeding
+      if (!data || !data.id || !data.totp || !data.totp.secret || !data.totp.qr_code) {
+        throw new Error('Invalid MFA enrollment data received from Supabase');
+      }
+      
+      // Transform the data structure for the TotpQr component
+      const transformedData = {
+        id: data.id,
+        secret: data.totp.secret,
+        qr_code: data.totp.qr_code,
+        uri: data.totp.uri
+      };
+      
+      setSetupData(transformedData);
       setShowSetup(true);
       
       toast({
