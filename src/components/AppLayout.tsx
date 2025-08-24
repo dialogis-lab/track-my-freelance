@@ -29,7 +29,9 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Top Navigation */}
       <header className="border-b border-border bg-card min-h-[3.5rem]">
         <div className="flex h-16 items-center justify-between px-6">
-          <BrandLogo size="md" />
+          <div className="ml-2">
+            <BrandLogo size="md" showWordmark />
+          </div>
 
           <nav className="hidden md:flex items-center space-x-6">
             {navigation.map((item) => {

@@ -20,8 +20,10 @@ const NewLandingPage = () => {
       {/* Navigation Header */}
       <nav className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <BrandLogo size="md" />
+          <div className="flex items-center justify-between min-h-[3rem]">
+            <div className="ml-2">
+              <BrandLogo size="md" showWordmark />
+            </div>
             
             <div className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
@@ -36,7 +38,7 @@ const NewLandingPage = () => {
       <section className="pt-20 pb-32 bg-gradient-to-br from-muted/30 to-background">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-4xl mx-auto">
-            <div className="mb-6">
+            <div className="mb-6 flex justify-center">
               <BrandLogo size="xl" noLink />
             </div>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
@@ -342,9 +344,11 @@ const NewLandingPage = () => {
       <footer className="py-16 bg-muted/30 border-t border-border/50">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto">
-            <div className="flex items-center justify-center space-x-3 mb-6">
-              <BrandLogo size="sm" noLink />
-              <span className="text-xl font-bold text-foreground">Simple time tracking for freelancers</span>
+            <div className="flex items-center justify-center space-x-4 mb-6">
+              <BrandLogo size="sm" noLink className="h-8" />
+              <span className="text-lg font-medium text-foreground">
+                TimeHatch – Simple time tracking for freelancers and small teams.
+              </span>
             </div>
             
             <h3 className="text-2xl font-bold text-foreground mb-4">Coming Soon</h3>
