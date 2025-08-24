@@ -29,9 +29,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Check if MFA is required after successful login
+        // Check if MFA is required after successful login, but don't block loading
         if (session?.user && event === 'SIGNED_IN') {
-          await checkMfaRequired(session);
+          // Don't await this - let it run in background
+          checkMfaRequired(session).catch(console.error);
         } else {
           setNeedsMfa(false);
         }
@@ -47,9 +48,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       
-      // Check if MFA is required for existing session
+      // Check if MFA is required for existing session, but don't block loading
       if (session?.user) {
-        await checkMfaRequired(session);
+        // Don't await this - let it run in background  
+        checkMfaRequired(session).catch(console.error);
       } else {
         setNeedsMfa(false);
       }
