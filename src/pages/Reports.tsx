@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface TimeEntry {
   id: string;
@@ -398,6 +399,66 @@ export default function Reports() {
             <FileText className="w-4 h-4 mr-2" />
             Export PDF
           </Button>
+        </div>
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Hours by Project</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {Object.keys(summary.byProject).length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={Object.entries(summary.byProject).map(([name, data]) => ({
+                    name,
+                    hours: data.hours
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="hours" fill="hsl(var(--primary))" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                  No data for selected period
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Hours by Client</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {Object.keys(summary.byClient).length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={Object.entries(summary.byClient).map(([name, data], index) => ({
+                        name,
+                        hours: data.hours,
+                        fill: `hsl(${index * 137.5 % 360}, 70%, 50%)`
+                      }))}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      dataKey="hours"
+                      label={({ name, hours }) => `${name}: ${hours.toFixed(1)}h`}
+                    />
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                  No data for selected period
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Breakdown Tables */}

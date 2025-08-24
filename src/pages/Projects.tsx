@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
-import { Plus, Archive, Edit2, ArchiveRestore } from 'lucide-react';
+import { Plus, Archive, Edit2, ArchiveRestore, Play, Square } from 'lucide-react';
 
 interface Client {
   id: string;
@@ -38,6 +38,7 @@ export default function Projects() {
     rate_hour: ''
   });
   const [loading, setLoading] = useState(false);
+  const [activeTimer, setActiveTimer] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -45,8 +46,21 @@ export default function Projects() {
     if (user) {
       loadProjects();
       loadClients();
+      checkActiveTimer();
     }
   }, [user]);
+
+  const checkActiveTimer = async () => {
+    const { data } = await supabase
+      .from('time_entries')
+      .select('project_id')
+      .is('stopped_at', null)
+      .single();
+    
+    if (data) {
+      setActiveTimer(data.project_id);
+    }
+  };
 
   const loadProjects = async () => {
     const { data, error } = await supabase
@@ -163,6 +177,63 @@ export default function Projects() {
     setIsDialogOpen(true);
   };
 
+  const startTimerForProject = async (projectId: string) => {
+    if (activeTimer) {
+      toast({
+        title: "Timer already running",
+        description: "Please stop the current timer before starting a new one.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { error } = await supabase
+      .from('time_entries')
+      .insert([{
+        project_id: projectId,
+        user_id: user!.id,
+        started_at: new Date().toISOString()
+      }]);
+
+    if (error) {
+      toast({
+        title: "Error starting timer",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setActiveTimer(projectId);
+      toast({
+        title: "Timer started",
+        description: "Timer has been started for this project.",
+      });
+    }
+  };
+
+  const stopTimer = async () => {
+    if (!activeTimer) return;
+
+    const { error } = await supabase
+      .from('time_entries')
+      .update({ stopped_at: new Date().toISOString() })
+      .is('stopped_at', null)
+      .eq('project_id', activeTimer);
+
+    if (error) {
+      toast({
+        title: "Error stopping timer",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setActiveTimer(null);
+      toast({
+        title: "Timer stopped",
+        description: "Timer has been stopped.",
+      });
+    }
+  };
+
   const activeProjects = projects.filter(p => !p.archived);
   const archivedProjects = projects.filter(p => p.archived);
 
@@ -266,6 +337,24 @@ export default function Projects() {
                       <CardTitle className="flex items-center justify-between">
                         <span className="truncate">{project.name}</span>
                         <div className="flex space-x-1">
+                          {activeTimer === project.id ? (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={stopTimer}
+                            >
+                              <Square className="w-4 h-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => startTimerForProject(project.id)}
+                              disabled={!!activeTimer}
+                            >
+                              <Play className="w-4 h-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
