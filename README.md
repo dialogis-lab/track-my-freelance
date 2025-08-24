@@ -1,73 +1,177 @@
-# Welcome to your Lovable project
+# TimeHatch
 
-## Project info
+TimeHatch is a simple, modern time tracking SaaS for freelancers and small teams. Track time per project and client, manage projects, generate reports, and export data.
 
-**URL**: https://lovable.dev/projects/61e38902-73dc-4830-a061-0602c271cc71
+## Features
 
-## How can I edit this code?
+- **Simple Time Tracking**: Start/stop timer with project selection and notes
+- **Project & Client Management**: Organize work by clients and projects
+- **Reports & Analytics**: View time spent per project/client with filtering
+- **Data Export**: Export reports to CSV and PDF formats
+- **Authentication**: Email/password and Google OAuth sign-in
+- **Responsive Design**: Works seamlessly on desktop and mobile
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- **Frontend**: React + TypeScript + Vite + Tailwind CSS
+- **Backend**: Supabase (Auth, Database, Realtime)
+- **UI Components**: shadcn/ui
+- **Routing**: React Router
+- **State Management**: React Query (TanStack Query)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/61e38902-73dc-4830-a061-0602c271cc71) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Node.js 18+ and npm/yarn/bun
+- Supabase account and project
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Environment Setup
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. Copy `.env.example` to `.env`:
+```bash
+cp .env.example .env
+```
 
-Follow these steps:
+2. Update the environment variables:
+```env
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Installation
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+```bash
+# Install dependencies
+npm install
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The app will be available at `http://localhost:3000`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Supabase Setup
 
-**Use GitHub Codespaces**
+### Database Schema
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+The app uses the following tables:
+- `leads` - Email signups from landing page
+- `clients` - Client management
+- `projects` - Project management with client relationships
+- `time_entries` - Time tracking entries
+- `reminders` - Email reminder settings
 
-## What technologies are used for this project?
+### Enable Google OAuth in Supabase
 
-This project is built with:
+To enable Google sign-in, follow these steps in your Supabase dashboard:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+1. **Configure Google OAuth Provider**:
+   - Go to Authentication → Providers → Google
+   - Enable the Google provider
+   - Add your Google OAuth Client ID and Client Secret
 
-## How can I deploy this project?
+2. **Set Up Google Cloud Console**:
+   - Create a project in [Google Cloud Console](https://console.cloud.google.com)
+   - Enable the Google+ API
+   - Create OAuth 2.0 credentials (Web application)
+   - Add authorized JavaScript origins:
+     - `https://timehatch.app` (production)
+     - `http://localhost:3000` (development)
+   - Add authorized redirect URIs:
+     - `https://ollbuhgghkporvzmrzau.supabase.co/auth/v1/callback` (Supabase callback)
 
-Simply open [Lovable](https://lovable.dev/projects/61e38902-73dc-4830-a061-0602c271cc71) and click on Share -> Publish.
+3. **Configure Supabase URLs**:
+   - Go to Authentication → URL Configuration
+   - Set Site URL: `https://timehatch.app` (production) or `http://localhost:3000` (development)
+   - Add Redirect URLs:
+     - `https://timehatch.app/auth/callback`
+     - `http://localhost:3000/auth/callback`
 
-## Can I connect a custom domain to my Lovable project?
+4. **Row Level Security (RLS)**:
+   - All tables have RLS enabled
+   - Policies ensure users can only access their own data
+   - User ID is automatically set from `auth.uid()`
 
-Yes, you can!
+### Authentication Flow
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+1. **Email/Password**: Standard sign-up and sign-in flow
+2. **Google OAuth**: 
+   - User clicks "Continue with Google" 
+   - Redirected to Google for authorization
+   - Returns to `/auth/callback` for session exchange
+   - Redirected to `/dashboard` on success
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Deployment
+
+### Production Environment
+
+Update your production environment variables:
+```env
+NEXT_PUBLIC_SITE_URL=https://timehatch.app
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### Build
+
+```bash
+# Build for production
+npm run build
+
+# Preview production build locally
+npm run preview
+```
+
+## Project Structure
+
+```
+src/
+├── components/          # Reusable UI components
+│   ├── ui/             # shadcn/ui components
+│   ├── BrandLogo.tsx   # Logo component
+│   ├── AppLayout.tsx   # Main app layout
+│   └── ...
+├── contexts/           # React contexts
+│   └── AuthContext.tsx # Authentication context
+├── hooks/              # Custom React hooks
+├── integrations/       # External service integrations
+│   └── supabase/       # Supabase client and types
+├── pages/              # Page components
+│   ├── Login.tsx       # Login page
+│   ├── Register.tsx    # Registration page
+│   ├── Dashboard.tsx   # Main dashboard
+│   └── ...
+└── lib/                # Utility functions
+```
+
+## Key Features Implementation
+
+### Time Tracking
+- Real-time timer with start/stop functionality
+- Manual time entry support
+- Project and notes association
+- Automatic time calculations
+
+### Project Management
+- CRUD operations for clients and projects
+- Archive functionality
+- Hourly rate tracking per project
+- Client-project relationships
+
+### Reports & Analytics
+- Time entries filtered by date range
+- Grouping by client/project
+- Export to CSV and PDF
+- Visual charts and summaries
+
+### Authentication & Security
+- Supabase Auth with email/password and Google OAuth
+- Row Level Security (RLS) policies
+- Protected routes and automatic redirects
+- Session persistence and auto-refresh
+
+---
+
+*Powered by [Lovable](https://lovable.dev) - Create amazing apps with AI*
