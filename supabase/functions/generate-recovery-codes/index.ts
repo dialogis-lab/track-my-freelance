@@ -72,6 +72,17 @@ serve(async (req) => {
       throw insertError;
     }
 
+    // Log the recovery codes regeneration
+    await supabase
+      .from('audit_logs')
+      .insert({
+        user_id: user.id,
+        event_type: 'recovery_codes_regenerated',
+        details: { codes_count: codes.length },
+        ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
+        user_agent: req.headers.get('user-agent') || 'unknown'
+      });
+
     return new Response(
       JSON.stringify({ codes }),
       { 

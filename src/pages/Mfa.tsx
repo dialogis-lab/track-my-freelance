@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
@@ -20,9 +21,38 @@ export default function Mfa() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const [rememberDevice, setRememberDevice] = useState(false);
+
   useEffect(() => {
     checkMfaChallenge();
+    checkTrustedDevice();
   }, []);
+
+  const checkTrustedDevice = async () => {
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) return;
+
+      const response = await fetch('/api/check-trusted-device', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.session.access_token}`,
+        },
+      });
+
+      if (response.ok) {
+        const { is_trusted } = await response.json();
+        if (is_trusted) {
+          // Device is trusted, bypass MFA
+          navigate('/dashboard');
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking trusted device:', error);
+    }
+  };
 
   const checkMfaChallenge = async () => {
     try {
@@ -81,13 +111,36 @@ export default function Mfa() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.mfa.verify({
-        factorId,
-        challengeId,
-        code: totpCode,
+      const { data: session } = await supabase.auth.getSession();
+      
+      const response = await fetch('/api/secure-mfa-verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.session?.access_token}`,
+        },
+        body: JSON.stringify({
+          factorId,
+          challengeId,
+          code: totpCode,
+          type: 'totp',
+          rememberDevice
+        })
       });
 
-      if (error) throw error;
+      const result = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          toast({
+            title: "Rate Limited", 
+            description: result.error + (result.retry_after ? ` Try again in ${result.retry_after} seconds.` : ''),
+            variant: "destructive",
+          });
+          return;
+        }
+        throw new Error(result.error);
+      }
 
       toast({
         title: "Success",
@@ -99,7 +152,7 @@ export default function Mfa() {
       console.error('Error verifying TOTP:', error);
       toast({
         title: "Verification Failed",
-        description: "Invalid code. Please try again.",
+        description: error.message || "Invalid code. Please try again.", 
         variant: "destructive",
       });
     } finally {
@@ -121,50 +174,39 @@ export default function Mfa() {
 
     setLoading(true);
     try {
-      const user = (await supabase.auth.getUser()).data.user;
-      if (!user) throw new Error('User not found');
-
-      // Hash the recovery code and check if it exists and is unused
-      const codeHash = await hashCode(recoveryCode);
+      const { data: session } = await supabase.auth.getSession();
       
-      const { data: recoveryCodeRecord, error: fetchError } = await supabase
-        .from('mfa_recovery_codes')
-        .select('id, used')
-        .eq('user_id', user.id)
-        .eq('code_hash', codeHash)
-        .eq('used', false)
-        .single();
-
-      if (fetchError || !recoveryCodeRecord) {
-        throw new Error('Invalid or used recovery code');
-      }
-
-      // Mark recovery code as used
-      const { error: updateError } = await supabase
-        .from('mfa_recovery_codes')
-        .update({ used: true })
-        .eq('id', recoveryCodeRecord.id);
-
-      if (updateError) throw updateError;
-
-      // Complete MFA challenge
-      const { error: verifyError } = await supabase.auth.mfa.verify({
-        factorId,
-        challengeId,
-        code: recoveryCode,
+      const response = await fetch('/api/secure-mfa-verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.session?.access_token}`,
+        },
+        body: JSON.stringify({
+          factorId,
+          challengeId,
+          code: recoveryCode,
+          type: 'recovery',
+          rememberDevice
+        })
       });
 
-      if (verifyError) {
-        // If MFA verify fails, revert the recovery code status
-        await supabase
-          .from('mfa_recovery_codes')
-          .update({ used: false })
-          .eq('id', recoveryCodeRecord.id);
-        throw verifyError;
+      const result = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          toast({
+            title: "Rate Limited",
+            description: result.error + (result.retry_after ? ` Try again in ${result.retry_after} seconds.` : ''),
+            variant: "destructive",
+          });
+          return;
+        }
+        throw new Error(result.error);
       }
 
       toast({
-        title: "Success",
+        title: "Success", 
         description: "Authentication successful using recovery code.",
       });
       
@@ -173,7 +215,7 @@ export default function Mfa() {
       console.error('Error using recovery code:', error);
       toast({
         title: "Verification Failed",
-        description: "Invalid or used recovery code. Please try again.",
+        description: error.message || "Invalid or used recovery code. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -268,6 +310,24 @@ export default function Mfa() {
                 </form>
               </TabsContent>
             </Tabs>
+            
+            {/* Remember this device option */}
+            <div className="mt-4 flex items-center space-x-2">
+              <Checkbox 
+                id="remember-device" 
+                checked={rememberDevice}
+                onCheckedChange={(checked) => setRememberDevice(checked === true)}
+              />
+              <Label 
+                htmlFor="remember-device" 
+                className="text-sm font-normal cursor-pointer"
+              >
+                Remember this device for 30 days
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Skip 2FA on this device until the trust expires.
+            </p>
           </CardContent>
         </Card>
       </div>

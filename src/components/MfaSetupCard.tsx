@@ -132,6 +132,26 @@ export function MfaSetupCard() {
     setShowSetup(false);
     checkMfaStatus();
     
+    // Send email notification for MFA enabled
+    try {
+      const user = (await supabase.auth.getUser()).data.user;
+      if (user?.email) {
+        await fetch('/api/mfa-email-notifications', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
+          body: JSON.stringify({
+            event_type: 'mfa_enabled',
+            user_email: user.email
+          })
+        });
+      }
+    } catch (error) {
+      console.error('Error sending MFA enabled email:', error);
+    }
+    
     toast({
       title: "2FA Enabled",
       description: "Two-factor authentication has been enabled successfully.",
@@ -158,9 +178,35 @@ export function MfaSetupCard() {
         .delete()
         .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
 
+      // Clear trusted devices
+      await supabase
+        .from('mfa_trusted_devices')
+        .delete()
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
+
       setMfaEnabled(false);
       setFactors([]);
       setRecoveryCodes([]);
+      
+      // Send email notification for MFA disabled
+      try {
+        const user = (await supabase.auth.getUser()).data.user;
+        if (user?.email) {
+          await fetch('/api/mfa-email-notifications', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            },
+            body: JSON.stringify({
+              event_type: 'mfa_disabled',
+              user_email: user.email
+            })
+          });
+        }
+      } catch (error) {
+        console.error('Error sending MFA disabled email:', error);
+      }
       
       toast({
         title: "2FA Disabled",
