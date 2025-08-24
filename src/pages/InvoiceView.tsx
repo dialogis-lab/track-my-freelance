@@ -174,12 +174,16 @@ export default function InvoiceView() {
     }
 
     try {
-      const response = await fetch(`/api/invoices/pdf/${invoice.id}`);
-      if (!response.ok) {
-        throw new Error('Failed to generate PDF');
+      const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
+        body: { invoiceId: invoice.id }
+      });
+
+      if (error) {
+        throw error;
       }
-      
-      const blob = await response.blob();
+
+      // Create blob and download
+      const blob = new Blob([data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

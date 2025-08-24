@@ -14,7 +14,7 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const invoiceId = url.pathname.split('/').pop();
+    const { invoiceId } = await req.json();
 
     if (!invoiceId) {
       return new Response('Invoice ID required', { 
