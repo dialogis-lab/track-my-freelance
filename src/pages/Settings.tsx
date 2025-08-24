@@ -41,9 +41,9 @@ export default function Settings() {
     const { data, error } = await supabase
       .from('reminders')
       .select('*')
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('Error loading reminder:', error);
     } else if (data) {
       setReminder({

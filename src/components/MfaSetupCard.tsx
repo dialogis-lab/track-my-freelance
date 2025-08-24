@@ -37,8 +37,40 @@ export function MfaSetupCard() {
   const handleEnableMfa = async () => {
     setLoading(true);
     try {
+      // First check if there are any existing factors
+      const { data: existingFactors, error: listError } = await supabase.auth.mfa.listFactors();
+      
+      if (listError) throw listError;
+      
+      // If there's an existing unverified factor, unenroll it first
+      const existingTotp = existingFactors?.totp?.find(f => f.status === 'unverified');
+      if (existingTotp) {
+        console.log('Found existing unverified factor, removing it first');
+        const { error: unenrollError } = await supabase.auth.mfa.unenroll({
+          factorId: existingTotp.id,
+        });
+        if (unenrollError) {
+          console.warn('Could not unenroll existing factor:', unenrollError);
+          // Continue anyway, might be able to use the existing factor
+        }
+      }
+      
+      // If there's already a verified factor, show appropriate message
+      const verifiedFactor = existingFactors?.totp?.find(f => f.status === 'verified');
+      if (verifiedFactor) {
+        toast({
+          title: "2FA Already Enabled",
+          description: "Two-factor authentication is already enabled for your account.",
+        });
+        setMfaEnabled(true);
+        setFactors(existingFactors.totp || []);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: 'totp',
+        friendlyName: 'TimeHatch TOTP', // Add a friendly name to avoid conflicts
       });
 
       if (error) throw error;
@@ -52,9 +84,17 @@ export function MfaSetupCard() {
       });
     } catch (error: any) {
       console.error('Error enabling MFA:', error);
+      let errorMessage = "Failed to start MFA setup. Please try again.";
+      
+      if (error.code === 'mfa_factor_name_conflict') {
+        errorMessage = "An MFA setup is already in progress. Please refresh the page and try again.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to start MFA setup. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
