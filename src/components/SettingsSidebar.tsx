@@ -1,14 +1,4 @@
 import { NavLink } from 'react-router-dom';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar';
 import { Building2, User, Bell, DollarSign, Clock, Shield, Info, Cookie } from 'lucide-react';
 
 const settingsItems = [
@@ -24,38 +14,33 @@ const settingsItems = [
 
 export function SettingsSidebar() {
   return (
-    <Sidebar className="w-64 border-r border-border bg-white dark:bg-gray-900">
-      <SidebarContent className="p-4">
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+    <div className="w-64 border-r border-gray-200 bg-gray-50 min-h-full">
+      <div className="p-4">
+        <div className="mb-6">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
             Settings
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {settingsItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.path} 
-                      end={item.exact}
-                      className={({ isActive }) => 
-                        `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
-                          isActive 
-                            ? "bg-blue-600 text-white shadow-sm" 
-                            : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                        }`
-                      }
-                    >
-                      <item.icon className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
-                      <span className="transition-all duration-200">{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
+          </h3>
+          <nav className="space-y-1">
+            {settingsItems.map((item) => (
+              <NavLink 
+                key={item.title}
+                to={item.path} 
+                end={item.exact}
+                className={({ isActive }) => 
+                  `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                    isActive 
+                      ? "bg-blue-600 text-white shadow-sm" 
+                      : "text-gray-900 hover:bg-white hover:shadow-sm"
+                  }`
+                }
+              >
+                <item.icon className="h-4 w-4 flex-shrink-0" />
+                <span>{item.title}</span>
+              </NavLink>
+            ))}
+          </nav>
+        </div>
+      </div>
+    </div>
   );
 }
