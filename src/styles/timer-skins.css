@@ -11,7 +11,7 @@
 
 .timer-skin-minimal {
   --timer-fg: hsl(var(--foreground));
-  --timer-bg: hsl(var(--muted));
+  --timer-bg: hsl(var(--card));
   --timer-sub: hsl(var(--muted-foreground));
   --timer-weight: 600;
   --timer-size: clamp(36px, 7vw, 64px);
@@ -57,6 +57,8 @@
   font-size: var(--timer-size);
   filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.1)) drop-shadow(0 1px 1px rgb(0 0 0 / 0.06));
   color: var(--timer-fg);
+  /* Ensure visibility with fallback color */
+  color: hsl(var(--foreground));
 }
 
 .timer-digits.gradient {
