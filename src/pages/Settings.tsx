@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/use-toast';
 import { Bell, Clock, User, Shield } from 'lucide-react';
 import { CookieDebug } from '@/components/CookieDebug';
+import { MfaSetupCard } from '@/components/MfaSetupCard';
 
 interface Reminder {
   id: string;
@@ -295,6 +296,22 @@ export default function Settings() {
                   <a href="/imprint" target="_blank">Legal Notice</a>
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Two-Factor Authentication */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <Shield className="w-5 h-5" />
+                <CardTitle>Two-Factor Authentication</CardTitle>
+              </div>
+              <CardDescription>
+                Add an extra layer of security to your account.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <MfaSetupCard />
             </CardContent>
           </Card>
 

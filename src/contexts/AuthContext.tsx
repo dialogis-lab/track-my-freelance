@@ -10,6 +10,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   loading: boolean;
+  needsMfa: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,13 +19,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsMfa, setNeedsMfa] = useState(false);
 
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        if (session && event === 'SIGNED_IN') {
+          // Check if user has MFA enabled and needs to complete challenge
+          try {
+            const { data: factors } = await supabase.auth.mfa.listFactors();
+            const hasMfa = factors?.totp?.some(f => f.status === 'verified');
+            setNeedsMfa(hasMfa || false);
+          } catch (error) {
+            console.error('Error checking MFA status:', error);
+            setNeedsMfa(false);
+          }
+        } else {
+          setNeedsMfa(false);
+        }
+        
         setLoading(false);
       }
     );
@@ -84,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signInWithGoogle,
     signOut,
     loading,
+    needsMfa,
   };
 
   return (

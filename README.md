@@ -62,6 +62,7 @@ The app uses the following tables:
 - `projects` - Project management with client relationships
 - `time_entries` - Time tracking entries
 - `reminders` - Email reminder settings
+- `mfa_recovery_codes` - Hashed recovery codes for two-factor authentication
 
 ### Enable Google OAuth in Supabase
 
@@ -102,6 +103,52 @@ To enable Google sign-in, follow these steps in your Supabase dashboard:
    - Redirected to Google for authorization
    - Returns to `/auth/callback` for session exchange
    - Redirected to `/dashboard` on success
+
+### Two-Factor Authentication (2FA)
+
+TimeHatch supports TOTP (Time-based One-Time Password) multi-factor authentication using Supabase Auth.
+
+**Features:**
+- **TOTP Support**: Works with Google Authenticator, 1Password, Authy, and other authenticator apps
+- **Recovery Codes**: 10 single-use backup codes for account recovery
+- **Secure Storage**: Recovery codes are hashed and stored securely in the database
+- **Flexible Setup**: Enable/disable 2FA from account settings
+
+**Usage:**
+
+1. **Enable 2FA**:
+   - Go to Settings → Two-Factor Authentication
+   - Click "Enable 2FA"
+   - Scan the QR code with your authenticator app or enter the secret manually
+   - Enter the 6-digit verification code
+   - Save your recovery codes in a secure location
+
+2. **Sign In with 2FA**:
+   - Enter email/password or use Google OAuth as usual
+   - If 2FA is enabled, you'll be redirected to `/mfa`
+   - Enter your 6-digit TOTP code or use a recovery code
+
+3. **Disable 2FA**:
+   - Go to Settings → Two-Factor Authentication
+   - Click "Disable 2FA" (requires recent authentication)
+   - Recovery codes will be automatically cleared
+
+4. **Recovery Codes**:
+   - Each code can only be used once
+   - Generate new codes anytime from settings
+   - Download codes as a text file for safekeeping
+
+**Technical Implementation:**
+- Uses Supabase Auth MFA API (`supabase.auth.mfa.*`)
+- Recovery codes stored in `mfa_recovery_codes` table with SHA-256 hashing
+- Edge function handles secure recovery code generation
+- Row-Level Security ensures users can only access their own codes
+
+**Security Notes:**
+- Always save recovery codes in a secure location
+- Each recovery code can only be used once
+- 2FA is optional but strongly recommended for account security
+- Recovery codes are automatically regenerated when requested
 
 ## Deployment
 

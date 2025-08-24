@@ -21,6 +21,7 @@ import Imprint from "./pages/Imprint";
 import Success from "./pages/Success";
 import Error from "./pages/Error";
 import NotFound from "./pages/NotFound";
+import Mfa from "./pages/Mfa";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/register" element={<Register />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/mfa" element={<Mfa />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
               <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />

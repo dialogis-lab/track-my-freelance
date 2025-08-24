@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, loading } = useAuth();
+  const { user, loading, needsMfa } = useAuth();
 
   if (loading) {
     return (
@@ -19,6 +19,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Check if user needs MFA but is not on MFA page
+  if (needsMfa && window.location.pathname !== '/mfa') {
+    return <Navigate to="/mfa" replace />;
   }
 
   return <>{children}</>;
