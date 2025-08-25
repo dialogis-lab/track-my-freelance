@@ -62,19 +62,31 @@ export function useDashboardTimers() {
     initializeDashboard();
   }, [user?.id]);
 
-  // Enhanced realtime subscriptions with better recovery
+  // Enhanced realtime subscriptions with better recovery and mobile fallback
   useEffect(() => {
     if (!user) return;
 
-    debugLog('Setting up realtime subscriptions with enhanced recovery');
+    debugLog('Setting up realtime subscriptions with enhanced recovery and mobile support');
     
     // Clean up existing subscriptions
     subscriptionsRef.current.forEach(sub => sub.unsubscribe());
     subscriptionsRef.current = [];
 
+    // Mobile fallback: periodic sync every 5 seconds when no updates received
+    let lastUpdateTime = Date.now();
+    const mobileBackupSync = setInterval(() => {
+      const timeSinceLastUpdate = Date.now() - lastUpdateTime;
+      if (timeSinceLastUpdate > 10000) { // 10 seconds without updates
+        debugLog('Mobile backup sync triggered - no updates for', timeSinceLastUpdate, 'ms');
+        loadCurrentTimerStates();
+        lastUpdateTime = Date.now();
+      }
+    }, 5000);
+
     // Subscribe to stopwatch (time_entries)
     const stopwatchSub = subscribeToTimeEntries(user.id, {
       onUpdate: (payload: TimerPayload) => {
+        lastUpdateTime = Date.now(); // Reset backup sync timer
         debugLog('Stopwatch realtime event received:', {
           eventType: payload.eventType,
           id: payload.new?.id,
@@ -90,6 +102,7 @@ export function useDashboardTimers() {
         setTimeout(() => {
           debugLog('Performing cross-device sync after subscription');
           loadCurrentTimerStates();
+          lastUpdateTime = Date.now();
         }, 50);
       },
       onError: (error) => {
@@ -99,6 +112,7 @@ export function useDashboardTimers() {
         setTimeout(() => {
           debugLog('Attempting to recover stopwatch subscription');
           loadCurrentTimerStates();
+          lastUpdateTime = Date.now();
         }, retryDelay);
       }
     });
@@ -106,6 +120,7 @@ export function useDashboardTimers() {
     // Subscribe to pomodoro sessions
     const pomodoroSub = subscribeToPomodoroSessions(user.id, {
       onUpdate: (payload: TimerPayload) => {
+        lastUpdateTime = Date.now(); // Reset backup sync timer
         debugLog('Pomodoro realtime event received:', {
           eventType: payload.eventType,
           id: payload.new?.id,
@@ -117,7 +132,10 @@ export function useDashboardTimers() {
       onSubscribed: () => {
         debugLog('Pomodoro channel subscribed - syncing current state');
         // Sync current state when subscription is ready
-        setTimeout(() => loadCurrentTimerStates(), 50);
+        setTimeout(() => {
+          loadCurrentTimerStates();
+          lastUpdateTime = Date.now();
+        }, 50);
       },
       onError: (error) => {
         debugLog('Pomodoro subscription error:', error);
@@ -126,6 +144,7 @@ export function useDashboardTimers() {
         setTimeout(() => {
           debugLog('Attempting to recover pomodoro subscription');
           loadCurrentTimerStates();
+          lastUpdateTime = Date.now();
         }, retryDelay);
       }
     });
@@ -133,7 +152,8 @@ export function useDashboardTimers() {
     subscriptionsRef.current = [stopwatchSub, pomodoroSub];
 
     return () => {
-      debugLog('Cleaning up dashboard timer subscriptions');
+      debugLog('Cleaning up dashboard timer subscriptions and mobile backup');
+      clearInterval(mobileBackupSync);
       subscriptionsRef.current.forEach(sub => sub.unsubscribe());
       subscriptionsRef.current = [];
     };
@@ -156,11 +176,11 @@ export function useDashboardTimers() {
     };
   }, []);
 
-  // Tab visibility handler for timer recovery
+  // Tab visibility handler for timer recovery with mobile support
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && user) {
-        debugLog('Tab became visible - forcing timer state refresh');
+        debugLog('Tab/App became visible - forcing timer state refresh (mobile-friendly)');
         // Force immediate state refresh when tab becomes visible
         setTimeout(async () => {
           await loadCurrentTimerStates();
@@ -168,10 +188,33 @@ export function useDashboardTimers() {
       }
     };
 
+    const handleFocus = () => {
+      if (user) {
+        debugLog('Window/App gained focus - mobile timer sync');
+        setTimeout(async () => {
+          await loadCurrentTimerStates();
+        }, 100);
+      }
+    };
+
+    const handlePageShow = () => {
+      if (user) {
+        debugLog('Page shown (mobile back/forward) - timer sync');
+        setTimeout(async () => {
+          await loadCurrentTimerStates();
+        }, 100);
+      }
+    };
+
+    // Multiple event listeners for different mobile scenarios
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('pageshow', handlePageShow);
     
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('pageshow', handlePageShow);
     };
   }, [user]);
 
