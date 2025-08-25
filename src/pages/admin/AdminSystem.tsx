@@ -167,30 +167,53 @@ export function AdminSystem() {
         };
       }
 
-      // Check storage
+      // Check storage - test with a simple bucket existence check
       try {
-        const { data: buckets, error } = await supabase.storage.listBuckets();
-        if (error) throw error;
-        
-        if (!buckets || buckets.length === 0) {
+        // Try to list files in a known bucket to test storage access
+        const testResults = await Promise.allSettled([
+          supabase.storage.from('logos').list('', { limit: 1 }),
+          supabase.storage.from('invoices').list('', { limit: 1 })
+        ]);
+
+        const logosBucketWorks = testResults[0].status === 'fulfilled' && !testResults[0].value.error;
+        const invoicesBucketWorks = testResults[1].status === 'fulfilled' && !testResults[1].value.error;
+
+        const workingBuckets = [];
+        if (logosBucketWorks) workingBuckets.push('logos');
+        if (invoicesBucketWorks) workingBuckets.push('invoices');
+
+        if (workingBuckets.length === 0) {
+          health.storage = 'error';
+          details.storage = {
+            status: 'error',
+            message: 'Storage buckets not accessible',
+            technicalDetails: 'Cannot access logos or invoices buckets. Check bucket configuration and RLS policies.',
+            lastChecked: now,
+            suggestions: [
+              'Verify that logos and invoices buckets exist',
+              'Check storage RLS policies',
+              'Ensure proper bucket permissions are configured'
+            ]
+          };
+        } else if (workingBuckets.length < 2) {
           health.storage = 'warning';
           details.storage = {
             status: 'warning',
-            message: 'No storage buckets found',
-            technicalDetails: 'Storage is accessible but no buckets are configured',
+            message: `Storage partially working (${workingBuckets.length}/2 buckets accessible)`,
+            technicalDetails: `Working buckets: ${workingBuckets.join(', ')}. Missing: ${workingBuckets.length === 1 ? (workingBuckets[0] === 'logos' ? 'invoices' : 'logos') : 'logos, invoices'}`,
             lastChecked: now,
             suggestions: [
-              'Create storage buckets for file uploads',
-              'Configure logos and invoices buckets',
-              'Set up proper RLS policies for storage'
+              'Check bucket configuration for missing buckets',
+              'Verify RLS policies for all storage buckets',
+              'Ensure all required buckets are created'
             ]
           };
         } else {
           health.storage = 'healthy';
           details.storage = {
             status: 'healthy',
-            message: `Storage is working with ${buckets.length} bucket(s)`,
-            technicalDetails: `Found buckets: ${buckets.map(b => b.name).join(', ')}`,
+            message: `Storage is working with ${workingBuckets.length} bucket(s)`,
+            technicalDetails: `Accessible buckets: ${workingBuckets.join(', ')}`,
             lastChecked: now,
             suggestions: ['Storage is operating normally']
           };
