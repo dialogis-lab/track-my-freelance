@@ -197,30 +197,42 @@ export function TimerWidget() {
       return;
     }
 
+    console.log('[TimerWidget] Starting timer for project:', selectedProjectId);
     setLoading(true);
     
-    const { data, error } = await supabase
-      .from('time_entries')
-      .insert([{
-        user_id: user!.id,
-        project_id: selectedProjectId,
-        started_at: new Date().toISOString(),
-        notes: notes,
-      }])
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('time_entries')
+        .insert([{
+          user_id: user!.id,
+          project_id: selectedProjectId,
+          started_at: new Date().toISOString(),
+          notes: notes,
+        }])
+        .select()
+        .single();
 
-    if (error) {
+      if (error) {
+        console.error('[TimerWidget] Error starting timer:', error);
+        toast({
+          title: "Error starting timer",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        console.log('[TimerWidget] Timer started successfully:', data);
+        setActiveEntry(data);
+        toast({
+          title: "Timer started",
+          description: "Time tracking has begun for the selected project.",
+        });
+      }
+    } catch (err) {
+      console.error('[TimerWidget] Exception starting timer:', err);
       toast({
         title: "Error starting timer",
-        description: error.message,
+        description: "An unexpected error occurred",
         variant: "destructive",
-      });
-    } else {
-      setActiveEntry(data);
-      toast({
-        title: "Timer started",
-        description: "Time tracking has begun for the selected project.",
       });
     }
     
@@ -230,29 +242,41 @@ export function TimerWidget() {
   const stopTimer = async () => {
     if (!activeEntry) return;
 
+    console.log('[TimerWidget] Stopping timer:', activeEntry.id);
     setLoading(true);
     
-    const { error } = await supabase
-      .from('time_entries')
-      .update({
-        stopped_at: new Date().toISOString(),
-        notes: notes,
-      })
-      .eq('id', activeEntry.id);
+    try {
+      const { error } = await supabase
+        .from('time_entries')
+        .update({
+          stopped_at: new Date().toISOString(),
+          notes: notes,
+        })
+        .eq('id', activeEntry.id);
 
-    if (error) {
+      if (error) {
+        console.error('[TimerWidget] Error stopping timer:', error);
+        toast({
+          title: "Error stopping timer",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        console.log('[TimerWidget] Timer stopped successfully');
+        setActiveEntry(null);
+        setElapsedTime(0);
+        setNotes('');
+        toast({
+          title: "Timer stopped",
+          description: "Time entry has been saved successfully.",
+        });
+      }
+    } catch (err) {
+      console.error('[TimerWidget] Exception stopping timer:', err);
       toast({
         title: "Error stopping timer",
-        description: error.message,
+        description: "An unexpected error occurred",
         variant: "destructive",
-      });
-    } else {
-      setActiveEntry(null);
-      setElapsedTime(0);
-      setNotes('');
-      toast({
-        title: "Timer stopped",
-        description: "Time entry has been saved successfully.",
       });
     }
     
