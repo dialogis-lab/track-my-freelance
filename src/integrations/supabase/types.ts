@@ -401,6 +401,7 @@ export type Database = {
         Row: {
           auto_advance: boolean
           auto_start_on_mode_switch: boolean
+          couple_with_stopwatch_default: boolean
           desktop_notifications: boolean
           focus_ms: number
           long_break_every: number
@@ -414,6 +415,7 @@ export type Database = {
         Insert: {
           auto_advance?: boolean
           auto_start_on_mode_switch?: boolean
+          couple_with_stopwatch_default?: boolean
           desktop_notifications?: boolean
           focus_ms?: number
           long_break_every?: number
@@ -427,6 +429,7 @@ export type Database = {
         Update: {
           auto_advance?: boolean
           auto_start_on_mode_switch?: boolean
+          couple_with_stopwatch_default?: boolean
           desktop_notifications?: boolean
           focus_ms?: number
           long_break_every?: number

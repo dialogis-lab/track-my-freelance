@@ -5,7 +5,7 @@ import { useDashboardTimers } from '@/hooks/useDashboardTimers';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/AppLayout';
-import { TimerWidget } from '@/components/TimerWidget';
+import { CombinedTimerCard } from '@/components/CombinedTimerCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, FolderOpen, Users, TrendingUp, ExternalLink } from 'lucide-react';
 import { formatTime, hoursToMinutes, calculateDurationMinutes, formatDuration } from '@/lib/timeUtils';
@@ -258,9 +258,9 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Timer Widget - for controls */}
+          {/* Combined Timer Card */}
           <div>
-            <TimerWidget />
+            <CombinedTimerCard />
             
             {/* Debug Info */}
             {process.env.NODE_ENV === 'development' && (
