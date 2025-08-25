@@ -135,57 +135,32 @@ export function useDashboardTimers() {
     };
   }, [user?.id]);
 
-  // Start display updates with requestAnimationFrame - pause when tab is hidden
+  // Display updates with proper tab visibility handling
   useEffect(() => {
-    let isPaused = false;
-
     const updateDisplay = () => {
-      if (!isPaused && !document.hidden) {
-        // Only trigger re-render when tab is visible
-        setState(prev => ({ ...prev }));
-      }
+      // Always trigger re-render, let React handle optimization
+      setState(prev => ({ ...prev }));
       displayRafRef.current = requestAnimationFrame(updateDisplay);
     };
-
-    const handleVisibilityChange = () => {
-      isPaused = document.hidden;
-      if (!isPaused) {
-        // Resume display updates when tab becomes visible
-        debugLog('Resuming display updates - tab became visible');
-      } else {
-        debugLog('Pausing display updates - tab became hidden');
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
     displayRafRef.current = requestAnimationFrame(updateDisplay);
     
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (displayRafRef.current) {
         cancelAnimationFrame(displayRafRef.current);
       }
     };
   }, []);
 
-  // Enhanced tab visibility handler for timer recovery
+  // Tab visibility handler for timer recovery
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && user) {
-        debugLog('Tab became visible - recovering timer states');
-        // Only recalculate server offset if it hasn't been calculated yet or there was an error
+        debugLog('Tab became visible - forcing timer state refresh');
+        // Force immediate state refresh when tab becomes visible
         setTimeout(async () => {
-          if (state.serverOffsetMs === 0) {
-            await calculateServerOffset();
-          }
           await loadCurrentTimerStates();
-          // Re-establish subscriptions if they were closed
-          const hasActiveTimer = state.stopwatch || state.pomodoro;
-          if (hasActiveTimer && subscriptionsRef.current.length === 0) {
-            debugLog('Re-establishing subscriptions after tab switch');
-            // The subscription useEffect will handle re-establishment
-          }
-        }, 100);
+        }, 50);
       }
     };
 
@@ -194,7 +169,7 @@ export function useDashboardTimers() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [user, state.serverOffsetMs, state.stopwatch, state.pomodoro]);
+  }, [user]);
 
   // Select active mode on mount without side effects
   const selectActiveModeOnMount = async () => {
