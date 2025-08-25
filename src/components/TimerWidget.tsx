@@ -75,6 +75,12 @@ export function TimerWidget() {
           
           // Immediately update the timer state based on the event
           if (payload.eventType === 'INSERT' && !payload.new.stopped_at) {
+            // Check if this is a pomodoro entry - ignore it for regular timer
+            if (payload.new.tags && payload.new.tags.includes('pomodoro')) {
+              console.log('Ignoring pomodoro timer entry for regular timer sync');
+              return;
+            }
+            
             // Timer started
             const newEntry = payload.new as ActiveEntry;
             setActiveEntry(newEntry);
@@ -82,6 +88,12 @@ export function TimerWidget() {
             setNotes(newEntry.notes || '');
             console.log('Timer started on another device');
           } else if (payload.eventType === 'UPDATE' && payload.new.stopped_at) {
+            // Check if this is a pomodoro entry - ignore it for regular timer
+            if (payload.new.tags && payload.new.tags.includes('pomodoro')) {
+              console.log('Ignoring pomodoro timer entry for regular timer sync');
+              return;
+            }
+            
             // Timer stopped
             setActiveEntry(null);
             setElapsedTime(0);
@@ -143,6 +155,7 @@ export function TimerWidget() {
       .select('*')
       .eq('user_id', user!.id)
       .is('stopped_at', null)
+      .not('tags', 'cs', '{"pomodoro"}') // Exclude pomodoro entries
       .order('started_at', { ascending: false })
       .limit(1)
       .single();
