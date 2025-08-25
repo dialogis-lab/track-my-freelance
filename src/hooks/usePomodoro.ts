@@ -85,18 +85,55 @@ export function usePomodoro() {
       if (data) {
         console.log('Found active pomodoro session:', data);
         
-        setPhase((data.phase as PomodoroPhase) || 'focus');
-        setState((data.status as PomodoroState) || 'idle');
-        
+        // Check if session is actually still valid (not expired)
         if (data.status === 'running' && data.expected_end_at) {
           const endTime = new Date(data.expected_end_at);
           const now = new Date();
+          
+          // If session has already expired, stop it
+          if (endTime.getTime() <= now.getTime()) {
+            console.log('Session expired, stopping it');
+            await supabase
+              .from('pomodoro_sessions')
+              .update({ 
+                status: 'stopped',
+                revised_at: now.toISOString()
+              })
+              .eq('id', data.id);
+            
+            // Set to idle
+            setPhase('focus');
+            setState('idle');
+            setTimeRemaining(0);
+            setTargetTime(null);
+            return;
+          }
+          
+          // Session is still valid
           const remaining = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
+          setPhase((data.phase as PomodoroPhase) || 'focus');
+          setState('running');
           setTimeRemaining(remaining);
           setTargetTime(endTime);
-        } else {
+        } else if (data.status === 'paused') {
           const elapsedSeconds = data.elapsed_ms ? Math.floor(data.elapsed_ms / 1000) : 0;
+          setPhase((data.phase as PomodoroPhase) || 'focus');
+          setState('paused');
           setTimeRemaining(elapsedSeconds);
+          setTargetTime(null);
+        } else {
+          // Invalid session state, stop it
+          await supabase
+            .from('pomodoro_sessions')
+            .update({ 
+              status: 'stopped',
+              revised_at: new Date().toISOString()
+            })
+            .eq('id', data.id);
+          
+          setPhase('focus');
+          setState('idle');
+          setTimeRemaining(0);
           setTargetTime(null);
         }
       } else {
