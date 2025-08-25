@@ -203,15 +203,19 @@ export function TimerWidget() {
   };
 
   const updateNotes = async () => {
-    if (!activeEntry) return;
+    if (!activeEntry?.id) return;
 
-    const { error } = await supabase
-      .from('time_entries')
-      .update({ notes })
-      .eq('id', activeEntry.id);
+    try {
+      const { error } = await supabase
+        .from('time_entries')
+        .update({ notes })
+        .eq('id', activeEntry.id);
 
-    if (error) {
-      console.error('Error updating notes:', error);
+      if (error) {
+        console.error('Error updating notes:', error);
+      }
+    } catch (err) {
+      console.error('Exception updating notes:', err);
     }
   };
 
@@ -361,8 +365,10 @@ export function TimerWidget() {
               {process.env.NODE_ENV === 'development' && (
                 <div className="mt-2 p-2 bg-yellow-100 rounded text-xs">
                   <div>Active Entry: {activeEntry ? `YES (${activeEntry.id})` : 'NO'}</div>
+                  <div>Running: {isStopwatchRunning ? 'YES' : 'NO'}</div>
                   <div>Loading: {loading ? 'YES' : 'NO'}</div>
                   <div>Selected Project: {selectedProjectId || 'NONE'}</div>
+                  <div>Display Time: {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}</div>
                 </div>
               )}
             </div>

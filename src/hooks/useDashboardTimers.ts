@@ -296,17 +296,18 @@ export function useDashboardTimers() {
       return timerState.elapsed_ms || 0;
     }
 
-    const serverTime = Date.now() + state.serverOffsetMs;
+    // Use consistent client time to avoid jumps
+    const clientTime = Date.now();
     
     // For stopwatch (time_entries): calculate from started_at
     // For pomodoro: use elapsed_ms + time since started_at
     if (timerState.phase) {
       // This is a pomodoro session
-      const elapsedMs = (timerState.elapsed_ms || 0) + (serverTime - startedMs);
+      const elapsedMs = (timerState.elapsed_ms || 0) + (clientTime - startedMs);
       return Math.max(0, elapsedMs);
     } else {
       // This is a stopwatch (time_entries)
-      const elapsedMs = serverTime - startedMs;
+      const elapsedMs = clientTime - startedMs;
       return Math.max(0, elapsedMs);
     }
   };
