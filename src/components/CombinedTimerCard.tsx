@@ -22,6 +22,11 @@ export function CombinedTimerCard() {
   const [projects, setProjects] = useState<Array<{id: string, name: string}>>([]);
   const notificationPermissionRequested = useRef(false);
   
+  // Local debug logging
+  const debugLog = (message: string, ...args: any[]) => {
+    console.log(`[CombinedTimerCard] ${message}`, ...args);
+  };
+  
   const {
     stopwatch,
     pomodoro,
@@ -217,24 +222,35 @@ export function CombinedTimerCard() {
 
     setLoading(true);
     try {
+      debugLog('Attempting to start timer for project:', selectedProjectId);
+      
       // First check if there's already a running timer
-      const { data: runningTimer } = await supabase
+      const { data: runningTimer, error: checkError } = await supabase
         .from('time_entries')
-        .select('id')
+        .select('id, project_id, started_at')
         .eq('user_id', user!.id)
         .is('stopped_at', null)
         .limit(1);
 
+      if (checkError) {
+        debugLog('Error checking running timer:', checkError);
+        throw checkError;
+      }
+
+      debugLog('Running timer check result:', runningTimer);
+
       if (runningTimer && runningTimer.length > 0) {
         toast({
           title: "Timer already running",
-          description: "Please stop the current timer first.",
+          description: `A timer is already running for project. Please stop it first.`,
           variant: "destructive"
         });
+        // The hook will automatically sync the state
         setLoading(false);
         return;
       }
 
+      debugLog('Inserting new timer entry...');
       const { error } = await supabase
         .from('time_entries')
         .insert([{
@@ -244,7 +260,12 @@ export function CombinedTimerCard() {
           notes: notes || null
         }]);
 
-      if (error) throw error;
+      if (error) {
+        debugLog('Error inserting timer:', error);
+        throw error;
+      }
+
+      debugLog('Timer started successfully');
 
       if (coupling) {
         // Start Pomodoro with fresh session to use current settings
@@ -256,8 +277,10 @@ export function CombinedTimerCard() {
       
       // Clear notes after starting
       setNotes('');
+      
+      // Let the hook handle state updates via realtime
     } catch (error) {
-      console.error('Error starting timer:', error);
+      debugLog('Error starting timer:', error);
       toast({ 
         title: "Error starting timer", 
         description: error.message || "Please try again",
@@ -268,13 +291,24 @@ export function CombinedTimerCard() {
   };
 
   const handleStopwatchStop = async () => {
-    if (!stopwatch) return;
+    if (!stopwatch) {
+      debugLog('No stopwatch to stop');
+      return;
+    }
+    
     setLoading(true);
     try {
-      await supabase
+      debugLog('Stopping timer:', stopwatch.id);
+      
+      const { error } = await supabase
         .from('time_entries')
         .update({ stopped_at: new Date().toISOString() })
         .eq('id', stopwatch.id);
+
+      if (error) {
+        debugLog('Error stopping timer:', error);
+        throw error;
+      }
 
       if (coupling && isPomodoroRunning) {
         await supabase.rpc('pomo_stop');
@@ -282,8 +316,10 @@ export function CombinedTimerCard() {
       } else {
         toast({ title: "Timer stopped" });
       }
+      
+      // Let the hook handle state updates via realtime
     } catch (error) {
-      console.error('Error stopping timer:', error);
+      debugLog('Error stopping timer:', error);
       toast({ title: "Error stopping timer", variant: "destructive" });
     }
     setLoading(false);

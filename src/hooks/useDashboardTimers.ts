@@ -48,9 +48,9 @@ export function useDashboardTimers() {
       debugLog('Initializing dashboard timers...');
       try {
         await calculateServerOffset();
-        await selectActiveModeOnMount();  
-        // Force initial load of current states
+        // Force reload of current states to ensure sync
         await loadCurrentTimerStates();
+        await selectActiveModeOnMount();  
         setState(prev => ({ ...prev, loading: false }));
         debugLog('Dashboard initialization complete');
       } catch (error) {
