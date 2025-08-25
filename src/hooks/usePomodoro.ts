@@ -56,33 +56,14 @@ export function usePomodoro() {
     }
   }, [user]);
 
+  // Remove database session loading since RPC might not work
   const loadCurrentSession = async () => {
-    try {
-      const { data, error } = await supabase.rpc('pomo_get_or_create_session');
-      
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
-        const session = data[0];
-        console.log('Loaded current Pomodoro session:', session);
-        
-        setPhase(session.phase as PomodoroPhase);
-        setState(session.status as PomodoroState);
-        
-        if (session.status === 'running' && session.expected_end_at) {
-          const endTime = new Date(session.expected_end_at);
-          const now = new Date();
-          const remaining = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
-          setTimeRemaining(remaining);
-          setTargetTime(endTime);
-        } else {
-          setTimeRemaining(session.elapsed_ms ? Math.floor(session.elapsed_ms / 1000) : 0);
-          setTargetTime(null);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading current session:', error);
-    }
+    console.log('Skipping current session loading - using local state only');
+    // Just initialize to idle state
+    setPhase('focus');
+    setState('idle');
+    setTimeRemaining(0);
+    setTargetTime(null);
   };
 
   // Real-time synchronization for Pomodoro state via database
@@ -325,6 +306,8 @@ export function usePomodoro() {
       return;
     }
 
+    console.log('Starting focus session with project:', projectId);
+
     try {
       // Create time entry for focus session
       const { data, error } = await supabase
@@ -339,14 +322,22 @@ export function usePomodoro() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating time entry:', error);
+        throw error;
+      }
 
-      // Use Supabase RPC to start Pomodoro session
-      const { data: sessionData, error: sessionError } = await supabase.rpc('pomo_start');
-      
-      if (sessionError) throw sessionError;
+      console.log('Time entry created:', data);
+
+      // Set local state directly
+      const duration = settings.focusMinutes * 60;
+      const newTargetTime = new Date(Date.now() + duration * 1000);
 
       setActiveEntryId(data.id);
+      setPhase('focus');
+      setState('running');
+      setTimeRemaining(duration);
+      setTargetTime(newTargetTime);
       
       triggerTimerUpdate();
       
@@ -355,32 +346,33 @@ export function usePomodoro() {
         description: `${settings.focusMinutes} minutes of focused work ahead!`,
       });
 
+      console.log('Focus session started successfully');
+
     } catch (error) {
       console.error('Error starting focus:', error);
       toast({
         title: "Error starting focus session",
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
         variant: "destructive",
       });
     }
   };
 
   const startBreak = async () => {
-    try {
-      // Use Supabase RPC to transition to next phase
-      const { data: sessionData, error: sessionError } = await supabase.rpc('pomo_next');
-      
-      if (sessionError) throw sessionError;
+    console.log('Starting break');
+    const nextPhase = getNextPhase();
+    const duration = nextPhase === 'longBreak' ? settings.longBreakMinutes : settings.breakMinutes;
+    const newTargetTime = new Date(Date.now() + duration * 60 * 1000);
+    
+    setPhase(nextPhase);
+    setState('running');
+    setTimeRemaining(duration * 60);
+    setTargetTime(newTargetTime);
 
-      const nextPhase = getNextPhase();
-      const duration = nextPhase === 'longBreak' ? settings.longBreakMinutes : settings.breakMinutes;
-
-      toast({
-        title: `${nextPhase === 'longBreak' ? 'Long b' : 'B'}reak started`,
-        description: `Take a ${duration}-minute break. You've earned it!`,
-      });
-    } catch (error) {
-      console.error('Error starting break:', error);
-    }
+    toast({
+      title: `${nextPhase === 'longBreak' ? 'Long b' : 'B'}reak started`,
+      description: `Take a ${duration}-minute break. You've earned it!`,
+    });
   };
 
   const finishFocusSession = async () => {
@@ -448,44 +440,40 @@ export function usePomodoro() {
   };
 
   const stopPomodoro = async () => {
-    try {
-      // Use Supabase RPC to stop session
-      const { data: sessionData, error: sessionError } = await supabase.rpc('pomo_stop');
-      
-      if (sessionError) throw sessionError;
+    console.log('Stopping pomodoro');
+    setState('idle');
+    setTargetTime(null);
+    setTimeRemaining(0);
 
-      if (phase === 'focus' && activeEntryId) {
-        // If stopping during focus, finish the time entry but break the streak
-        const { error: entryError } = await supabase
-          .from('time_entries')
-          .update({
-            stopped_at: new Date().toISOString(),
-          })
-          .eq('id', activeEntryId);
+    if (phase === 'focus' && activeEntryId) {
+      // If stopping during focus, finish the time entry but break the streak
+      const { error: entryError } = await supabase
+        .from('time_entries')
+        .update({
+          stopped_at: new Date().toISOString(),
+        })
+        .eq('id', activeEntryId);
 
-        if (entryError) {
-          console.error('Error stopping focus session:', entryError);
-        }
-
-        // Reset streak on incomplete session
-        await resetStreak();
-        
-        setActiveEntryId(null);
-        triggerTimerUpdate();
-        
-        toast({
-          title: "Focus session stopped",
-          description: "Your partial session has been saved. Streak reset.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Pomodoro stopped",
-          description: "Timer has been reset.",
-        });
+      if (entryError) {
+        console.error('Error stopping focus session:', entryError);
       }
-    } catch (error) {
-      console.error('Error stopping pomodoro:', error);
+
+      // Reset streak on incomplete session
+      await resetStreak();
+      
+      setActiveEntryId(null);
+      triggerTimerUpdate();
+      
+      toast({
+        title: "Focus session stopped",
+        description: "Your partial session has been saved. Streak reset.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Pomodoro stopped",
+        description: "Timer has been reset.",
+      });
     }
   };
 
@@ -516,23 +504,17 @@ export function usePomodoro() {
 
   const pausePomodoro = async () => {
     if (state === 'running') {
-      try {
-        const { data: sessionData, error: sessionError } = await supabase.rpc('pomo_pause');
-        if (sessionError) throw sessionError;
-      } catch (error) {
-        console.error('Error pausing pomodoro:', error);
-      }
+      console.log('Pausing pomodoro');
+      setState('paused');
+      setTargetTime(null);
     }
   };
 
   const resumePomodoro = async () => {
     if (state === 'paused' && timeRemaining > 0) {
-      try {
-        const { data: sessionData, error: sessionError } = await supabase.rpc('pomo_resume');
-        if (sessionError) throw sessionError;
-      } catch (error) {
-        console.error('Error resuming pomodoro:', error);
-      }
+      console.log('Resuming pomodoro');
+      setState('running');
+      setTargetTime(new Date(Date.now() + timeRemaining * 1000));
     }
   };
 
