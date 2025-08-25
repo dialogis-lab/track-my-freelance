@@ -172,6 +172,7 @@ export function useDashboardTimers() {
 
   const loadPomodoroState = async () => {
     try {
+      debugLog('Loading pomodoro state for user:', user!.id);
       const { data, error } = await supabase
         .from('pomodoro_sessions')
         .select('id, started_at, expected_end_at, phase, status, elapsed_ms')
@@ -185,6 +186,8 @@ export function useDashboardTimers() {
         return;
       }
 
+      debugLog('Raw pomodoro query result:', data);
+
       const pomodoroState = data ? {
         id: data.id,
         started_at: data.started_at,
@@ -194,7 +197,7 @@ export function useDashboardTimers() {
         elapsed_ms: data.elapsed_ms || 0
       } : null;
 
-      debugLog('Loaded pomodoro state:', pomodoroState);
+      debugLog('Processed pomodoro state:', pomodoroState);
       setState(prev => ({ ...prev, pomodoro: pomodoroState }));
     } catch (error) {
       debugLog('Failed to load pomodoro state:', error);
