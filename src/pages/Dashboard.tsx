@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTimerContext } from '@/contexts/TimerContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useDashboardTimers } from '@/hooks/useDashboardTimers';
 import { AppLayout } from '@/components/AppLayout';
 import { TimerWidget } from '@/components/TimerWidget';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,8 +33,16 @@ export default function Dashboard() {
     weekHours: 0,
   });
   const [recentEntries, setRecentEntries] = useState<RecentEntry[]>([]);
+  const [timerDisplayTime, setTimerDisplayTime] = useState({ stopwatch: 0, pomodoro: 0 });
   const { user } = useAuth();
   const { timerUpdated } = useTimerContext();
+  const { 
+    getStopwatchDisplayTime, 
+    getPomodoroDisplayTime, 
+    isStopwatchRunning, 
+    isPomodoroRunning, 
+    pomodoroPhase 
+  } = useDashboardTimers();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,6 +50,32 @@ export default function Dashboard() {
       loadDashboardData();
     }
   }, [user]);
+
+  // Real-time timer display updates using requestAnimationFrame
+  useEffect(() => {
+    let animationFrame: number;
+    
+    const updateTimerDisplay = () => {
+      setTimerDisplayTime({
+        stopwatch: getStopwatchDisplayTime(),
+        pomodoro: getPomodoroDisplayTime()
+      });
+      
+      if (isStopwatchRunning || isPomodoroRunning) {
+        animationFrame = requestAnimationFrame(updateTimerDisplay);
+      }
+    };
+
+    if (isStopwatchRunning || isPomodoroRunning) {
+      updateTimerDisplay();
+    }
+
+    return () => {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, [isStopwatchRunning, isPomodoroRunning, getStopwatchDisplayTime, getPomodoroDisplayTime]);
 
   // Refresh dashboard when timer events occur
   useEffect(() => {
@@ -261,10 +296,81 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Timer Widget */}
-          <div>
-            <TimerWidget />
-          </div>
+          {/* Dashboard Timer Display */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Active Timer</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Stopwatch Display */}
+                {isStopwatchRunning && (
+                  <div className="text-center">
+                    <div className="text-sm text-muted-foreground mb-2">Stopwatch</div>
+                    <div 
+                      className="text-3xl font-mono font-bold text-brand-gradient"
+                      data-testid="timer-display"
+                    >
+                      {(() => {
+                        const ms = timerDisplayTime.stopwatch;
+                        const totalSeconds = Math.floor(ms / 1000);
+                        const hours = Math.floor(totalSeconds / 3600);
+                        const minutes = Math.floor((totalSeconds % 3600) / 60);
+                        const seconds = totalSeconds % 60;
+                        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                      })()}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Pomodoro Display */}
+                {isPomodoroRunning && (
+                  <div className="text-center">
+                    <div className="flex items-center justify-center space-x-2 mb-2">
+                      <span 
+                        className="text-sm bg-brand-gradient text-white px-2 py-1 rounded"
+                        data-testid="pomodoro-badge"
+                      >
+                        {pomodoroPhase}
+                      </span>
+                      <span 
+                        className="text-xs text-muted-foreground"
+                        data-testid="pomodoro-status"
+                      >
+                        Active
+                      </span>
+                    </div>
+                    <div 
+                      className="text-3xl font-mono font-bold text-brand-gradient"
+                      data-testid="pomodoro-timer"
+                    >
+                      {(() => {
+                        const ms = timerDisplayTime.pomodoro;
+                        const totalSeconds = Math.floor(ms / 1000);
+                        const hours = Math.floor(totalSeconds / 3600);
+                        const minutes = Math.floor((totalSeconds % 3600) / 60);
+                        const seconds = totalSeconds % 60;
+                        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                      })()}
+                    </div>
+                  </div>
+                )}
+
+                {/* No Active Timer */}
+                {!isStopwatchRunning && !isPomodoroRunning && (
+                  <div className="text-center py-8">
+                    <div className="text-muted-foreground">No active timer</div>
+                    <div 
+                      className="text-2xl font-mono mt-2"
+                      data-testid="timer-display"
+                    >
+                      00:00:00
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Recent Activity */}
           <Card>
