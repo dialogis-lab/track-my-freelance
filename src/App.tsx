@@ -5,6 +5,7 @@ import Invoices from "./pages/Invoices";
 import InvoiceNew from "./pages/InvoiceNew";
 import InvoiceView from "./pages/InvoiceView";
 import Focus from "./pages/Focus";
+import StandardFocus from "./pages/StandardFocus";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -64,6 +65,7 @@ const App = () => (
             <Route path="/invoices/:id" element={<ProtectedRoute><InvoiceView /></ProtectedRoute>} />
             <Route path="/settings/*" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/focus" element={<ProtectedRoute><Focus /></ProtectedRoute>} />
+            <Route path="/standard-focus" element={<ProtectedRoute><StandardFocus /></ProtectedRoute>} />
             
             {/* Admin Routes */}
             <Route path="/admin" element={

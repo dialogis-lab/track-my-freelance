@@ -302,7 +302,7 @@ export function TimerWidget() {
             </div>
 
             {/* Control Buttons */}
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
               {!activeEntry ? (
                 <Button
                   onClick={startTimer}
@@ -314,16 +314,27 @@ export function TimerWidget() {
                   Start Timer
                 </Button>
               ) : (
-                <Button
-                  onClick={stopTimer}
-                  disabled={loading}
-                  size="lg"
-                  variant="destructive"
-                  className="w-full"
-                >
-                  <Square className="w-4 h-4 mr-2" />
-                  Stop Timer
-                </Button>
+                <>
+                  <Button
+                    onClick={stopTimer}
+                    disabled={loading}
+                    size="lg"
+                    variant="destructive"
+                    className="w-full"
+                  >
+                    <Square className="w-4 h-4 mr-2" />
+                    Stop Timer
+                  </Button>
+                  
+                  {/* Mobile Focus View Button */}
+                  <Button
+                    variant="outline"
+                    onClick={() => window.location.href = '/standard-focus'}
+                    className="w-full"
+                  >
+                    📱 Minimal Focus View
+                  </Button>
+                </>
               )}
             </div>
           </>
