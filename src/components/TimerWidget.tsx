@@ -55,18 +55,23 @@ export function TimerWidget() {
   useEffect(() => {
     if (!user) return;
 
+    console.log('[TimerWidget] Setting up real-time subscription');
+    
     const subscription = subscribeToTimeEntries(user.id, {
       onUpdate: (payload: TimerPayload) => {
+        console.log('[TimerWidget] Real-time update received:', payload);
+        
         // Skip if this is a pomodoro entry
         if (payload.new && 'tags' in payload.new && Array.isArray(payload.new.tags) && payload.new.tags.includes('pomodoro')) {
+          console.log('[TimerWidget] Skipping pomodoro entry');
           return;
         }
         
-        // Robust null-guarded payload handling
+        // Handle INSERT events (new timer started)
         if (payload.eventType === 'INSERT' && payload.new && !payload.new.stopped_at) {
           const newEntry = payload.new as ActiveEntry;
+          console.log('[TimerWidget] New timer started:', newEntry);
           
-          // Null-guard all fields
           if (newEntry.id && newEntry.project_id) {
             setActiveEntry(newEntry);
             setSelectedProjectId(newEntry.project_id);
@@ -74,7 +79,9 @@ export function TimerWidget() {
             setElapsedTime(0);
           }
         } 
+        // Handle UPDATE events (timer stopped)
         else if (payload.eventType === 'UPDATE' && payload.new && payload.new.stopped_at) {
+          console.log('[TimerWidget] Timer stopped:', payload.new);
           // Only clear if this was our active entry
           if (activeEntry && payload.new.id === activeEntry.id) {
             setActiveEntry(null);
@@ -85,16 +92,21 @@ export function TimerWidget() {
         }
       },
       onSubscribed: () => {
-        // Reload active entry after subscription is ready
-        loadActiveEntry();
+        console.log('[TimerWidget] Real-time subscription ready, loading active entry');
+        // Only reload if we don't already have an active entry from real-time
+        setTimeout(() => {
+          if (!activeEntry) {
+            loadActiveEntry();
+          }
+        }, 100);
       },
       onError: (error) => {
-        console.error('Timer sync error:', error);
+        console.error('[TimerWidget] Timer sync error:', error);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [user, activeEntry]);
+  }, [user]); // Removed activeEntry dependency to prevent subscription resets
 
   // Server-offset timer effect using requestAnimationFrame
   useEffect(() => {
