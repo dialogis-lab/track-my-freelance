@@ -46,9 +46,18 @@ export function useDashboardTimers() {
     if (!user) return;
     
     const initializeDashboard = async () => {
-      await calculateServerOffset();
-      await selectActiveModeOnMount();
-      setState(prev => ({ ...prev, loading: false }));
+      debugLog('Initializing dashboard timers...');
+      try {
+        await calculateServerOffset();
+        await selectActiveModeOnMount();  
+        // Force initial load of current states
+        await loadCurrentTimerStates();
+        setState(prev => ({ ...prev, loading: false }));
+        debugLog('Dashboard initialization complete');
+      } catch (error) {
+        debugLog('Dashboard initialization error:', error);
+        setState(prev => ({ ...prev, loading: false }));
+      }
     };
     
     initializeDashboard();
@@ -218,6 +227,7 @@ export function useDashboardTimers() {
     }
   };
 
+  // Load current timer states with better debugging
   const loadCurrentTimerStates = async () => {
     try {
       debugLog('Loading current timer states...');
@@ -225,7 +235,7 @@ export function useDashboardTimers() {
       const [swResult, poResult] = await Promise.all([
         supabase
           .from('time_entries')
-          .select('id, started_at, stopped_at, tags, created_at')
+          .select('id, started_at, stopped_at, tags, created_at, notes, project_id')
           .eq('user_id', user!.id)
           .is('stopped_at', null)
           .not('tags', 'cs', '{"pomodoro"}')
@@ -240,29 +250,40 @@ export function useDashboardTimers() {
           .maybeSingle()
       ]);
 
-      debugLog('Timer states loaded:', { 
-        stopwatch: swResult.data ? 'running' : 'none',
-        pomodoro: poResult.data ? poResult.data.status : 'none'
+      debugLog('Raw query results:', { 
+        stopwatch: swResult.data,
+        pomodoro: poResult.data,
+        stopwatchError: swResult.error,
+        pomodoroError: poResult.error
+      });
+
+      const newStopwatch = swResult.data && !swResult.data.stopped_at ? {
+        id: swResult.data.id,
+        started_at: swResult.data.started_at,
+        status: 'running',
+        elapsed_ms: 0,
+        revised_at: swResult.data.created_at
+      } : null;
+
+      const newPomodoro = poResult.data ? {
+        id: poResult.data.id,
+        started_at: poResult.data.started_at,
+        expected_end_at: poResult.data.expected_end_at,
+        phase: poResult.data.phase,
+        status: poResult.data.status,
+        elapsed_ms: poResult.data.elapsed_ms || 0,
+        revised_at: poResult.data.revised_at
+      } : null;
+
+      debugLog('Setting timer states:', { 
+        stopwatch: newStopwatch ? 'running' : 'none',
+        pomodoro: newPomodoro ? newPomodoro.status : 'none'
       });
 
       setState(prev => ({
         ...prev,
-        stopwatch: swResult.data && !swResult.data.stopped_at ? {
-          id: swResult.data.id,
-          started_at: swResult.data.started_at,
-          status: 'running',
-          elapsed_ms: 0,
-          revised_at: swResult.data.created_at
-        } : null,
-        pomodoro: poResult.data ? {
-          id: poResult.data.id,
-          started_at: poResult.data.started_at,
-          expected_end_at: poResult.data.expected_end_at,
-          phase: poResult.data.phase,
-          status: poResult.data.status,
-          elapsed_ms: poResult.data.elapsed_ms || 0,
-          revised_at: poResult.data.revised_at
-        } : null
+        stopwatch: newStopwatch,
+        pomodoro: newPomodoro
       }));
     } catch (error) {
       debugLog('Failed to load current timer states:', error);

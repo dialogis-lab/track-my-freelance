@@ -62,14 +62,30 @@ export default function Projects() {
   }, [user, location.search]);
 
   const checkActiveTimer = async () => {
-    const { data } = await supabase
-      .from('time_entries')
-      .select('project_id')
-      .is('stopped_at', null)
-      .single();
-    
-    if (data) {
-      setActiveTimer(data.project_id);
+    try {
+      const { data, error } = await supabase
+        .from('time_entries')
+        .select('project_id')
+        .eq('user_id', user!.id)
+        .is('stopped_at', null)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error checking active timer:', error);
+        setActiveTimer(null);
+        return;
+      }
+      
+      if (data) {
+        console.log('Active timer found for project:', data.project_id);
+        setActiveTimer(data.project_id);
+      } else {
+        console.log('No active timer found');
+        setActiveTimer(null);
+      }
+    } catch (error) {
+      console.error('Error in checkActiveTimer:', error);
+      setActiveTimer(null);
     }
   };
 
@@ -235,23 +251,33 @@ export default function Projects() {
   const stopTimer = async () => {
     if (!activeTimer) return;
 
-    const { error } = await supabase
-      .from('time_entries')
-      .update({ stopped_at: new Date().toISOString() })
-      .is('stopped_at', null)
-      .eq('project_id', activeTimer);
+    try {
+      const { error } = await supabase
+        .from('time_entries')
+        .update({ stopped_at: new Date().toISOString() })
+        .eq('user_id', user!.id)
+        .is('stopped_at', null)
+        .eq('project_id', activeTimer);
 
-    if (error) {
+      if (error) {
+        toast({
+          title: "Error stopping timer",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        setActiveTimer(null);
+        toast({
+          title: "Timer stopped",
+          description: "Timer has been stopped.",
+        });
+      }
+    } catch (error) {
+      console.error('Error stopping timer:', error);
       toast({
         title: "Error stopping timer",
-        description: error.message,
+        description: "Please try again.",
         variant: "destructive",
-      });
-    } else {
-      setActiveTimer(null);
-      toast({
-        title: "Timer stopped",
-        description: "Timer has been stopped.",
       });
     }
   };
