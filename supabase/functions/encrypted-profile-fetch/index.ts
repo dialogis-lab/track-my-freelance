@@ -93,7 +93,7 @@ serve(async (req) => {
 
   try {
     // Validate encryption configuration
-    const encryptionCheck = validateEncryptionConfig();
+    const encryptionCheck = await validateEncryptionConfig();
     if (!encryptionCheck.isValid) {
       console.error('Encryption config invalid:', encryptionCheck.error);
       return new Response(

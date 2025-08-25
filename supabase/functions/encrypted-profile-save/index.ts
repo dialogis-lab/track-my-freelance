@@ -91,7 +91,7 @@ serve(async (req) => {
 
     // Handle health check test requests
     if (body.test_encryption === 'health_check') {
-      const encryptionCheck = validateEncryptionConfig();
+      const encryptionCheck = await validateEncryptionConfig();
       if (!encryptionCheck.isValid) {
         return new Response(
           JSON.stringify({ 
@@ -113,7 +113,7 @@ serve(async (req) => {
     }
 
     // Validate encryption config for actual profile saves
-    const encryptionCheck = validateEncryptionConfig();
+    const encryptionCheck = await validateEncryptionConfig();
     if (!encryptionCheck.isValid) {
       console.error('Encryption config invalid:', encryptionCheck.error);
       return new Response(
