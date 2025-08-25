@@ -97,7 +97,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         )
       `)
       .is('stopped_at', null)
-      .or('tags.is.null,not.tags.cs.{pomodoro}')
+      .is('tags', null)
       .order('started_at', { ascending: false })
       .limit(1)
       .maybeSingle();
