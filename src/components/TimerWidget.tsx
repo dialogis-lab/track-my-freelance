@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTimerContext } from '@/contexts/TimerContext';
+import { useDashboardTimers } from '@/hooks/useDashboardTimers';
 import { useTimerSkin } from '@/hooks/useTimerSkin';
 import { usePomodoro } from '@/hooks/usePomodoro';
 import { supabase } from '@/integrations/supabase/client';
-import { subscribeToTimeEntries, type TimerPayload } from '@/lib/realtimeTimer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -32,127 +32,61 @@ interface ActiveEntry {
 
 export function TimerWidget() {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [activeEntry, setActiveEntry] = useState<ActiveEntry | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [notes, setNotes] = useState('');
-  const [elapsedTime, setElapsedTime] = useState(0);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { triggerTimerUpdate } = useTimerContext();
   const { timerSkin } = useTimerSkin();
   const { isEnabled: pomodoroEnabled, setIsEnabled: setPomodoroEnabled, state: pomodoroState } = usePomodoro();
   const { toast } = useToast();
+  
+  // Use shared timer state from useDashboardTimers
+  const { 
+    stopwatch: activeEntry,
+    getStopwatchDisplayTime,
+    isStopwatchRunning
+  } = useDashboardTimers();
+  
+  // Calculate elapsed time in seconds for display
+  const elapsedTime = Math.floor(getStopwatchDisplayTime() / 1000);
 
-  // Load projects and active entry
+  // Load projects and sync state with active entry
   useEffect(() => {
     if (user) {
       loadProjects();
-      loadActiveEntry();
     }
   }, [user]);
 
-  // Listen for real-time updates to time entries
+  // Sync form state when active entry changes
   useEffect(() => {
-    if (!user) return;
-
-    console.log('[TimerWidget] Setting up real-time subscription');
-    
-    const subscription = subscribeToTimeEntries(user.id, {
-      onUpdate: (payload: TimerPayload) => {
-        console.log('[TimerWidget] Real-time update received:', payload);
-        
-        // Skip if this is a pomodoro entry
-        if (payload.new && 'tags' in payload.new && Array.isArray(payload.new.tags) && payload.new.tags.includes('pomodoro')) {
-          console.log('[TimerWidget] Skipping pomodoro entry');
-          return;
-        }
-        
-        // Handle INSERT events (new timer started)  
-        if (payload.eventType === 'INSERT' && payload.new && !payload.new.stopped_at) {
-          const newEntry = payload.new as ActiveEntry;
-          console.log('[TimerWidget] New timer started:', newEntry);
-          
-          if (newEntry.id && newEntry.project_id) {
-            setActiveEntry(newEntry);
-            setSelectedProjectId(newEntry.project_id);
-            setNotes(newEntry.notes || '');
-            setElapsedTime(0);
-            triggerTimerUpdate(); // Notify dashboard and other components
-          }
-        }
-        // Handle UPDATE events (timer stopped)
-        else if (payload.eventType === 'UPDATE' && payload.new && payload.new.stopped_at) {
-          console.log('[TimerWidget] Timer stopped:', payload.new);
-          // Only clear if this was our active entry
-          if (activeEntry && payload.new.id === activeEntry.id) {
-            setActiveEntry(null);
-            setElapsedTime(0);
-            setNotes('');
-            setSelectedProjectId('');
-            triggerTimerUpdate(); // Notify dashboard and other components
-          }
-        }
-      },
-      onSubscribed: () => {
-        console.log('[TimerWidget] Real-time subscription ready, loading active entry');
-        // Always reload to ensure sync
-        loadActiveEntry();
-      },
-      onError: (error) => {
-        console.error('[TimerWidget] Timer sync error:', error);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [user]); // Removed activeEntry dependency to prevent subscription resets
-
-  // Server-offset timer effect using requestAnimationFrame
-  useEffect(() => {
-    let animationFrame: number;
-    let serverOffsetMs = 0;
-    
-    // Get server offset
-    const getServerOffset = async () => {
-      try {
-        const { data, error } = await supabase.rpc('server_time');
-        if (!error && data) {
-          serverOffsetMs = new Date(data).getTime() - Date.now();
-        }
-      } catch (error) {
-        // Fallback to 0 offset
-        serverOffsetMs = 0;
-      }
-    };
-
-    const updateTimer = () => {
-      if (activeEntry && activeEntry.started_at) {
-        const startedMs = new Date(activeEntry.started_at).getTime();
-        if (!Number.isNaN(startedMs)) {
-          const serverTime = Date.now() + serverOffsetMs;
-          const elapsedMs = serverTime - startedMs;
-          setElapsedTime(Math.floor(Math.max(0, elapsedMs) / 1000));
-        }
-      }
-      
-      if (activeEntry) {
-        animationFrame = requestAnimationFrame(updateTimer);
-      }
-    };
-
-    if (activeEntry) {
-      getServerOffset().then(() => {
-        updateTimer();
-      });
+    if (activeEntry?.id) {
+      // Load full entry details to get project_id and notes
+      loadEntryDetails(activeEntry.id);
     } else {
-      setElapsedTime(0);
+      setNotes('');
+      // Keep selectedProjectId for new entries
     }
-
-    return () => {
-      if (animationFrame) {
-        cancelAnimationFrame(animationFrame);
-      }
-    };
   }, [activeEntry]);
+
+  const loadEntryDetails = async (entryId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('time_entries')
+        .select('project_id, notes')
+        .eq('id', entryId)
+        .single();
+
+      if (error) {
+        console.error('Error loading entry details:', error);
+      } else if (data) {
+        setSelectedProjectId(data.project_id);
+        setNotes(data.notes || '');
+      }
+    } catch (err) {
+      console.error('Exception loading entry details:', err);
+    }
+  };
 
   const loadProjects = async () => {
     const { data, error } = await supabase
@@ -172,30 +106,6 @@ export function TimerWidget() {
     }
   };
 
-  const loadActiveEntry = async () => {
-    const { data, error } = await supabase
-      .from('time_entries')
-      .select('*')
-      .eq('user_id', user!.id)
-      .is('stopped_at', null)
-      .not('tags', 'cs', '{"pomodoro"}') // Exclude pomodoro entries
-      .order('started_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error loading active entry:', error);
-    } else if (data) {
-      setActiveEntry(data);
-      setSelectedProjectId(data.project_id);
-      setNotes(data.notes || '');
-    } else {
-      // No active entry found - clear the state
-      setActiveEntry(null);
-      setElapsedTime(0);
-      setNotes('');
-    }
-  };
 
   const startTimer = async () => {
     if (!selectedProjectId) {
@@ -231,7 +141,6 @@ export function TimerWidget() {
         });
       } else {
         console.log('[TimerWidget] Timer started successfully:', data);
-        setActiveEntry(data);
         triggerTimerUpdate(); // Notify other components
         toast({
           title: "Timer started",
@@ -274,8 +183,6 @@ export function TimerWidget() {
         });
       } else {
         console.log('[TimerWidget] Timer stopped successfully');
-        setActiveEntry(null);
-        setElapsedTime(0);
         setNotes('');
         triggerTimerUpdate(); // Notify other components
         toast({

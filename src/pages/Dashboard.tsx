@@ -67,30 +67,8 @@ export default function Dashboard() {
     }
   }, [user, timerUpdated]);
 
-  // Listen for real-time updates to time entries
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('dashboard-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'time_entries',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          loadDashboardData();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
+  // Refresh dashboard when timer events occur (handled by useDashboardTimers)
+  // No need for additional realtime subscription here
 
   const loadDashboardData = async () => {
     await Promise.all([
