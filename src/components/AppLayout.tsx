@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { usePomodoro } from '@/hooks/usePomodoro';
@@ -16,6 +16,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { isAdmin } = useUserRole();
   const { isEnabled: pomodoroEnabled, setIsEnabled: setPomodoroEnabled, state, timeRemaining, formatTime } = usePomodoro();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Clock },
@@ -110,15 +111,9 @@ export function AppLayout({ children }: AppLayoutProps) {
               if (!pomodoroEnabled) {
                 setPomodoroEnabled(true);
               }
-              // Navigate to dashboard to show timer - using React Router
+              // Navigate to dashboard to show timer
               if (location.pathname !== '/dashboard') {
-                // Use React Router navigation instead of window.location
-                const navigate = () => {
-                  const link = document.createElement('a');
-                  link.href = '/dashboard';
-                  link.click();
-                };
-                navigate();
+                navigate('/dashboard');
               }
             }}
             className="flex items-center space-x-2 px-3 py-2 whitespace-nowrap"
