@@ -265,7 +265,14 @@ export function usePomodoro() {
   }, [activeEntryId, user, currentStreak, longestStreak, todaySessions, settings.focusMinutes, toast]);
 
   const startBreak = useCallback(async () => {
-    console.log('Starting break');
+    console.log('Starting break, current state:', { phase, state });
+    
+    // Prevent multiple calls - only start if idle
+    if (state !== 'idle') {
+      console.log('Ignoring startBreak - not idle');
+      return;
+    }
+    
     const nextPhase = getNextPhase();
     const duration = nextPhase === 'longBreak' ? settings.longBreakMinutes : settings.breakMinutes;
     const newTargetTime = new Date(Date.now() + duration * 60 * 1000);
@@ -279,7 +286,7 @@ export function usePomodoro() {
       title: `${nextPhase === 'longBreak' ? 'Long b' : 'B'}reak started`,
       description: `Take a ${duration}-minute break. You've earned it!`,
     });
-  }, [getNextPhase, settings.longBreakMinutes, settings.breakMinutes, toast]);
+  }, [phase, state, getNextPhase, settings.longBreakMinutes, settings.breakMinutes, toast]);
 
   const handlePhaseComplete = useCallback(() => {
     console.log('Phase complete called:', { phase, state });
