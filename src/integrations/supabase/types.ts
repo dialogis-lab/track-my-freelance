@@ -107,6 +107,90 @@ export type Database = {
         }
         Relationships: []
       }
+      expenses: {
+        Row: {
+          billable: boolean
+          category: string | null
+          client_id: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          gross_amount_cents: number
+          id: string
+          net_amount_cents: number
+          project_id: string
+          quantity: number
+          receipt_url: string | null
+          reimbursable: boolean
+          spent_on: string
+          unit_amount_cents: number
+          updated_at: string
+          user_id: string
+          vat_amount_cents: number
+          vat_rate: number
+          vendor: string | null
+        }
+        Insert: {
+          billable?: boolean
+          category?: string | null
+          client_id?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          gross_amount_cents?: number
+          id?: string
+          net_amount_cents?: number
+          project_id: string
+          quantity?: number
+          receipt_url?: string | null
+          reimbursable?: boolean
+          spent_on?: string
+          unit_amount_cents?: number
+          updated_at?: string
+          user_id: string
+          vat_amount_cents?: number
+          vat_rate?: number
+          vendor?: string | null
+        }
+        Update: {
+          billable?: boolean
+          category?: string | null
+          client_id?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          gross_amount_cents?: number
+          id?: string
+          net_amount_cents?: number
+          project_id?: string
+          quantity?: number
+          receipt_url?: string | null
+          reimbursable?: boolean
+          spent_on?: string
+          unit_amount_cents?: number
+          updated_at?: string
+          user_id?: string
+          vat_amount_cents?: number
+          vat_rate?: number
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_expenses_client"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_expenses_project"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       focus_stats: {
         Row: {
           created_at: string
@@ -642,6 +726,54 @@ export type Database = {
       cleanup_stale_timers: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      expense_calculate_amounts: {
+        Args: { p_quantity: number; p_unit_cents: number; p_vat_rate: number }
+        Returns: {
+          gross_cents: number
+          net_cents: number
+          vat_cents: number
+        }[]
+      }
+      expense_upsert: {
+        Args: {
+          p_billable: boolean
+          p_category: string
+          p_client_id: string
+          p_currency: string
+          p_description: string
+          p_id: string
+          p_project_id: string
+          p_quantity: number
+          p_receipt_url: string
+          p_reimbursable: boolean
+          p_spent_on: string
+          p_unit_amount_cents: number
+          p_vat_rate: number
+          p_vendor: string
+        }
+        Returns: {
+          billable: boolean
+          category: string | null
+          client_id: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          gross_amount_cents: number
+          id: string
+          net_amount_cents: number
+          project_id: string
+          quantity: number
+          receipt_url: string | null
+          reimbursable: boolean
+          spent_on: string
+          unit_amount_cents: number
+          updated_at: string
+          user_id: string
+          vat_amount_cents: number
+          vat_rate: number
+          vendor: string | null
+        }
       }
       generate_invoice_number: {
         Args: Record<PropertyKey, never>
