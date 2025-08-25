@@ -50,6 +50,31 @@ export function TimerWidget() {
     }
   }, [user]);
 
+  // Listen for real-time updates to time entries
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('timer-sync')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'time_entries',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          loadActiveEntry();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   // Timer effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -88,6 +113,7 @@ export function TimerWidget() {
     const { data, error } = await supabase
       .from('time_entries')
       .select('*')
+      .eq('user_id', user!.id)
       .is('stopped_at', null)
       .order('started_at', { ascending: false })
       .limit(1)
@@ -99,6 +125,11 @@ export function TimerWidget() {
       setActiveEntry(data);
       setSelectedProjectId(data.project_id);
       setNotes(data.notes || '');
+    } else {
+      // No active entry found - clear the state
+      setActiveEntry(null);
+      setElapsedTime(0);
+      setNotes('');
     }
   };
 
