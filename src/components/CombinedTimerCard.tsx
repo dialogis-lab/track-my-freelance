@@ -410,13 +410,25 @@ export function CombinedTimerCard() {
 
   // Calculate pomodoro remaining time
   const getPomodoroRemaining = () => {
-    if (!pomodoro || !pomodoro.expected_end_at || pomodoro.status !== 'running') {
+    if (!pomodoro || !pomodoro.expected_end_at) {
       return 0;
     }
     
+    // Use the same logic as getPomodoroDisplayTime from useDashboardTimers
     const endTime = new Date(pomodoro.expected_end_at).getTime();
     const currentTime = Date.now() + serverOffsetMs;
-    return Math.max(0, endTime - currentTime);
+    const remaining = Math.max(0, endTime - currentTime);
+    
+    // Debug log for troubleshooting
+    debugLog('Pomodoro remaining calculation:', {
+      endTime: new Date(pomodoro.expected_end_at),
+      currentTime: new Date(currentTime),
+      remaining: remaining,
+      status: pomodoro.status,
+      phase: pomodoro.phase
+    });
+    
+    return remaining;
   };
 
   // Get cycle dots display
