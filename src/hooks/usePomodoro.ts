@@ -47,13 +47,59 @@ export function usePomodoro() {
   const [longestStreak, setLongestStreak] = useState(0);
   const [activeEntryId, setActiveEntryId] = useState<string | null>(null);
 
-  // Load settings and today's stats
+  // Load active entry and sync Pomodoro state
   useEffect(() => {
     if (user) {
       loadSettings();
       loadTodayStats();
+      loadPomodoroStateFromDatabase();
     }
   }, [user]);
+
+  // Load Pomodoro state from active time entry
+  const loadPomodoroStateFromDatabase = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('time_entries')
+        .select('id, started_at, notes, tags')
+        .is('stopped_at', null)
+        .eq('user_id', user.id)
+        .order('started_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!error && data) {
+        // Check if this is a Pomodoro session
+        const isPomodoroSession = data.tags?.includes('pomodoro');
+        if (isPomodoroSession && isEnabled) {
+          const startTime = new Date(data.started_at).getTime();
+          const now = new Date().getTime();
+          const elapsed = Math.floor((now - startTime) / 1000);
+          const focusDuration = settings.focusMinutes * 60;
+          const remaining = Math.max(0, focusDuration - elapsed);
+          
+          if (remaining > 0) {
+            // Resume the Pomodoro timer
+            setActiveEntryId(data.id);
+            setPhase('focus');
+            setState('running');
+            setTimeRemaining(remaining);
+            setTargetTime(new Date(startTime + focusDuration * 1000));
+          } else {
+            // Timer should have finished, but entry is still active
+            setActiveEntryId(data.id);
+            setPhase('focus');
+            setState('idle');
+            setTimeRemaining(0);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading Pomodoro state:', error);
+    }
+  };
 
   // Real-time subscription for timer updates
   useEffect(() => {
@@ -72,8 +118,13 @@ export function usePomodoro() {
         (payload) => {
           console.log('Pomodoro timer update received:', payload);
           
-          // If our active pomodoro timer was stopped externally, reset state
-          if (payload.eventType === 'UPDATE' && activeEntryId === payload.new?.id) {
+          if (payload.eventType === 'INSERT') {
+            // New timer started, check if it's a Pomodoro
+            const isPomodoro = payload.new?.tags?.includes('pomodoro');
+            if (isPomodoro && isEnabled) {
+              loadPomodoroStateFromDatabase();
+            }
+          } else if (payload.eventType === 'UPDATE' && activeEntryId === payload.new?.id) {
             const wasStopped = payload.old?.stopped_at === null && payload.new?.stopped_at !== null;
             if (wasStopped) {
               setState('idle');
@@ -97,7 +148,7 @@ export function usePomodoro() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, activeEntryId, triggerTimerUpdate, toast]);
+  }, [user, activeEntryId, triggerTimerUpdate, toast, isEnabled]);
 
   // Timer tick effect
   useEffect(() => {
@@ -534,6 +585,7 @@ export function usePomodoro() {
     resumePomodoro,
     updateSettings,
     requestNotificationPermission,
+    loadPomodoroStateFromDatabase,
 
     // Helpers
     formatTime,

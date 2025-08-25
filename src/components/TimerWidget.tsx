@@ -39,7 +39,12 @@ export function TimerWidget() {
   const { user } = useAuth();
   const { triggerTimerUpdate } = useTimerContext();
   const { timerSkin } = useTimerSkin();
-  const { isEnabled: pomodoroEnabled, setIsEnabled: setPomodoroEnabled, state: pomodoroState } = usePomodoro();
+  const { 
+    isEnabled: pomodoroEnabled, 
+    setIsEnabled: setPomodoroEnabled, 
+    state: pomodoroState,
+    loadPomodoroStateFromDatabase
+  } = usePomodoro();
   const { toast } = useToast();
 
   // Load projects and active entry
@@ -72,6 +77,11 @@ export function TimerWidget() {
             // New timer started
             loadActiveEntry();
             triggerTimerUpdate();
+            
+            // If Pomodoro mode is enabled, sync the state
+            if (pomodoroEnabled) {
+              loadPomodoroStateFromDatabase();
+            }
           } else if (payload.eventType === 'UPDATE') {
             // Timer updated (likely stopped)
             const wasStopped = payload.old?.stopped_at === null && payload.new?.stopped_at !== null;
