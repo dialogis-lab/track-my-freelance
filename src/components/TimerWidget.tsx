@@ -64,16 +64,22 @@ export function TimerWidget() {
           table: 'time_entries',
           filter: `user_id=eq.${user.id}`
         },
-        () => {
+        (payload) => {
+          console.log('Timer sync update received:', payload);
+          // Reload active entry to sync timer state
           loadActiveEntry();
+          // Trigger dashboard update
+          triggerTimerUpdate();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Timer sync subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, triggerTimerUpdate]);
 
   // Timer effect
   useEffect(() => {
