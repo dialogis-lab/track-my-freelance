@@ -66,9 +66,25 @@ export function TimerWidget() {
         },
         (payload) => {
           console.log('Timer update received:', payload);
-          // Reload active entry when any timer change occurs
-          loadActiveEntry();
-          triggerTimerUpdate();
+          
+          // Handle different types of updates
+          if (payload.eventType === 'INSERT') {
+            // New timer started
+            loadActiveEntry();
+            triggerTimerUpdate();
+          } else if (payload.eventType === 'UPDATE') {
+            // Timer updated (likely stopped)
+            const wasStopped = payload.old?.stopped_at === null && payload.new?.stopped_at !== null;
+            if (wasStopped) {
+              // Timer was stopped, refresh active entry
+              loadActiveEntry();
+              triggerTimerUpdate();
+            }
+          } else if (payload.eventType === 'DELETE') {
+            // Timer deleted
+            loadActiveEntry();
+            triggerTimerUpdate();
+          }
         }
       )
       .subscribe();

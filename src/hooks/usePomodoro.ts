@@ -71,14 +71,23 @@ export function usePomodoro() {
         },
         (payload) => {
           console.log('Pomodoro timer update received:', payload);
-          // If a timer was stopped externally, reset pomodoro state
-          if (payload.eventType === 'UPDATE' && payload.new?.stopped_at && payload.old?.stopped_at === null) {
-            if (activeEntryId === payload.new.id) {
+          
+          // If our active pomodoro timer was stopped externally, reset state
+          if (payload.eventType === 'UPDATE' && activeEntryId === payload.new?.id) {
+            const wasStopped = payload.old?.stopped_at === null && payload.new?.stopped_at !== null;
+            if (wasStopped) {
               setState('idle');
               setTargetTime(null);
               setTimeRemaining(0);
               setActiveEntryId(null);
               triggerTimerUpdate();
+              
+              // Show notification about external stop
+              toast({
+                title: "Timer stopped",
+                description: "Your Pomodoro timer was stopped from another device.",
+                variant: "default",
+              });
             }
           }
         }
@@ -88,7 +97,7 @@ export function usePomodoro() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, activeEntryId]);
+  }, [user, activeEntryId, triggerTimerUpdate, toast]);
 
   // Timer tick effect
   useEffect(() => {

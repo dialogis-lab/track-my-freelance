@@ -53,7 +53,18 @@ export default function StandardFocus() {
         },
         (payload) => {
           console.log('Standard focus update received:', payload);
-          // Reload active entry when any timer change occurs
+          
+          // Check if our active timer was stopped
+          if (payload.eventType === 'UPDATE' && activeEntry?.id === payload.new?.id) {
+            const wasStopped = payload.old?.stopped_at === null && payload.new?.stopped_at !== null;
+            if (wasStopped) {
+              // Our timer was stopped externally, redirect to dashboard
+              navigate('/dashboard');
+              return;
+            }
+          }
+          
+          // Reload active entry for other changes
           loadActiveEntry();
         }
       )
@@ -62,7 +73,7 @@ export default function StandardFocus() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, activeEntry?.id, navigate]);
 
   // Timer effect
   useEffect(() => {
