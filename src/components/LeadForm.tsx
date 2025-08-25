@@ -115,15 +115,15 @@ const LeadForm = ({ className = "", variant = "hero" }: LeadFormProps) => {
       />
       
       {variant === "hero" ? (
-        <div className="flex flex-col sm:flex-row gap-4 max-w-2xl w-full">
-          <div className="flex-[2] space-y-2">
+        <div className="flex flex-col gap-4 max-w-md w-full">
+          <div className="space-y-2">
             <Input
               type="email"
               placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="h-12 bg-background border-2 border-border focus:border-primary"
+              className="h-12 bg-background border-2 border-border focus:border-primary w-full"
               aria-label="Email address for waitlist signup"
             />
             {errors.email && (
@@ -133,7 +133,7 @@ const LeadForm = ({ className = "", variant = "hero" }: LeadFormProps) => {
           <Button 
             type="submit" 
             disabled={isLoading}
-            className="h-12 px-8 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-md hover:shadow-lg transition-all duration-200"
+            className="h-12 px-8 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-md hover:shadow-lg transition-all duration-200 w-full"
             aria-describedby={isLoading ? "loading-status" : undefined}
           >
             {isLoading ? (
