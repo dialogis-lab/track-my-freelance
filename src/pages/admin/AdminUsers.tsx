@@ -34,43 +34,18 @@ export function AdminUsers() {
     try {
       setLoading(true);
 
-      // First get all users from auth.users (via profiles which we can access)
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, company_name')
-        .order('created_at', { ascending: false });
+      // Get all user data using the new admin function
+      const { data: usersData, error } = await supabase.rpc('get_admin_users');
 
-      if (profilesError) throw profilesError;
+      if (error) throw error;
 
-      // Get user roles
-      const { data: roles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
-
-      if (rolesError) throw rolesError;
-
-      // Create a map of user roles
-      const roleMap = new Map(roles?.map(r => [r.user_id, r.role]) || []);
-
-      // Get auth information from admin function
-      const { data: authData, error: authError } = await supabase
-        .rpc('get_admin_user_stats'); // We'll enhance this later
-
-      // For now, create user list from profiles
-      const usersData: AdminUser[] = (profiles || []).map(profile => ({
-        id: profile.id,
-        email: 'Loading...', // We'll get this from a dedicated admin function
-        created_at: new Date().toISOString(),
-        last_sign_in_at: null,
-        email_confirmed_at: null,
-        role: roleMap.get(profile.id) || 'user',
-        company_name: profile.company_name
-      }));
-
-      setUsers(usersData);
+      // Parse the JSON response and cast to AdminUser array
+      const users: AdminUser[] = Array.isArray(usersData) ? (usersData as unknown as AdminUser[]) : [];
+      setUsers(users);
     } catch (error: any) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');
+      setUsers([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
