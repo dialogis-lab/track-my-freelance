@@ -268,9 +268,50 @@ export function CombinedTimerCard() {
       debugLog('Timer started successfully');
 
       if (coupling) {
-        // Start Pomodoro with fresh session to use current settings
-        await supabase.rpc('pomo_start');
-        toast({ title: "Timer started", description: "Pomodoro session is now running with your timer." });
+        // Start Pomodoro session directly instead of using RPC
+        try {
+          // First stop any existing pomodoro sessions
+          await supabase
+            .from('pomodoro_sessions')
+            .update({ 
+              status: 'stopped',
+              revised_at: new Date().toISOString()
+            })
+            .eq('user_id', user!.id)
+            .in('status', ['running', 'paused']);
+
+          // Create new pomodoro session
+          const duration = 25 * 60 * 1000; // 25 minutes default
+          const now = new Date();
+          const endTime = new Date(now.getTime() + duration);
+
+          const { error: pomodoroError } = await supabase
+            .from('pomodoro_sessions')
+            .insert({
+              user_id: user!.id,
+              status: 'running',
+              phase: 'focus',
+              started_at: now.toISOString(),
+              expected_end_at: endTime.toISOString(),
+              elapsed_ms: 0,
+              revised_at: now.toISOString()
+            });
+
+          if (pomodoroError) {
+            debugLog('Error creating pomodoro session:', pomodoroError);
+            toast({ 
+              title: "Timer started", 
+              description: "Stopwatch started but Pomodoro sync failed. Try restarting.",
+              variant: "destructive"
+            });
+          } else {
+            debugLog('Pomodoro session created successfully');
+            toast({ title: "Timer started", description: "Pomodoro session is now running with your timer." });
+          }
+        } catch (pomodoroError) {
+          debugLog('Error with pomodoro session:', pomodoroError);
+          toast({ title: "Timer started", description: "Stopwatch started but Pomodoro sync failed." });
+        }
       } else {
         toast({ title: "Timer started" });
       }
@@ -311,8 +352,28 @@ export function CombinedTimerCard() {
       }
 
       if (coupling && isPomodoroRunning) {
-        await supabase.rpc('pomo_stop');
-        toast({ title: "Timer stopped", description: "Both timer and Pomodoro session stopped." });
+        // Stop pomodoro session directly instead of using RPC
+        try {
+          const { error: pomodoroError } = await supabase
+            .from('pomodoro_sessions')
+            .update({ 
+              status: 'stopped',
+              revised_at: new Date().toISOString()
+            })
+            .eq('user_id', user!.id)
+            .in('status', ['running', 'paused']);
+
+          if (pomodoroError) {
+            debugLog('Error stopping pomodoro session:', pomodoroError);
+            toast({ title: "Timer stopped", description: "Stopwatch stopped but Pomodoro stop failed." });
+          } else {
+            debugLog('Pomodoro session stopped successfully');
+            toast({ title: "Timer stopped", description: "Both timer and Pomodoro session stopped." });
+          }
+        } catch (pomodoroError) {
+          debugLog('Error with pomodoro session stop:', pomodoroError);
+          toast({ title: "Timer stopped", description: "Stopwatch stopped but Pomodoro stop failed." });
+        }
       } else {
         toast({ title: "Timer stopped" });
       }
