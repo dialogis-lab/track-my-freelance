@@ -48,9 +48,8 @@ export function TimerWidget() {
     if (user) {
       loadProjects();
       loadActiveEntry();
-      triggerTimerUpdate(); // Trigger context update on mount
     }
-  }, [user, triggerTimerUpdate]);
+  }, [user]);
 
   // Listen for real-time updates to time entries
   useEffect(() => {
@@ -235,7 +234,6 @@ export function TimerWidget() {
       } else {
         console.log('[TimerWidget] Timer started successfully:', data);
         setActiveEntry(data);
-        triggerTimerUpdate(); // Notify other components
         toast({
           title: "Timer started",
           description: "Time tracking has begun for the selected project.",
@@ -280,7 +278,6 @@ export function TimerWidget() {
         setActiveEntry(null);
         setElapsedTime(0);
         setNotes('');
-        triggerTimerUpdate(); // Notify other components
         toast({
           title: "Timer stopped",
           description: "Time entry has been saved successfully.",
