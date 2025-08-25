@@ -123,16 +123,17 @@ export default function StandardFocus() {
           )
         `)
         .is('stopped_at', null)
+        .not('tags', 'cs', '{pomodoro}') // Exclude Pomodoro sessions
         .order('started_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (!error && data) {
         setActiveEntry(data);
       } else {
-        // No active entry found, redirect to dashboard
+        // No active standard timer found, redirect to dashboard
         setActiveEntry(null);
-        if (!error || error.code === 'PGRST116') {
+        if (!error) {
           navigate('/dashboard');
         }
       }

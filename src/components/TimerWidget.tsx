@@ -143,9 +143,10 @@ export function TimerWidget() {
       .from('time_entries')
       .select('*')
       .is('stopped_at', null)
+      .not('tags', 'cs', '{pomodoro}') // Exclude Pomodoro sessions
       .order('started_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (error && error.code !== 'PGRST116') {
       console.error('Error loading active entry:', error);
