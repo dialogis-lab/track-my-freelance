@@ -54,8 +54,10 @@ export function TimerWidget() {
   useEffect(() => {
     if (!user) return;
 
+    console.log('Setting up timer sync for user:', user.id);
+    
     const channel = supabase
-      .channel('timer-sync')
+      .channel(`timer-sync-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -67,9 +69,10 @@ export function TimerWidget() {
         (payload) => {
           console.log('Timer sync update received:', payload);
           // Reload active entry to sync timer state
-          loadActiveEntry();
-          // Trigger dashboard update
-          triggerTimerUpdate();
+          setTimeout(() => {
+            loadActiveEntry();
+            triggerTimerUpdate();
+          }, 100);
         }
       )
       .subscribe((status) => {
@@ -77,6 +80,7 @@ export function TimerWidget() {
       });
 
     return () => {
+      console.log('Cleaning up timer sync channel');
       supabase.removeChannel(channel);
     };
   }, [user, triggerTimerUpdate]);
@@ -105,6 +109,7 @@ export function TimerWidget() {
         id, name, client_id,
         clients:client_id (name)
       `)
+      .eq('user_id', user!.id)
       .eq('archived', false)
       .order('name');
 
