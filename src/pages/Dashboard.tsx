@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTimerContext } from '@/contexts/TimerContext';
+import { useDashboardTimers } from '@/hooks/useDashboardTimers';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/AppLayout';
@@ -35,12 +36,29 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { timerUpdated } = useTimerContext();
   const navigate = useNavigate();
+  
+  // Dashboard Timer Hook
+  const {
+    getStopwatchDisplayTime,
+    getPomodoroDisplayTime,
+    isStopwatchRunning,
+    isPomodoroRunning,
+    pomodoroPhase,
+    loading: timerLoading
+  } = useDashboardTimers();
 
   useEffect(() => {
     if (user) {
       loadDashboardData();
     }
   }, [user]);
+
+  // Set debug mode for timer
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('TIMER_DEBUG', '1');
+    }
+  }, []);
 
   // Refresh dashboard when timer events occur
   useEffect(() => {
@@ -264,6 +282,17 @@ export default function Dashboard() {
           {/* Timer Widget - for controls */}
           <div>
             <TimerWidget />
+            
+            {/* Debug Info */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mt-4 p-4 bg-gray-100 rounded text-xs">
+                <div>Stopwatch Running: {isStopwatchRunning ? 'YES' : 'NO'}</div>
+                <div>Pomodoro Running: {isPomodoroRunning ? 'YES' : 'NO'}</div>
+                <div>Stopwatch Time: {getStopwatchDisplayTime()}ms</div>
+                <div>Pomodoro Time: {getPomodoroDisplayTime()}ms</div>
+                <div>Timer Loading: {timerLoading ? 'YES' : 'NO'}</div>
+              </div>
+            )}
           </div>
 
           {/* Recent Activity */}
