@@ -79,17 +79,21 @@ export function useDashboardTimers() {
           eventType: payload.eventType,
           id: payload.new?.id,
           stopped_at: payload.new?.stopped_at,
-          started_at: payload.new?.started_at
+          started_at: payload.new?.started_at,
+          device: 'cross-device-sync'
         });
         handleStopwatchUpdate(payload);
       },
       onSubscribed: () => {
-        debugLog('Stopwatch channel subscribed - syncing current state');
-        // Sync current state when subscription is ready
-        setTimeout(() => loadCurrentTimerStates(), 50);
+        debugLog('Stopwatch channel subscribed - syncing current state for cross-device');
+        // Sync current state when subscription is ready - critical for mobile sync
+        setTimeout(() => {
+          debugLog('Performing cross-device sync after subscription');
+          loadCurrentTimerStates();
+        }, 50);
       },
       onError: (error) => {
-        debugLog('Stopwatch subscription error:', error);
+        debugLog('Stopwatch subscription error - attempting recovery:', error);
         // Implement exponential backoff for error recovery
         const retryDelay = subscriptionsRef.current.length > 0 ? 1000 : 2000;
         setTimeout(() => {

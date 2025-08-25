@@ -168,16 +168,22 @@ export function usePomodoro() {
   useEffect(() => {
     if (!user) return;
 
+    console.log('[Pomodoro] Setting up realtime subscription for user:', user.id);
+    
     const subscription = subscribeToPomodoroSessions(user.id, {
       onUpdate: (payload: TimerPayload) => {
+        console.log('[Pomodoro] Realtime update received:', payload);
+        
         if (payload.new && typeof payload.new === 'object') {
           const session = payload.new;
           
           // Robust null-guarded field updates
           if (session.phase && typeof session.phase === 'string') {
+            console.log('[Pomodoro] Setting phase to:', session.phase);
             setPhase(session.phase as PomodoroPhase);
           }
           if (session.status && typeof session.status === 'string') {
+            console.log('[Pomodoro] Setting state to:', session.status);
             setState(session.status as PomodoroState);
           }
           
@@ -185,27 +191,37 @@ export function usePomodoro() {
             const endTime = new Date(session.expected_end_at);
             const now = new Date();
             const remaining = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
+            console.log('[Pomodoro] Setting running timer with remaining seconds:', remaining);
             setTimeRemaining(remaining);
             setTargetTime(endTime);
-          } else {
+          } else if (session.status === 'paused') {
             const elapsedSeconds = session.elapsed_ms && typeof session.elapsed_ms === 'number' 
               ? Math.floor(session.elapsed_ms / 1000) 
               : 0;
+            console.log('[Pomodoro] Setting paused timer with elapsed seconds:', elapsedSeconds);
             setTimeRemaining(elapsedSeconds);
+            setTargetTime(null);
+          } else if (session.status === 'idle' || session.status === 'stopped') {
+            console.log('[Pomodoro] Setting idle/stopped state');
+            setTimeRemaining(0);
             setTargetTime(null);
           }
         }
       },
       onSubscribed: () => {
+        console.log('[Pomodoro] Realtime subscription established');
         // Reload current session after subscription is ready
         loadCurrentSession();
       },
       onError: (error) => {
-        console.error('Pomodoro sync error:', error);
+        console.error('[Pomodoro] Realtime sync error:', error);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('[Pomodoro] Cleaning up realtime subscription');
+      subscription.unsubscribe();
+    };
   }, [user]);
 
   const getNextPhase = useCallback((): PomodoroPhase => {
