@@ -160,11 +160,187 @@ export function usePomodoro() {
     return () => subscription.unsubscribe();
   }, [user]);
 
-  // Timer tick effect
+  const getNextPhase = useCallback((): PomodoroPhase => {
+    if (phase === 'focus') {
+      const nextSession = currentSession + 1;
+      // Check if it's time for a long break
+      if (settings.longBreakEvery > 0 && nextSession % settings.longBreakEvery === 0) {
+        return 'longBreak';
+      }
+      return 'break';
+    }
+    return 'focus';
+  }, [phase, currentSession, settings.longBreakEvery]);
+
+  const playSound = useCallback(() => {
+    if (settings.soundEnabled && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      // Create a simple beep sound using Web Audio API
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    }
+  }, [settings.soundEnabled]);
+
+  const showNotification = useCallback((title: string, body: string) => {
+    if (settings.notificationsEnabled && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, {
+        body,
+        icon: '/icon-192.png',
+        badge: '/icon-192.png'
+      });
+    }
+  }, [settings.notificationsEnabled]);
+
+  const finishFocusSession = useCallback(async () => {
+    if (!activeEntryId || !user) return;
+
+    try {
+      // Stop the time entry
+      const { error: entryError } = await supabase
+        .from('time_entries')
+        .update({
+          stopped_at: new Date().toISOString(),
+        })
+        .eq('id', activeEntryId);
+
+      if (entryError) throw entryError;
+
+      // Increment streak and session counts
+      const newStreak = currentStreak + 1;
+      const newLongestStreak = Math.max(longestStreak, newStreak);
+      const newSessionsToday = todaySessions + 1;
+
+      // Update focus stats with streak information
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Manual upsert since RPC doesn't exist yet
+      const { error: statsError } = await supabase
+        .from('focus_stats')
+        .upsert({
+          user_id: user.id,
+          date: today,
+          sessions: newSessionsToday,
+          focus_minutes: Math.floor(settings.focusMinutes),
+          sessions_today: newSessionsToday,
+          current_streak: newStreak,
+          longest_streak: newLongestStreak
+        }, {
+          onConflict: 'user_id,date'
+        });
+
+      if (statsError) throw statsError;
+
+      setActiveEntryId(null);
+      setCurrentSession(prev => prev + 1);
+      setTodaySessions(newSessionsToday);
+      setCurrentStreak(newStreak);
+      setLongestStreak(newLongestStreak);
+
+      // Show streak milestone notification
+      if (newStreak > 0 && newStreak % 4 === 0) {
+        toast({
+          title: `🎉 Streak Milestone!`,
+          description: `${newStreak} focus sessions completed! Long break unlocked.`,
+        });
+      } else {
+        toast({
+          title: "Great job! 🎉",
+          description: `You completed a ${settings.focusMinutes} min focus block!`,
+        });
+      }
+
+    } catch (error) {
+      console.error('Error finishing focus session:', error);
+    }
+  }, [activeEntryId, user, currentStreak, longestStreak, todaySessions, settings.focusMinutes, toast]);
+
+  const startBreak = useCallback(async () => {
+    console.log('Starting break');
+    const nextPhase = getNextPhase();
+    const duration = nextPhase === 'longBreak' ? settings.longBreakMinutes : settings.breakMinutes;
+    const newTargetTime = new Date(Date.now() + duration * 60 * 1000);
+    
+    setPhase(nextPhase);
+    setState('running');
+    setTimeRemaining(duration * 60);
+    setTargetTime(newTargetTime);
+
+    toast({
+      title: `${nextPhase === 'longBreak' ? 'Long b' : 'B'}reak started`,
+      description: `Take a ${duration}-minute break. You've earned it!`,
+    });
+  }, [getNextPhase, settings.longBreakMinutes, settings.breakMinutes, toast]);
+
+  const handlePhaseComplete = useCallback(() => {
+    console.log('Phase complete called:', { phase, state });
+    
+    // Prevent multiple calls
+    if (state !== 'running') {
+      console.log('Ignoring phase complete - not running');
+      return;
+    }
+    
+    setState('idle');
+    setTargetTime(null);
+    playSound();
+
+    if (phase === 'focus') {
+      // Focus completed - finish the time entry
+      finishFocusSession();
+      
+      showNotification(
+        'Focus completed!',
+        `Great job! Time for a ${getNextPhase() === 'longBreak' ? 'long ' : ''}break.`
+      );
+
+      if (settings.autoStartBreak) {
+        setTimeout(() => startBreak(), 1000);
+      } else {
+        const nextPhase = getNextPhase();
+        setPhase(nextPhase);
+        toast({
+          title: "Focus session completed!",
+          description: `Ready to start your ${nextPhase === 'longBreak' ? 'long ' : ''}break?`,
+        });
+      }
+    } else {
+      // Break completed
+      showNotification(
+        'Break finished!',
+        'Ready to start your next focus session?'
+      );
+
+      if (settings.autoStartFocus) {
+        setTimeout(() => {
+          setPhase('focus');
+          // Don't auto-start focus, just prepare
+        }, 1000);
+      } else {
+        setPhase('focus');
+        toast({
+          title: "Break finished!",
+          description: "Ready for your next focus session?",
+        });
+      }
+    }
+  }, [phase, state, settings, playSound, finishFocusSession, showNotification, getNextPhase, startBreak, toast]);
+
+  // Timer tick effect with proper dependencies
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
     if (state === 'running' && targetTime) {
+      console.log('Starting timer interval for phase:', phase);
       interval = setInterval(() => {
         const now = new Date();
         const remaining = Math.max(0, Math.floor((targetTime.getTime() - now.getTime()) / 1000));
@@ -172,15 +348,19 @@ export function usePomodoro() {
         setTimeRemaining(remaining);
         
         if (remaining === 0) {
+          console.log('Timer reached zero, calling handlePhaseComplete');
           handlePhaseComplete();
         }
       }, 1000);
     }
 
     return () => {
-      if (interval) clearInterval(interval);
+      if (interval) {
+        console.log('Clearing timer interval for phase:', phase);
+        clearInterval(interval);
+      }
     };
-  }, [state, targetTime]);
+  }, [state, targetTime, handlePhaseComplete, phase]);
 
   const loadSettings = async () => {
     try {
@@ -254,92 +434,9 @@ export function usePomodoro() {
     return Notification.permission === 'granted';
   };
 
-  const showNotification = (title: string, body: string) => {
-    if (settings.notificationsEnabled && 'Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, {
-        body,
-        icon: '/icon-192.png',
-        badge: '/icon-192.png'
-      });
-    }
-  };
 
-  const playSound = () => {
-    if (settings.soundEnabled && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      // Create a simple beep sound using Web Audio API
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.5);
-    }
-  };
 
-  const handlePhaseComplete = () => {
-    setState('idle');
-    setTargetTime(null);
-    playSound();
 
-    if (phase === 'focus') {
-      // Focus completed - finish the time entry
-      finishFocusSession();
-      
-      showNotification(
-        'Focus completed!',
-        `Great job! Time for a ${getNextPhase() === 'longBreak' ? 'long ' : ''}break.`
-      );
-
-      if (settings.autoStartBreak) {
-        setTimeout(() => startBreak(), 1000);
-      } else {
-        const nextPhase = getNextPhase();
-        setPhase(nextPhase);
-        toast({
-          title: "Focus session completed!",
-          description: `Ready to start your ${nextPhase === 'longBreak' ? 'long ' : ''}break?`,
-        });
-      }
-    } else {
-      // Break completed
-      showNotification(
-        'Break finished!',
-        'Ready to start your next focus session?'
-      );
-
-      if (settings.autoStartFocus) {
-        setTimeout(() => {
-          setPhase('focus');
-          // Don't auto-start focus, just prepare
-        }, 1000);
-      } else {
-        setPhase('focus');
-        toast({
-          title: "Break finished!",
-          description: "Ready for your next focus session?",
-        });
-      }
-    }
-  };
-
-  const getNextPhase = (): PomodoroPhase => {
-    if (phase === 'focus') {
-      const nextSession = currentSession + 1;
-      // Check if it's time for a long break
-      if (settings.longBreakEvery > 0 && nextSession % settings.longBreakEvery === 0) {
-        return 'longBreak';
-      }
-      return 'break';
-    }
-    return 'focus';
-  };
 
   const startFocus = async (projectId: string) => {
     if (!projectId) {
@@ -448,85 +545,7 @@ export function usePomodoro() {
     }
   };
 
-  const startBreak = async () => {
-    console.log('Starting break');
-    const nextPhase = getNextPhase();
-    const duration = nextPhase === 'longBreak' ? settings.longBreakMinutes : settings.breakMinutes;
-    const newTargetTime = new Date(Date.now() + duration * 60 * 1000);
-    
-    setPhase(nextPhase);
-    setState('running');
-    setTimeRemaining(duration * 60);
-    setTargetTime(newTargetTime);
 
-    toast({
-      title: `${nextPhase === 'longBreak' ? 'Long b' : 'B'}reak started`,
-      description: `Take a ${duration}-minute break. You've earned it!`,
-    });
-  };
-
-  const finishFocusSession = async () => {
-    if (!activeEntryId) return;
-
-    try {
-      // Stop the time entry
-      const { error: entryError } = await supabase
-        .from('time_entries')
-        .update({
-          stopped_at: new Date().toISOString(),
-        })
-        .eq('id', activeEntryId);
-
-      if (entryError) throw entryError;
-
-      // Increment streak and session counts
-      const newStreak = currentStreak + 1;
-      const newLongestStreak = Math.max(longestStreak, newStreak);
-      const newSessionsToday = todaySessions + 1;
-
-      // Update focus stats with streak information
-      const today = new Date().toISOString().split('T')[0];
-      
-      // Manual upsert since RPC doesn't exist yet
-      const { error: statsError } = await supabase
-        .from('focus_stats')
-        .upsert({
-          user_id: user!.id,
-          date: today,
-          sessions: newSessionsToday,
-          focus_minutes: Math.floor(settings.focusMinutes),
-          sessions_today: newSessionsToday,
-          current_streak: newStreak,
-          longest_streak: newLongestStreak
-        }, {
-          onConflict: 'user_id,date'
-        });
-
-      if (statsError) throw statsError;
-
-      setActiveEntryId(null);
-      setCurrentSession(prev => prev + 1);
-      setTodaySessions(newSessionsToday);
-      setCurrentStreak(newStreak);
-      setLongestStreak(newLongestStreak);
-
-      // Show streak milestone notification
-      if (newStreak > 0 && newStreak % 4 === 0) {
-        toast({
-          title: `🎉 Streak Milestone!`,
-          description: `${newStreak} focus sessions completed! Long break unlocked.`,
-        });
-      } else {
-        toast({
-          title: "Great job! 🎉",
-          description: `You completed a ${settings.focusMinutes} min focus block!`,
-        });
-      }
-
-    } catch (error) {
-      console.error('Error finishing focus session:', error);
-    }
-  };
 
   const stopPomodoro = async () => {
     console.log('Stopping pomodoro');
