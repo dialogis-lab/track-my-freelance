@@ -55,6 +55,39 @@ export function usePomodoro() {
     }
   }, [user]);
 
+  // Real-time synchronization for Pomodoro state
+  useEffect(() => {
+    if (!user) return;
+
+    console.log('Setting up Pomodoro sync for user:', user.id);
+    
+    const channel = supabase
+      .channel(`pomodoro-sync-${user.id}`, {
+        config: {
+          broadcast: { self: false }
+        }
+      })
+      .on('broadcast', { event: 'pomodoro-state' }, (payload) => {
+        console.log('Pomodoro sync received:', payload);
+        
+        const { phase: newPhase, state: newState, timeRemaining: newTimeRemaining, targetTime: newTargetTime, activeEntryId: newActiveEntryId } = payload.payload;
+        
+        setPhase(newPhase);
+        setState(newState);
+        setTimeRemaining(newTimeRemaining);
+        setTargetTime(newTargetTime ? new Date(newTargetTime) : null);
+        setActiveEntryId(newActiveEntryId);
+      })
+      .subscribe((status) => {
+        console.log('Pomodoro sync subscription status:', status);
+      });
+
+    return () => {
+      console.log('Cleaning up Pomodoro sync channel');
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   // Timer tick effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -137,6 +170,34 @@ export function usePomodoro() {
           variant: "destructive",
         });
       }
+    }
+  };
+
+  // Broadcast Pomodoro state to other devices
+  const broadcastPomodoroState = async (customState?: {
+    phase?: PomodoroPhase;
+    state?: PomodoroState;
+    timeRemaining?: number;
+    targetTime?: Date | null;
+    activeEntryId?: string | null;
+  }) => {
+    if (!user) return;
+    
+    try {
+      const channel = supabase.channel(`pomodoro-sync-${user.id}`);
+      await channel.send({
+        type: 'broadcast',
+        event: 'pomodoro-state',
+        payload: {
+          phase: customState?.phase ?? phase,
+          state: customState?.state ?? state,
+          timeRemaining: customState?.timeRemaining ?? timeRemaining,
+          targetTime: (customState?.targetTime ?? targetTime)?.toISOString() || null,
+          activeEntryId: customState?.activeEntryId ?? activeEntryId,
+        }
+      });
+    } catch (error) {
+      console.error('Error broadcasting Pomodoro state:', error);
     }
   };
 
@@ -262,14 +323,26 @@ export function usePomodoro() {
 
       if (error) throw error;
 
-      setActiveEntryId(data.id);
-      setPhase('focus');
-      setState('running');
-      
+      const newPhase: PomodoroPhase = 'focus';
+      const newState: PomodoroState = 'running';
       const duration = settings.focusMinutes * 60;
-      setTimeRemaining(duration);
-      setTargetTime(new Date(Date.now() + duration * 1000));
+      const newTargetTime = new Date(Date.now() + duration * 1000);
 
+      setActiveEntryId(data.id);
+      setPhase(newPhase);
+      setState(newState);
+      setTimeRemaining(duration);
+      setTargetTime(newTargetTime);
+
+      // Broadcast state to other devices with correct values
+      await broadcastPomodoroState({
+        phase: newPhase,
+        state: newState,
+        timeRemaining: duration,
+        targetTime: newTargetTime,
+        activeEntryId: data.id
+      });
+      
       triggerTimerUpdate();
       
       toast({
@@ -286,14 +359,24 @@ export function usePomodoro() {
     }
   };
 
-  const startBreak = () => {
+  const startBreak = async () => {
     const nextPhase = getNextPhase();
     const duration = nextPhase === 'longBreak' ? settings.longBreakMinutes : settings.breakMinutes;
+    const newTargetTime = new Date(Date.now() + duration * 60 * 1000);
     
     setPhase(nextPhase);
     setState('running');
     setTimeRemaining(duration * 60);
-    setTargetTime(new Date(Date.now() + duration * 60 * 1000));
+    setTargetTime(newTargetTime);
+
+    // Broadcast state to other devices with correct values
+    await broadcastPomodoroState({
+      phase: nextPhase,
+      state: 'running',
+      timeRemaining: duration * 60,
+      targetTime: newTargetTime,
+      activeEntryId
+    });
 
     toast({
       title: `${nextPhase === 'longBreak' ? 'Long b' : 'B'}reak started`,
@@ -366,9 +449,18 @@ export function usePomodoro() {
   };
 
   const stopPomodoro = async () => {
-    setState('idle');
+    const newState: PomodoroState = 'idle';
+    
+    setState(newState);
     setTargetTime(null);
     setTimeRemaining(0);
+
+    // Broadcast state to other devices with correct values
+    await broadcastPomodoroState({
+      state: newState,
+      targetTime: null,
+      timeRemaining: 0
+    });
 
     if (phase === 'focus' && activeEntryId) {
       // If stopping during focus, finish the time entry but break the streak
@@ -427,17 +519,34 @@ export function usePomodoro() {
     }
   };
 
-  const pausePomodoro = () => {
+  const pausePomodoro = async () => {
     if (state === 'running') {
-      setState('paused');
+      const newState: PomodoroState = 'paused';
+      
+      setState(newState);
       setTargetTime(null);
+      
+      // Broadcast state to other devices with correct values
+      await broadcastPomodoroState({
+        state: newState,
+        targetTime: null
+      });
     }
   };
 
-  const resumePomodoro = () => {
+  const resumePomodoro = async () => {
     if (state === 'paused' && timeRemaining > 0) {
-      setState('running');
-      setTargetTime(new Date(Date.now() + timeRemaining * 1000));
+      const newState: PomodoroState = 'running';
+      const newTargetTime = new Date(Date.now() + timeRemaining * 1000);
+      
+      setState(newState);
+      setTargetTime(newTargetTime);
+      
+      // Broadcast state to other devices with correct values
+      await broadcastPomodoroState({
+        state: newState,
+        targetTime: newTargetTime
+      });
     }
   };
 
