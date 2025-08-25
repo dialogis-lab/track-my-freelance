@@ -43,10 +43,7 @@ export default function Dashboard() {
   // Dashboard Timer Hook
   const {
     getStopwatchDisplayTime,
-    getPomodoroDisplayTime,
     isStopwatchRunning,
-    isPomodoroRunning,
-    pomodoroPhase,
     loading: timerLoading
   } = useDashboardTimers();
 
@@ -306,9 +303,7 @@ export default function Dashboard() {
             {process.env.NODE_ENV === 'development' && (
               <div className="mt-4 p-4 bg-gray-100 rounded text-xs">
                 <div>Stopwatch Running: {isStopwatchRunning ? 'YES' : 'NO'}</div>
-                <div>Pomodoro Running: {isPomodoroRunning ? 'YES' : 'NO'}</div>
                 <div>Stopwatch Time: {getStopwatchDisplayTime()}ms</div>
-                <div>Pomodoro Time: {getPomodoroDisplayTime()}ms</div>
                 <div>Timer Loading: {timerLoading ? 'YES' : 'NO'}</div>
               </div>
             )}

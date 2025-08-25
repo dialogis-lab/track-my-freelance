@@ -1,26 +1,21 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useDashboardTimers } from '@/hooks/useDashboardTimers';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Play, Square, Timer } from 'lucide-react';
+import { Play, Square } from 'lucide-react';
 
 export function CombinedTimerCard() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [coupling, setCoupling] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [notes, setNotes] = useState('');
   const [projects, setProjects] = useState<Array<{id: string, name: string}>>([]);
-  const notificationPermissionRequested = useRef(false);
   
   // Local debug logging
   const debugLog = (message: string, ...args: any[]) => {
@@ -29,110 +24,16 @@ export function CombinedTimerCard() {
   
   const {
     stopwatch,
-    pomodoro,
     getStopwatchDisplayTime,
-    getPomodoroDisplayTime,
     isStopwatchRunning,
-    isPomodoroRunning,
-    pomodoroPhase,
-    serverOffsetMs
   } = useDashboardTimers();
 
-  // Load coupling default and projects on mount
+  // Load projects on mount
   useEffect(() => {
     if (user) {
-      loadCouplingDefault();
       loadProjects();
     }
   }, [user]);
-
-  // Request notification permission once if needed
-  useEffect(() => {
-    if (!notificationPermissionRequested.current && coupling) {
-      notificationPermissionRequested.current = true;
-      if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-      }
-    }
-  }, [coupling]);
-
-  // Monitor pomodoro phase changes for alarms and timer control
-  const prevPhaseRef = useRef<string>();
-  const prevStatusRef = useRef<string>();
-  useEffect(() => {
-    if (pomodoro && coupling) {
-      // Check for phase changes
-      if (prevPhaseRef.current && prevPhaseRef.current !== pomodoro.phase) {
-        // Phase ended, play alarm and show notification
-        playAlarmSound();
-        showPhaseNotification(pomodoro.phase, prevPhaseRef.current);
-        
-        // If we just finished a focus phase, stop the main timer
-        if (prevPhaseRef.current === 'focus') {
-          handleStopwatchStop();
-        }
-      }
-      
-      // Check for status changes (running to stopped/completed)
-      if (prevStatusRef.current === 'running' && 
-          (pomodoro.status === 'stopped' || pomodoro.status === 'completed')) {
-        // Pomodoro session ended, play alarm
-        playAlarmSound();
-        showPhaseNotification('session_complete', prevStatusRef.current);
-        
-        // Stop main timer if it's running
-        if (isStopwatchRunning) {
-          handleStopwatchStop();
-        }
-      }
-    }
-    
-    prevPhaseRef.current = pomodoro?.phase;
-    prevStatusRef.current = pomodoro?.status;
-  }, [pomodoro?.phase, pomodoro?.status, coupling, isStopwatchRunning]);
-
-  // Legacy coupling enforcement - now handled server-side with stronger guarantees
-  useEffect(() => {
-    // Only reconcile if coupling status changed, let server handle enforcement
-    if (coupling && !isStopwatchRunning && isPomodoroRunning) {
-      debugLog('Coupling mismatch detected, calling server reconciliation');
-      const reconcile = async () => {
-        try {
-          await supabase.rpc('coupling_reconcile');
-        } catch (error) {
-          console.error('Error during reconciliation:', error);
-        }
-      };
-      reconcile();
-    }
-  }, [coupling, isStopwatchRunning, isPomodoroRunning]);
-
-  const loadCouplingDefault = async () => {
-    try {
-      const { data } = await supabase
-        .from('pomodoro_settings')
-        .select('couple_with_stopwatch_default, pomodoro_requires_stopwatch')
-        .eq('user_id', user!.id)
-        .single();
-      
-      if (data) {
-        // Use new field if available, fallback to old field for backward compatibility
-        const couplingEnabled = data.pomodoro_requires_stopwatch ?? data.couple_with_stopwatch_default ?? false;
-        setCoupling(couplingEnabled);
-        debugLog('Loaded coupling settings:', { couplingEnabled });
-        
-        // Call server-side reconcile to handle any mismatches
-        try {
-          await supabase.rpc('coupling_reconcile');
-          debugLog('Coupling reconciliation completed');
-        } catch (error) {
-          console.error('Error during coupling reconciliation:', error);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading coupling settings:', error);
-    }
-  };
 
   const loadProjects = async () => {
     try {
@@ -153,98 +54,6 @@ export function CombinedTimerCard() {
       }
     } catch (error) {
       console.error('Error loading projects:', error);
-    }
-  };
-
-  const saveCouplingDefault = async (newCoupling: boolean) => {
-    try {
-      await supabase.rpc('pomo_get_or_init_settings');
-      await supabase
-        .from('pomodoro_settings')
-        .update({ 
-          pomodoro_requires_stopwatch: newCoupling,
-          couple_with_stopwatch_default: newCoupling // Keep for backward compatibility
-        })
-        .eq('user_id', user!.id);
-    } catch (error) {
-      console.error('Error saving coupling default:', error);
-    }
-  };
-
-  const handleCouplingChange = async (newCoupling: boolean) => {
-    setCoupling(newCoupling);
-    await saveCouplingDefault(newCoupling);
-    
-    if (newCoupling && isStopwatchRunning) {
-      // If turning ON while stopwatch is running, start pomodoro
-      try {
-        await supabase.rpc('pomo_start');
-        toast({ title: "Pomodoro coupled", description: "Started Pomodoro session with running timer." });
-      } catch (error) {
-        console.error('Error starting coupled pomodoro:', error);
-      }
-    } else if (!newCoupling && isPomodoroRunning) {
-      // If turning OFF while pomodoro is running, stop pomodoro
-      try {
-        await supabase.rpc('pomo_stop');
-        toast({ title: "Pomodoro uncoupled", description: "Stopped Pomodoro session." });
-      } catch (error) {
-        console.error('Error stopping pomodoro:', error);
-      }
-    }
-  };
-
-  const playAlarmSound = () => {
-    try {
-      // Create a short beep sound
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.5);
-    } catch (error) {
-      console.error('Error playing alarm sound:', error);
-    }
-  };
-
-  const showPhaseNotification = (phase: string, previousPhase?: string) => {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      let title = '';
-      let body = '';
-      
-      if (phase === 'session_complete') {
-        title = 'Pomodoro Session Complete';
-        body = 'Great work! Your Pomodoro session is finished.';
-      } else if (previousPhase === 'focus') {
-        // Just finished a focus session
-        title = 'Focus Session Complete';
-        body = phase === 'short_break' ? 'Time for a short break!' : 'Time for a long break!';
-      } else if (previousPhase === 'short_break' || previousPhase === 'long_break') {
-        // Just finished a break
-        title = 'Break Complete';
-        body = 'Break time is over - ready to focus?';
-      } else {
-        // Fallback
-        const phaseLabels = {
-          focus: 'Focus Session',
-          short_break: 'Short Break', 
-          long_break: 'Long Break'
-        };
-        title = `${phaseLabels[phase as keyof typeof phaseLabels] || 'Pomodoro'} Started`;
-        body = `${phase.replace('_', ' ')} phase has begun.`;
-      }
-      
-      new Notification(title, {
-        body,
-        icon: '/icon-192.png'
-      });
     }
   };
 
@@ -280,7 +89,7 @@ export function CombinedTimerCard() {
       if (runningTimer && runningTimer.length > 0) {
         toast({
           title: "Timer already running",
-          description: `A timer is already running for project. Please stop it first.`,
+          description: `A timer is already running. Please stop it first.`,
           variant: "destructive"
         });
         setLoading(false);
@@ -289,10 +98,8 @@ export function CombinedTimerCard() {
 
       debugLog('Inserting new timer entry...');
       
-      // Create both stopwatch and pomodoro together for better synchronization
       const now = new Date().toISOString();
       
-      // Always create the time entry first
       const { data: timeEntryData, error: timeEntryError } = await supabase
         .from('time_entries')
         .insert([{
@@ -310,55 +117,7 @@ export function CombinedTimerCard() {
       }
 
       debugLog('Timer started successfully:', timeEntryData);
-
-      if (coupling) {
-        // Create pomodoro session linked to the timer
-        try {
-          // First stop any existing pomodoro sessions
-          await supabase
-            .from('pomodoro_sessions')
-            .update({ 
-              status: 'stopped',
-              revised_at: now
-            })
-            .eq('user_id', user!.id)
-            .in('status', ['running', 'paused']);
-
-          // Create new pomodoro session synchronized with timer start time
-          const duration = 25 * 60 * 1000; // 25 minutes default
-          const startTime = new Date(now);
-          const endTime = new Date(startTime.getTime() + duration);
-
-          const { error: pomodoroError } = await supabase
-            .from('pomodoro_sessions')
-            .insert({
-              user_id: user!.id,
-              status: 'running',
-              phase: 'focus',
-              started_at: now,
-              expected_end_at: endTime.toISOString(),
-              elapsed_ms: 0,
-              revised_at: now
-            });
-
-          if (pomodoroError) {
-            debugLog('Error creating pomodoro session:', pomodoroError);
-            toast({ 
-              title: "Timer started", 
-              description: "Stopwatch started but Pomodoro sync failed. Try restarting.",
-              variant: "destructive"
-            });
-          } else {
-            debugLog('Pomodoro session created successfully');
-            toast({ title: "Timer started", description: "Both stopwatch and Pomodoro are now running." });
-          }
-        } catch (pomodoroError) {
-          debugLog('Error with pomodoro session:', pomodoroError);
-          toast({ title: "Timer started", description: "Stopwatch started but Pomodoro sync failed." });
-        }
-      } else {
-        toast({ title: "Timer started" });
-      }
+      toast({ title: "Timer started" });
       
       // Clear notes after starting
       setNotes('');
@@ -394,34 +153,8 @@ export function CombinedTimerCard() {
         throw error;
       }
 
-      if (coupling && isPomodoroRunning) {
-        // Stop pomodoro session directly instead of using RPC
-        try {
-          const { error: pomodoroError } = await supabase
-            .from('pomodoro_sessions')
-            .update({ 
-              status: 'stopped',
-              revised_at: new Date().toISOString()
-            })
-            .eq('user_id', user!.id)
-            .in('status', ['running', 'paused']);
-
-          if (pomodoroError) {
-            debugLog('Error stopping pomodoro session:', pomodoroError);
-            toast({ title: "Timer stopped", description: "Stopwatch stopped but Pomodoro stop failed." });
-          } else {
-            debugLog('Pomodoro session stopped successfully');
-            toast({ title: "Timer stopped", description: "Both timer and Pomodoro session stopped." });
-          }
-        } catch (pomodoroError) {
-          debugLog('Error with pomodoro session stop:', pomodoroError);
-          toast({ title: "Timer stopped", description: "Stopwatch stopped but Pomodoro stop failed." });
-        }
-      } else {
-        toast({ title: "Timer stopped" });
-      }
+      toast({ title: "Timer stopped" });
       
-      // Let the hook handle state updates via realtime
     } catch (error) {
       debugLog('Error stopping timer:', error);
       toast({ title: "Error stopping timer", variant: "destructive" });
@@ -429,7 +162,7 @@ export function CombinedTimerCard() {
     setLoading(false);
   };
 
-  // Format display time for main timer (always stopwatch)
+  // Format display time for main timer
   const formatMainTime = (ms: number) => {
     const seconds = Math.floor(ms / 1000);
     const hours = Math.floor(seconds / 3600);
@@ -438,184 +171,80 @@ export function CombinedTimerCard() {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Format pomodoro remaining time
-  const formatPomodoroTime = (ms: number) => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  // Calculate pomodoro remaining time
-  const getPomodoroRemaining = () => {
-    if (!pomodoro || !pomodoro.expected_end_at) {
-      return 0;
-    }
-    
-    // Use the same logic as getPomodoroDisplayTime from useDashboardTimers
-    const endTime = new Date(pomodoro.expected_end_at).getTime();
-    const currentTime = Date.now() + serverOffsetMs;
-    const remaining = Math.max(0, endTime - currentTime);
-    
-    // Debug log for troubleshooting
-    debugLog('Pomodoro remaining calculation:', {
-      endTime: new Date(pomodoro.expected_end_at),
-      currentTime: new Date(currentTime),
-      remaining: remaining,
-      status: pomodoro.status,
-      phase: pomodoro.phase
-    });
-    
-    return remaining;
-  };
-
-  // Get cycle dots display
-  const getCycleDots = () => {
-    if (!pomodoro) return [];
-    const dots = [];
-    const cycleCount = 4; // Default long break every 4
-    
-    for (let i = 0; i < cycleCount; i++) {
-      const isActive = i < ((pomodoro as any).cycle_in_round || 0);
-      dots.push(
-        <div
-          key={i}
-          className={`w-2 h-2 rounded-full ${
-            isActive ? 'bg-primary' : 'bg-muted'
-          }`}
-        />
-      );
-    }
-    return dots;
-  };
-
   const mainDisplayTime = getStopwatchDisplayTime();
-  const pomodoroRemaining = getPomodoroRemaining();
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Timer</span>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="pomodoro-coupling"
-              checked={coupling}
-              onCheckedChange={handleCouplingChange}
-            />
-            <Label htmlFor="pomodoro-coupling" className="text-sm">
-              Pomodoro
-            </Label>
-          </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         {/* Main Timer Display */}
         <div className="text-center">
-          <div className="text-6xl font-mono font-bold text-primary">
+          <div className="text-4xl font-mono font-bold text-primary mb-2">
             {formatMainTime(mainDisplayTime)}
           </div>
-          <div className="text-sm text-muted-foreground mt-1">
+          <div className="text-sm text-muted-foreground">
             {isStopwatchRunning ? 'Running' : 'Stopped'}
           </div>
         </div>
 
-        {/* Pomodoro Stripe */}
-        {coupling && (
-          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-            <div className="flex items-center space-x-3">
-              <Timer className="w-4 h-4 text-primary" />
-              <div>
-                <div className="flex items-center space-x-2">
-                  <Badge variant={isPomodoroRunning ? "default" : "outline"} className="text-xs">
-                    {pomodoroPhase === 'focus' ? 'Focus' : 
-                     pomodoroPhase === 'short_break' ? 'Short Break' : 
-                     pomodoroPhase === 'long_break' ? 'Long Break' : 'Focus'}
-                  </Badge>
-                  {isPomodoroRunning && (
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  )}
-                </div>
-                <div className="text-sm font-mono">
-                  {formatPomodoroTime(pomodoroRemaining)}
-                </div>
-              </div>
-            </div>
-            <div className="flex space-x-1">
-              {getCycleDots()}
-            </div>
-          </div>
-        )}
-
-        {/* Project Selection and Notes (only when timer is not running) */}
-        {!isStopwatchRunning && (
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="project-select" className="text-sm font-medium">
-                Project
-              </Label>
-              <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select a project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label htmlFor="notes-input" className="text-sm font-medium">
-                Notes (optional)
-              </Label>
-              <Input
-                id="notes-input"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="What are you working on?"
-                className="mt-1"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Control Buttons */}
-        <div className="flex space-x-2">
-          {!isStopwatchRunning ? (
-            <Button
-              onClick={handleStopwatchStart}
-              disabled={loading || projects.length === 0}
-              className="flex-1"
-            >
-              <Play className="w-4 h-4 mr-2" />
-              Start Timer
-            </Button>
-          ) : (
-            <Button
-              onClick={handleStopwatchStop}
-              disabled={loading}
-              variant="destructive"
-              className="flex-1"
-            >
-              <Square className="w-4 h-4 mr-2" />
-              Stop Timer
-            </Button>
-          )}
-          
+        {/* Project Selection */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Project</label>
+          <Select
+            value={selectedProjectId}
+            onValueChange={setSelectedProjectId}
+            disabled={isStopwatchRunning}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select a project" />
+            </SelectTrigger>
+            <SelectContent>
+              {projects.map((project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Show help text if no projects */}
-        {projects.length === 0 && (
-          <div className="text-sm text-muted-foreground text-center">
-            <a href="/projects" className="text-primary hover:underline">
-              Create a project
-            </a> to start time tracking
-          </div>
-        )}
+        {/* Notes (optional) */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Notes (optional)</label>
+          <Input
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="What are you working on?"
+            disabled={isStopwatchRunning}
+          />
+        </div>
+
+        {/* Control Button */}
+        <Button
+          onClick={isStopwatchRunning ? handleStopwatchStop : handleStopwatchStart}
+          disabled={loading || (!selectedProjectId && !isStopwatchRunning)}
+          className="w-full"
+          size="lg"
+          variant={isStopwatchRunning ? "destructive" : "default"}
+        >
+          {loading ? (
+            "Loading..."
+          ) : isStopwatchRunning ? (
+            <>
+              <Square className="w-4 h-4 mr-2" />
+              Stop Timer
+            </>
+          ) : (
+            <>
+              <Play className="w-4 h-4 mr-2" />
+              Start Timer
+            </>
+          )}
+        </Button>
       </CardContent>
     </Card>
   );

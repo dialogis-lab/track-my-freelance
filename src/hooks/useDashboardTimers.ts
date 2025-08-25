@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { subscribeToTimeEntries, subscribeToPomodoroSessions, type TimerPayload } from '@/lib/realtimeTimer';
+import { subscribeToTimeEntries, type TimerPayload } from '@/lib/realtimeTimer';
 
 interface TimerState {
   id: string;
@@ -15,10 +15,8 @@ interface TimerState {
 
 interface DashboardTimersState {
   stopwatch: TimerState | null;
-  pomodoro: TimerState | null;
   serverOffsetMs: number;
   loading: boolean;
-  selectedMode: 'stopwatch' | 'pomodoro';
 }
 
 // Debug logging only when enabled
@@ -30,10 +28,8 @@ const debugLog = (message: string, ...args: any[]) => {
 export function useDashboardTimers() {
   const [state, setState] = useState<DashboardTimersState>({
     stopwatch: null,
-    pomodoro: null,
     serverOffsetMs: 0,
     loading: true,
-    selectedMode: 'stopwatch'
   });
   
   const { user } = useAuth();
@@ -50,7 +46,6 @@ export function useDashboardTimers() {
         await calculateServerOffset();
         // Force reload of current states to ensure sync
         await loadCurrentTimerStates();
-        await selectActiveModeOnMount();  
         setState(prev => ({ ...prev, loading: false }));
         debugLog('Dashboard initialization complete');
       } catch (error) {
@@ -117,39 +112,7 @@ export function useDashboardTimers() {
       }
     });
 
-    // Subscribe to pomodoro sessions
-    const pomodoroSub = subscribeToPomodoroSessions(user.id, {
-      onUpdate: (payload: TimerPayload) => {
-        lastUpdateTime = Date.now(); // Reset backup sync timer
-        debugLog('Pomodoro realtime event received:', {
-          eventType: payload.eventType,
-          id: payload.new?.id,
-          status: payload.new?.status,
-          phase: payload.new?.phase
-        });
-        handlePomodoroUpdate(payload);
-      },
-      onSubscribed: () => {
-        debugLog('Pomodoro channel subscribed - syncing current state');
-        // Sync current state when subscription is ready
-        setTimeout(() => {
-          loadCurrentTimerStates();
-          lastUpdateTime = Date.now();
-        }, 50);
-      },
-      onError: (error) => {
-        debugLog('Pomodoro subscription error:', error);
-        // Implement exponential backoff for error recovery
-        const retryDelay = subscriptionsRef.current.length > 0 ? 1000 : 2000;
-        setTimeout(() => {
-          debugLog('Attempting to recover pomodoro subscription');
-          loadCurrentTimerStates();
-          lastUpdateTime = Date.now();
-        }, retryDelay);
-      }
-    });
-
-    subscriptionsRef.current = [stopwatchSub, pomodoroSub];
+    subscriptionsRef.current = [stopwatchSub];
 
     return () => {
       debugLog('Cleaning up dashboard timer subscriptions and mobile backup');
@@ -218,75 +181,6 @@ export function useDashboardTimers() {
     };
   }, [user]);
 
-  // Select active mode on mount without side effects
-  const selectActiveModeOnMount = async () => {
-    try {
-      const [swResult, poResult] = await Promise.all([
-        supabase
-          .from('time_entries')
-          .select('id, started_at, stopped_at, tags, created_at')
-          .eq('user_id', user!.id)
-          .is('stopped_at', null)
-          .not('tags', 'cs', '{"pomodoro"}')
-          .order('started_at', { ascending: false })
-          .maybeSingle(),
-        supabase
-          .from('pomodoro_sessions')
-          .select('id, started_at, expected_end_at, phase, status, elapsed_ms, revised_at')
-          .eq('user_id', user!.id)
-          .in('status', ['running', 'paused'])
-          .order('revised_at', { ascending: false })
-          .maybeSingle()
-      ]);
-
-      const running = 
-        (swResult.data && !swResult.data.stopped_at) ? 'stopwatch' :
-        (poResult.data && (poResult.data.status === 'running' || poResult.data.status === 'paused')) ? 'pomodoro' : null;
-
-      if (running) {
-        debugLog('Selected active mode on mount:', running);
-        setState(prev => ({ 
-          ...prev, 
-          selectedMode: running,
-          stopwatch: running === 'stopwatch' && swResult.data ? {
-            id: swResult.data.id,
-            started_at: swResult.data.started_at,
-            status: 'running',
-            elapsed_ms: 0,
-            revised_at: swResult.data.created_at
-          } : null,
-          pomodoro: running === 'pomodoro' && poResult.data ? {
-            id: poResult.data.id,
-            started_at: poResult.data.started_at,
-            expected_end_at: poResult.data.expected_end_at,
-            phase: poResult.data.phase,
-            status: poResult.data.status,
-            elapsed_ms: poResult.data.elapsed_ms || 0,
-            revised_at: poResult.data.revised_at
-          } : null
-        }));
-      } else {
-        // Fallback to stored preference or default
-        try {
-          const { data: settingsData } = await supabase
-            .from('pomodoro_settings')
-            .select('preferred_timer_mode')
-            .eq('user_id', user!.id)
-            .single();
-          
-          const preferredMode = (settingsData?.preferred_timer_mode as 'stopwatch' | 'pomodoro') || 'stopwatch';
-          debugLog('Selected preferred mode on mount:', preferredMode);
-          setState(prev => ({ ...prev, selectedMode: preferredMode }));
-        } catch {
-          debugLog('Selected default mode on mount: stopwatch');
-          setState(prev => ({ ...prev, selectedMode: 'stopwatch' }));
-        }
-      }
-    } catch (error) {
-      debugLog('Error in selectActiveModeOnMount:', error);
-      setState(prev => ({ ...prev, selectedMode: 'stopwatch' }));
-    }
-  };
 
   const calculateServerOffset = async () => {
     try {
@@ -313,58 +207,34 @@ export function useDashboardTimers() {
     try {
       debugLog('Loading current timer states...');
       
-      const [swResult, poResult] = await Promise.all([
-        supabase
-          .from('time_entries')
-          .select('id, started_at, stopped_at, tags, created_at, notes, project_id')
-          .eq('user_id', user!.id)
-          .is('stopped_at', null)
-          .not('tags', 'cs', '{"pomodoro"}')
-          .order('started_at', { ascending: false })
-          .maybeSingle(),
-        supabase
-          .from('pomodoro_sessions')
-          .select('id, started_at, expected_end_at, phase, status, elapsed_ms, revised_at')
-          .eq('user_id', user!.id)
-          .in('status', ['running', 'paused'])
-          .order('revised_at', { ascending: false })
-          .maybeSingle()
-      ]);
+      const { data: swResult, error: swError } = await supabase
+        .from('time_entries')
+        .select('id, started_at, stopped_at, tags, created_at, notes, project_id')
+        .eq('user_id', user!.id)
+        .is('stopped_at', null)
+        .order('started_at', { ascending: false })
+        .maybeSingle();
 
       debugLog('Raw query results:', { 
-        stopwatch: swResult.data,
-        pomodoro: poResult.data,
-        stopwatchError: swResult.error,
-        pomodoroError: poResult.error
+        stopwatch: swResult,
+        stopwatchError: swError
       });
 
-      const newStopwatch = swResult.data && !swResult.data.stopped_at ? {
-        id: swResult.data.id,
-        started_at: swResult.data.started_at,
+      const newStopwatch = swResult && !swResult.stopped_at ? {
+        id: swResult.id,
+        started_at: swResult.started_at,
         status: 'running',
         elapsed_ms: 0,
-        revised_at: swResult.data.created_at
-      } : null;
-
-      const newPomodoro = poResult.data ? {
-        id: poResult.data.id,
-        started_at: poResult.data.started_at,
-        expected_end_at: poResult.data.expected_end_at,
-        phase: poResult.data.phase,
-        status: poResult.data.status,
-        elapsed_ms: poResult.data.elapsed_ms || 0,
-        revised_at: poResult.data.revised_at
+        revised_at: swResult.created_at
       } : null;
 
       debugLog('Setting timer states:', { 
-        stopwatch: newStopwatch ? 'running' : 'none',
-        pomodoro: newPomodoro ? newPomodoro.status : 'none'
+        stopwatch: newStopwatch ? 'running' : 'none'
       });
 
       setState(prev => ({
         ...prev,
         stopwatch: newStopwatch,
-        pomodoro: newPomodoro
       }));
     } catch (error) {
       debugLog('Failed to load current timer states:', error);
@@ -373,13 +243,6 @@ export function useDashboardTimers() {
 
   const handleStopwatchUpdate = (payload: TimerPayload) => {
     debugLog('Stopwatch update received:', payload);
-    
-    // Skip pomodoro entries
-    if (payload.new && 'tags' in payload.new && Array.isArray(payload.new.tags) && 
-        payload.new.tags.includes('pomodoro')) {
-      debugLog('Skipping pomodoro entry');
-      return;
-    }
 
     // Apply version gating using revised_at or created_at
     const applyUpdate = (newState: TimerState | null) => {
@@ -435,42 +298,6 @@ export function useDashboardTimers() {
     }
   };
 
-  const handlePomodoroUpdate = (payload: TimerPayload) => {
-    // Apply version gating using revised_at
-    const applyUpdate = (newState: TimerState | null) => {
-      setState(prev => {
-        const current = prev.pomodoro;
-        if (!current || !newState || 
-            new Date(newState.revised_at || newState.started_at) >= 
-            new Date(current.revised_at || current.started_at)) {
-          debugLog('Applied pomodoro update - version check passed');
-          return { ...prev, pomodoro: newState };
-        } else {
-          debugLog('Ignored pomodoro update - stale version');
-          return prev;
-        }
-      });
-    };
-
-    if (payload.eventType === 'DELETE' || !payload.new) {
-      applyUpdate(null);
-      return;
-    }
-
-    if (payload.new.status === 'stopped' || payload.new.status === 'completed') {
-      applyUpdate(null);
-    } else if (payload.new.status === 'running' || payload.new.status === 'paused') {
-      applyUpdate({
-        id: payload.new.id,
-        started_at: payload.new.started_at,
-        expected_end_at: payload.new.expected_end_at,
-        phase: payload.new.phase,
-        status: payload.new.status,
-        elapsed_ms: payload.new.elapsed_ms || 0,
-        revised_at: payload.new.revised_at
-      });
-    }
-  };
 
   // Calculate display time with server offset (correct formula)
   const getDisplayTime = (timerState: TimerState | null): number => {
@@ -500,17 +327,9 @@ export function useDashboardTimers() {
     return Math.max(0, displayMs);
   };
 
-  const setSelectedMode = (mode: 'stopwatch' | 'pomodoro') => {
-    setState(prev => ({ ...prev, selectedMode: mode }));
-  };
-
   return {
     ...state,
     getStopwatchDisplayTime: () => getDisplayTime(state.stopwatch),
-    getPomodoroDisplayTime: () => getDisplayTime(state.pomodoro),
     isStopwatchRunning: state.stopwatch?.status === 'running',
-    isPomodoroRunning: state.pomodoro?.status === 'running',
-    pomodoroPhase: state.pomodoro?.phase || 'idle',
-    setSelectedMode
   };
 }
