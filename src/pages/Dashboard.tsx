@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/AppLayout';
 import { CombinedTimerCard } from '@/components/CombinedTimerCard';
+import { UpgradeButton } from '@/components/UpgradeButton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, FolderOpen, Users, TrendingUp, ExternalLink, Receipt } from 'lucide-react';
 import { formatTime, hoursToMinutes, calculateDurationMinutes, formatDuration } from '@/lib/timeUtils';
@@ -294,19 +295,25 @@ export default function Dashboard() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Combined Timer Card */}
-          <div>
-            <CombinedTimerCard />
-            
-            {/* Debug Info */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="mt-4 p-4 bg-gray-100 rounded text-xs">
-                <div>Stopwatch Running: {isStopwatchRunning ? 'YES' : 'NO'}</div>
-                <div>Stopwatch Time: {getStopwatchDisplayTime()}ms</div>
-                <div>Timer Loading: {timerLoading ? 'YES' : 'NO'}</div>
-              </div>
-            )}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Combined Timer Card */}
+            <div className="lg:col-span-2">
+              <CombinedTimerCard />
+              
+              {/* Debug Info */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mt-4 p-4 bg-gray-100 rounded text-xs">
+                  <div>Stopwatch Running: {isStopwatchRunning ? 'YES' : 'NO'}</div>
+                  <div>Stopwatch Time: {getStopwatchDisplayTime()}ms</div>
+                  <div>Timer Loading: {timerLoading ? 'YES' : 'NO'}</div>
+                </div>
+              )}
+            </div>
+
+            {/* Upgrade Button */}
+            <div>
+              <UpgradeButton />
+            </div>
           </div>
 
           {/* Recent Activity */}
@@ -353,7 +360,6 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
-        </div>
       </div>
     </AppLayout>
   );

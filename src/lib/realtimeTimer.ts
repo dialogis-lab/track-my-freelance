@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
-type TimerTable = 'time_entries' | 'pomodoro_sessions';
+type TimerTable = 'time_entries';
 
 interface RealtimeTimerSubscription {
   unsubscribe: () => void;
@@ -203,13 +203,6 @@ export const subscribeToTimeEntries = (
   callbacks: TimerCallbacks
 ): RealtimeTimerSubscription => {
   return realtimeTimer.subscribe(userId, 'time_entries', callbacks);
-};
-
-export const subscribeToPomodoroSessions = (
-  userId: string,
-  callbacks: TimerCallbacks
-): RealtimeTimerSubscription => {
-  return realtimeTimer.subscribe(userId, 'pomodoro_sessions', callbacks);
 };
 
 // Type exports

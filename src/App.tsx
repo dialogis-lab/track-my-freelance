@@ -27,6 +27,7 @@ import Settings from "./pages/Settings";
 import Privacy from "./pages/Privacy";
 import Imprint from "./pages/Imprint";
 import Success from "./pages/Success";
+import SubscriptionSuccess from "./pages/SubscriptionSuccess";
 import Error from "./pages/Error";
 import NotFound from "./pages/NotFound";
 import Mfa from "./pages/Mfa";
@@ -108,6 +109,7 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/imprint" element={<Imprint />} />
               <Route path="/success" element={<Success />} />
+              <Route path="/subscription-success" element={<SubscriptionSuccess />} />
               <Route path="/error" element={<Error />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
