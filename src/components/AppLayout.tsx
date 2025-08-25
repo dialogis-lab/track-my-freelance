@@ -110,9 +110,15 @@ export function AppLayout({ children }: AppLayoutProps) {
               if (!pomodoroEnabled) {
                 setPomodoroEnabled(true);
               }
-              // Navigate to dashboard to show timer
+              // Navigate to dashboard to show timer - using React Router
               if (location.pathname !== '/dashboard') {
-                window.location.href = '/dashboard';
+                // Use React Router navigation instead of window.location
+                const navigate = () => {
+                  const link = document.createElement('a');
+                  link.href = '/dashboard';
+                  link.click();
+                };
+                navigate();
               }
             }}
             className="flex items-center space-x-2 px-3 py-2 whitespace-nowrap"

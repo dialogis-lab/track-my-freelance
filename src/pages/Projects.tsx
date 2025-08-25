@@ -58,6 +58,8 @@ export default function Projects() {
 
   useEffect(() => {
     if (user) {
+      console.log('=== PROJECTS USEEFFECT TRIGGERED ===');
+      console.log('User available, loading data...');
       loadProjects();
       loadClients();
       
@@ -68,6 +70,8 @@ export default function Projects() {
         setFormData(prev => ({ ...prev, client_id: clientId }));
         setIsDialogOpen(true);
       }
+    } else {
+      console.log('=== PROJECTS USEEFFECT: No user yet ===');
     }
   }, [user, location.search]);
 
