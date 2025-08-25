@@ -45,15 +45,18 @@ export function useDashboardTimers() {
     calculateServerOffset();
   }, [user?.id]);
 
-  // Set up realtime subscriptions
+  // Set up realtime subscriptions with fallback polling
   useEffect(() => {
     if (!user) return;
 
-    debugLog('Setting up realtime subscriptions');
+    debugLog('Setting up realtime subscriptions with fallback');
     
     // Clean up existing subscriptions
     subscriptionsRef.current.forEach(sub => sub.unsubscribe());
     subscriptionsRef.current = [];
+
+    let hasRealtimeError = false;
+    let pollingInterval: NodeJS.Timeout;
 
     // Subscribe to stopwatch (time_entries)
     const stopwatchSub = subscribeToTimeEntries(user.id, {
@@ -67,6 +70,7 @@ export function useDashboardTimers() {
       },
       onError: (error) => {
         debugLog('Stopwatch subscription error:', error);
+        hasRealtimeError = true;
       }
     });
 
@@ -82,19 +86,28 @@ export function useDashboardTimers() {
       },
       onError: (error) => {
         debugLog('Pomodoro subscription error:', error);
+        hasRealtimeError = true;
       }
     });
 
     subscriptionsRef.current = [stopwatchSub, pomodoroSub];
 
-    // Initial load with delay to ensure subscriptions are ready
-    setTimeout(() => {
-      loadInitialStates();
-    }, 100);
+    // Initial load
+    loadInitialStates();
+
+    // Always start polling as backup (regardless of real-time status)
+    debugLog('Starting backup polling every 3 seconds');
+    pollingInterval = setInterval(() => {
+      loadStopwatchState();
+      loadPomodoroState();
+    }, 3000); // Poll every 3 seconds as backup
 
     return () => {
       subscriptionsRef.current.forEach(sub => sub.unsubscribe());
       subscriptionsRef.current = [];
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
     };
   }, [user?.id]);
 

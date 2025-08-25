@@ -336,7 +336,7 @@ export function TimerWidget() {
 
             {/* Control Buttons */}
             <div className="pt-2">
-              {!activeEntry ? (
+              {!isStopwatchRunning ? (
                 <Button
                   onClick={startTimer}
                   disabled={loading || !selectedProjectId}
@@ -350,7 +350,7 @@ export function TimerWidget() {
               ) : (
                 <Button
                   onClick={stopTimer}
-                  disabled={loading}
+                  disabled={loading || !activeEntry}
                   size="lg"
                   variant="destructive"
                   className="w-full"
@@ -369,6 +369,9 @@ export function TimerWidget() {
                   <div>Loading: {loading ? 'YES' : 'NO'}</div>
                   <div>Selected Project: {selectedProjectId || 'NONE'}</div>
                   <div>Display Time: {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}</div>
+                  <div>Dashboard State: {isStopwatchRunning ? 'RUNNING' : 'STOPPED'}</div>
+                  <div>Dashboard Time: {Math.floor(getStopwatchDisplayTime() / 1000 / 60)}:{(Math.floor(getStopwatchDisplayTime() / 1000) % 60).toString().padStart(2, '0')}</div>
+                  <div>Button Shows: {(!activeEntry && !isStopwatchRunning) ? 'START' : 'STOP'}</div>
                 </div>
               )}
             </div>
