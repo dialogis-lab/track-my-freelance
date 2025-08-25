@@ -141,7 +141,7 @@ export function useDashboardTimers() {
         .select('id, started_at, stopped_at, tags')
         .eq('user_id', user!.id)
         .is('stopped_at', null)
-        .not('tags', 'cs', '{"pomodoro"}') // Exclude pomodoro entries
+        .or('tags.is.null,not.tags.cs.{"pomodoro"}') // Include null tags or exclude pomodoro
         .order('started_at', { ascending: false })
         .maybeSingle();
 
