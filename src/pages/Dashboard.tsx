@@ -137,6 +137,8 @@ export default function Dashboard() {
           clients:client_id (name)
         )
       `)
+      .eq('user_id', user!.id)
+      .not('stopped_at', 'is', null)
       .order('started_at', { ascending: false })
       .limit(5);
 
