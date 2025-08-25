@@ -22,10 +22,9 @@ interface TimerCallbacks {
 
 class RealtimeTimerManager {
   private channels: Map<string, RealtimeChannel> = new Map();
-  private debug = true; // Enable debug temporarily
+  private debug = true;
   private subscriptionCount: Map<string, number> = new Map();
   private callbacks: Map<string, TimerCallbacks[]> = new Map();
-  private connectionStatus: Map<string, 'connecting' | 'connected' | 'error'> = new Map();
 
   private log(message: string, ...args: any[]) {
     if (this.debug) {
@@ -34,7 +33,7 @@ class RealtimeTimerManager {
   }
 
   private getChannelKey(userId: string, table: TimerTable): string {
-    return `timer:${table}:${userId}`;
+    return `${table}_${userId}`;
   }
 
   subscribe(
@@ -52,18 +51,14 @@ class RealtimeTimerManager {
     existingCallbacks.push(callbacks);
     this.callbacks.set(channelKey, existingCallbacks);
     
-    this.log(`Setting up subscription for ${table} (count: ${currentCount + 1})`, { userId, table });
+    this.log(`Setting up subscription for ${table} (count: ${currentCount + 1})`);
 
     // Check if we already have an active channel
-    const existingChannel = this.channels.get(channelKey);
-    const status = this.connectionStatus.get(channelKey);
-    
-    if (existingChannel && status === 'connected') {
+    if (this.channels.has(channelKey)) {
       this.log(`Reusing existing channel for ${table}`);
       // Trigger onSubscribed for the new callback immediately
       setTimeout(() => callbacks.onSubscribed?.(), 10);
       
-      // Return subscription that just manages the count and callbacks
       return {
         unsubscribe: () => {
           const callbacksList = this.callbacks.get(channelKey) || [];
@@ -79,17 +74,9 @@ class RealtimeTimerManager {
       };
     }
 
-    // Set status to connecting
-    this.connectionStatus.set(channelKey, 'connecting');
-
+    // Create a simpler channel subscription
     const channel = supabase
-      .channel(channelKey, {
-        config: {
-          presence: {
-            key: userId
-          }
-        }
-      })
+      .channel(channelKey)
       .on(
         'postgres_changes',
         {
@@ -108,48 +95,36 @@ class RealtimeTimerManager {
             table
           };
 
-          // Validate payload has required data for non-DELETE events
-          if (payload.eventType !== 'DELETE' && (!payload.new || typeof payload.new !== 'object')) {
-            this.log(`Invalid payload for ${table} - missing 'new' data:`, payload);
-            return;
-          }
-
-          // Notify all callbacks with a small delay to prevent race conditions
-          setTimeout(() => {
-            const allCallbacks = this.callbacks.get(channelKey) || [];
-            allCallbacks.forEach(cb => {
-              try {
-                cb.onUpdate?.(timerPayload);
-              } catch (error) {
-                this.log(`Error in callback for ${table}:`, error);
-                cb.onError?.(error);
-              }
-            });
-          }, 10);
+          // Notify all callbacks immediately
+          const allCallbacks = this.callbacks.get(channelKey) || [];
+          allCallbacks.forEach(cb => {
+            try {
+              cb.onUpdate?.(timerPayload);
+            } catch (error) {
+              this.log(`Error in callback for ${table}:`, error);
+              cb.onError?.(error);
+            }
+          });
         }
       )
-      .subscribe((status) => {
-        this.log(`Subscription status for ${table}:`, status);
+      .subscribe((status, err) => {
+        this.log(`Subscription status for ${table}:`, status, err);
         
         if (status === 'SUBSCRIBED') {
-          this.connectionStatus.set(channelKey, 'connected');
-          this.log(`Subscription ready for ${table}, triggering reload`);
+          this.log(`Subscription ready for ${table}`);
           
-          // Notify all callbacks with a small delay to ensure subscription is ready
-          setTimeout(() => {
-            const allCallbacks = this.callbacks.get(channelKey) || [];
-            allCallbacks.forEach(cb => {
-              try {
-                cb.onSubscribed?.();
-              } catch (error) {
-                this.log(`Error in onSubscribed callback for ${table}:`, error);
-                cb.onError?.(error);
-              }
-            });
-          }, 50);
+          // Notify all callbacks
+          const allCallbacks = this.callbacks.get(channelKey) || [];
+          allCallbacks.forEach(cb => {
+            try {
+              cb.onSubscribed?.();
+            } catch (error) {
+              this.log(`Error in onSubscribed callback for ${table}:`, error);
+              cb.onError?.(error);
+            }
+          });
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          this.connectionStatus.set(channelKey, 'error');
-          this.log(`Channel error for ${table}:`, status);
+          this.log(`Channel error for ${table}:`, status, err);
           const error = new Error(`Channel error for ${table}: ${status}`);
           
           // Notify all callbacks
@@ -158,7 +133,6 @@ class RealtimeTimerManager {
           
           // Clean up the failed connection
           this.channels.delete(channelKey);
-          this.connectionStatus.delete(channelKey);
         }
       });
 
@@ -206,7 +180,6 @@ class RealtimeTimerManager {
       this.channels.delete(channelKey);
       this.subscriptionCount.delete(channelKey);
       this.callbacks.delete(channelKey);
-      this.connectionStatus.delete(channelKey);
     }
   }
 
@@ -218,7 +191,6 @@ class RealtimeTimerManager {
     this.channels.clear();
     this.subscriptionCount.clear();
     this.callbacks.clear();
-    this.connectionStatus.clear();
   }
 }
 
