@@ -52,8 +52,38 @@ export function usePomodoro() {
     if (user) {
       loadSettings();
       loadTodayStats();
+      loadCurrentSession();
     }
   }, [user]);
+
+  const loadCurrentSession = async () => {
+    try {
+      const { data, error } = await supabase.rpc('pomo_get_or_create_session');
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const session = data[0];
+        console.log('Loaded current Pomodoro session:', session);
+        
+        setPhase(session.phase as PomodoroPhase);
+        setState(session.status as PomodoroState);
+        
+        if (session.status === 'running' && session.expected_end_at) {
+          const endTime = new Date(session.expected_end_at);
+          const now = new Date();
+          const remaining = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
+          setTimeRemaining(remaining);
+          setTargetTime(endTime);
+        } else {
+          setTimeRemaining(session.elapsed_ms ? Math.floor(session.elapsed_ms / 1000) : 0);
+          setTargetTime(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading current session:', error);
+    }
+  };
 
   // Real-time synchronization for Pomodoro state via database
   useEffect(() => {
@@ -78,8 +108,8 @@ export function usePomodoro() {
             const session = payload.new as any;
             console.log('Updating Pomodoro state from DB:', session);
             
-            if (session.phase) setPhase(session.phase);
-            if (session.status) setState(session.status);
+            if (session.phase) setPhase(session.phase as PomodoroPhase);
+            if (session.status) setState(session.status as PomodoroState);
             
             if (session.status === 'running' && session.expected_end_at) {
               const endTime = new Date(session.expected_end_at);
