@@ -247,6 +247,22 @@ export function usePomodoro() {
     }
 
     try {
+      // First, stop any existing active timer
+      const { data: existingEntry, error: existingError } = await supabase
+        .from('time_entries')
+        .select('id')
+        .eq('user_id', user!.id)
+        .is('stopped_at', null)
+        .single();
+
+      if (existingEntry && !existingError) {
+        // Stop the existing timer
+        await supabase
+          .from('time_entries')
+          .update({ stopped_at: new Date().toISOString() })
+          .eq('id', existingEntry.id);
+      }
+
       // Create time entry for focus session
       const { data, error } = await supabase
         .from('time_entries')

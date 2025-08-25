@@ -113,13 +113,13 @@ export default function Focus() {
          }}>
       
       {/* Header */}
-      <div className="flex justify-between items-center p-6">
-        <div className="flex items-center space-x-4">
-          <Badge variant={phase === 'focus' ? 'default' : 'secondary'} className="text-sm">
+      <div className="flex justify-between items-center p-4 sm:p-6">
+        <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
+          <Badge variant={phase === 'focus' ? 'default' : 'secondary'} className="text-xs sm:text-sm shrink-0">
             {getPhaseDisplay()}
           </Badge>
           {currentProject && (
-            <span className="text-sm text-muted-foreground">
+            <span className="text-xs sm:text-sm text-muted-foreground truncate">
               {getProjectDisplay(currentProject)}
             </span>
           )}
@@ -129,26 +129,30 @@ export default function Focus() {
           variant="ghost"
           size="icon"
           onClick={() => navigate('/dashboard')}
-          className="hover:bg-background/20"
+          className="hover:bg-background/20 shrink-0 ml-2"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4 sm:w-5 sm:h-5" />
         </Button>
       </div>
 
       {/* Main Timer Display */}
-      <div className="flex-1 flex flex-col items-center justify-center space-y-8 px-6">
+      <div className="flex-1 flex flex-col items-center justify-center space-y-8 px-4 sm:px-6">
         
         {/* Large Timer */}
         <div className="timer-display" style={{ 
-          padding: '3rem 4rem',
+          padding: 'clamp(1.5rem, 5vw, 3rem) clamp(2rem, 8vw, 4rem)',
           background: 'var(--timer-bg)',
           boxShadow: 'var(--timer-shadow)',
+          borderRadius: 'clamp(0.5rem, 2vw, 1rem)',
+          minWidth: 'min(90vw, 400px)',
+          textAlign: 'center',
         }}>
           <div className={`timer-digits ${timerSkin === 'gradient' ? 'gradient' : ''} ${isLongRunning ? 'warning' : ''}`}
                style={{ 
-                 fontSize: 'clamp(3rem, 12vw, 8rem)',
+                 fontSize: 'clamp(2rem, 10vw, 8rem)',
                  fontWeight: 'var(--timer-weight)',
                  color: isLongRunning ? '#dc2626' : 'var(--timer-fg)',
+                 lineHeight: '1.1',
                }}>
             {formatTime(timeRemaining)}
           </div>
@@ -209,8 +213,8 @@ export default function Focus() {
       </div>
 
       {/* Footer Instructions */}
-      <div className="p-6 text-center">
-        <p className="text-sm text-muted-foreground">
+      <div className="p-4 sm:p-6 text-center">
+        <p className="text-xs sm:text-sm text-muted-foreground">
           Press <kbd className="px-2 py-1 bg-muted rounded text-xs">Escape</kbd> to return to dashboard
         </p>
       </div>
