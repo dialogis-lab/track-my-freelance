@@ -59,26 +59,29 @@ export function TimerProvider({ children }: { children: ReactNode }) {
           console.log('Cross-device timer update received:', payload);
           
           if (payload.eventType === 'INSERT' && !payload.new.stopped_at) {
-            // New timer started on another device
-            console.log('New timer started, reloading active timer');
+            // New timer started - reload immediately 
             loadActiveTimer();
             triggerTimerUpdate();
           } else if (payload.eventType === 'UPDATE') {
             const wasStopped = payload.old?.stopped_at === null && payload.new?.stopped_at !== null;
             if (wasStopped) {
-              // Timer was stopped on another device
-              console.log('Timer was stopped on another device, clearing active timer');
+              // Timer was stopped - clear immediately without reload
+              console.log('Timer was stopped, clearing active timer');
               setActiveTimer(null);
               triggerTimerUpdate();
             } else if (!payload.new.stopped_at) {
-              // Timer updated (notes changed, etc.)
-              console.log('Timer updated (notes/etc), reloading active timer');
-              loadActiveTimer();
+              // Timer updated (notes changed, etc.) - update in place if possible
+              if (activeTimer && activeTimer.id === payload.new.id) {
+                setActiveTimer(prev => prev ? {
+                  ...prev,
+                  notes: payload.new.notes || prev.notes
+                } : null);
+              }
             }
           } else if (payload.eventType === 'DELETE') {
             // Timer entry deleted
-            console.log('Timer entry deleted, reloading active timer');
-            loadActiveTimer();
+            console.log('Timer entry deleted, clearing active timer');
+            setActiveTimer(null);
             triggerTimerUpdate();
           }
         }
@@ -91,7 +94,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       console.log('Cleaning up cross-device timer subscription');
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, activeTimer]);
 
   const loadActiveTimer = async () => {
     if (!user) return;

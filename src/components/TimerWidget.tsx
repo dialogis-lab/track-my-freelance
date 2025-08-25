@@ -127,7 +127,7 @@ export function TimerWidget() {
         title: "Timer started",
         description: "Time tracking has begun for the selected project.",
       });
-      triggerTimerUpdate(); // Trigger dashboard update
+      // Don't call triggerTimerUpdate() here as real-time will handle it
     }
     
     setLoading(false);
@@ -153,13 +153,14 @@ export function TimerWidget() {
         variant: "destructive",
       });
     } else {
+      // Immediately clear local state for instant UI feedback
       setElapsedTime(0);
       setNotes('');
       toast({
         title: "Timer stopped",
         description: "Time entry has been saved successfully.",
       });
-      triggerTimerUpdate(); // Trigger dashboard update
+      // Don't call triggerTimerUpdate() here as real-time will handle it
     }
     
     setLoading(false);
