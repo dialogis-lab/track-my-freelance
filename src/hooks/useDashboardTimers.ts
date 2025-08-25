@@ -71,12 +71,14 @@ export function useDashboardTimers() {
         handleStopwatchUpdate(payload);
       },
       onSubscribed: () => {
-        debugLog('Stopwatch channel subscribed');
+        debugLog('Stopwatch channel subscribed - loading current state');
         // Re-fetch current state once on subscription
         loadCurrentTimerStates();
       },
       onError: (error) => {
         debugLog('Stopwatch subscription error:', error);
+        // Try to recover by reloading state
+        setTimeout(() => loadCurrentTimerStates(), 1000);
       }
     });
 
@@ -87,12 +89,14 @@ export function useDashboardTimers() {
         handlePomodoroUpdate(payload);
       },
       onSubscribed: () => {
-        debugLog('Pomodoro channel subscribed');
+        debugLog('Pomodoro channel subscribed - loading current state');
         // Re-fetch current state once on subscription
         loadCurrentTimerStates();
       },
       onError: (error) => {
         debugLog('Pomodoro subscription error:', error);
+        // Try to recover by reloading state
+        setTimeout(() => loadCurrentTimerStates(), 1000);
       }
     });
 
@@ -206,14 +210,18 @@ export function useDashboardTimers() {
       debugLog('Server offset calculated:', offsetMs + 'ms');
       
       setState(prev => ({ ...prev, serverOffsetMs: offsetMs }));
+      return offsetMs;
     } catch (error) {
       debugLog('Failed to calculate server offset:', error);
       setState(prev => ({ ...prev, serverOffsetMs: 0 }));
+      return 0;
     }
   };
 
   const loadCurrentTimerStates = async () => {
     try {
+      debugLog('Loading current timer states...');
+      
       const [swResult, poResult] = await Promise.all([
         supabase
           .from('time_entries')
@@ -231,6 +239,11 @@ export function useDashboardTimers() {
           .order('revised_at', { ascending: false })
           .maybeSingle()
       ]);
+
+      debugLog('Timer states loaded:', { 
+        stopwatch: swResult.data ? 'running' : 'none',
+        pomodoro: poResult.data ? poResult.data.status : 'none'
+      });
 
       setState(prev => ({
         ...prev,
@@ -355,8 +368,19 @@ export function useDashboardTimers() {
       return timerState.elapsed_ms || 0;
     }
 
-    // Use server-corrected time for accuracy
-    const displayMs = timerState.elapsed_ms + ((Date.now() + state.serverOffsetMs) - startedMs);
+    // Use server-corrected time for accuracy, but fallback to local time if offset is not ready
+    const serverOffset = state.serverOffsetMs || 0;
+    const currentTime = Date.now() + serverOffset;
+    const displayMs = (timerState.elapsed_ms || 0) + (currentTime - startedMs);
+    
+    debugLog('Display calculation:', {
+      elapsed_ms: timerState.elapsed_ms,
+      serverOffset,
+      startedMs,
+      currentTime,
+      displayMs: Math.max(0, displayMs)
+    });
+    
     return Math.max(0, displayMs);
   };
 
