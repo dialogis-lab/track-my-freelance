@@ -437,6 +437,15 @@ export function TimerWidget() {
                   Stop Timer
                 </Button>
               )}
+              
+              {/* Debug Info for Button State */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mt-2 p-2 bg-yellow-100 rounded text-xs">
+                  <div>Active Entry: {activeEntry ? `YES (${activeEntry.id})` : 'NO'}</div>
+                  <div>Loading: {loading ? 'YES' : 'NO'}</div>
+                  <div>Selected Project: {selectedProjectId || 'NONE'}</div>
+                </div>
+              )}
             </div>
           </>
         )}
