@@ -44,7 +44,7 @@ export function useDashboardTimers() {
     if (!user) return;
     
     calculateServerOffset();
-  }, [user]);
+  }, [user?.id]);
 
   // Set up realtime subscriptions
   useEffect(() => {
@@ -97,7 +97,7 @@ export function useDashboardTimers() {
       subscriptionsRef.current.forEach(sub => sub.unsubscribe());
       subscriptionsRef.current = [];
     };
-  }, [user]);
+  }, [user?.id]);
 
   // Listen to timer context updates for cross-device sync
   useEffect(() => {
@@ -148,7 +148,6 @@ export function useDashboardTimers() {
         .select('id, started_at, stopped_at, tags')
         .eq('user_id', user!.id)
         .is('stopped_at', null)
-        .or('tags.is.null,not.tags.cs.{"pomodoro"}') // Include null tags or exclude pomodoro
         .order('started_at', { ascending: false })
         .maybeSingle();
 

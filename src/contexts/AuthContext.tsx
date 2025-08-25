@@ -20,18 +20,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+        
         console.log('Auth state change:', event, session?.user?.id);
         
+        // Only update state for meaningful changes
         if (event === 'SIGNED_OUT') {
-          // Clear state immediately on signout
           setSession(null);
           setUser(null);
           setLoading(false);
           console.log('User signed out, clearing state');
-        } else {
+        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          // Only update if session actually changed
+          setSession(prevSession => {
+            if (prevSession?.access_token !== session?.access_token) {
+              return session;
+            }
+            return prevSession;
+          });
+          setUser(session?.user ?? null);
+          setLoading(false);
+        } else if (event === 'INITIAL_SESSION') {
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
@@ -41,13 +55,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
       console.log('Initial session check:', session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string) => {
