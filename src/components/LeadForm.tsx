@@ -203,12 +203,12 @@ const LeadForm = ({ className = "", variant = "hero" }: LeadFormProps) => {
               Joining...
             </>
            ) : (
-             "Get Early Access + 30% Launch Discount"
+             "Join the Waitlist – Get 30% Off at Launch"
            )}
-        </Button>
-      )}
+         </Button>
+       )}
       
-      {isLoading && <span id="loading-status" className="sr-only">Processing your request</span>}
+       {isLoading && <span id="loading-status" className="sr-only">Processing your request</span>}
     </form>
   );
 };

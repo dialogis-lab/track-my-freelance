@@ -1,4 +1,4 @@
-import { Timer, Clock, Users, FileText, BarChart3, Zap, Bell, Shield } from "lucide-react";
+import { Timer, Clock, Users, FileText, BarChart3, Zap, Bell, Shield, DollarSign, Smartphone, Lock, Key, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import LeadForm from "./LeadForm";
@@ -31,7 +31,8 @@ const NewLandingPage = () => {
               </div>
               
               <div className="hidden md:flex items-center space-x-8">
-                <a href="#benefits" className="text-muted-foreground hover:text-foreground transition-colors">Benefits</a>
+                <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
+                <a href="#security" className="text-muted-foreground hover:text-foreground transition-colors">Security</a>
                 <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
                 <a href="#early-access" className="text-muted-foreground hover:text-foreground transition-colors">Early Access</a>
                 
@@ -70,45 +71,65 @@ const NewLandingPage = () => {
                 </div>
               </div>
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
-                Simple Time Tracking –{" "}
+                Effortless Time Tracking &{" "}
                 <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  Made Effortless
+                  Smart Invoicing
                 </span>
               </h1>
               
               <p className="text-xl md:text-2xl text-muted-foreground mb-12 leading-relaxed max-w-3xl mx-auto">
-                Stay focused, track your projects, and create clean reports – without distractions.
+                TimeHatch combines a simple timer with client management, invoicing, and reports – all in one secure app.
               </p>
               
-              <div className="max-w-md mx-auto mb-8">
-                <LeadForm variant="hero" />
+              <div className="max-w-lg mx-auto mb-8">
+                <LeadForm variant="hero" className="space-y-6" />
               </div>
               
               <p className="text-sm text-muted-foreground">
                 <Timer className="w-4 h-4 inline mr-2" />
-                No spam. Only one email when we launch.
+                No spam. Just one email when we launch.
               </p>
             </div>
           </div>
         </section>
 
-        {/* Benefits Section */}
-        <section id="benefits" className="py-20 bg-background" aria-labelledby="benefits-heading">
+        {/* Features Section */}
+        <section id="features" className="py-20 bg-background" aria-labelledby="features-heading">
           <div className="container mx-auto px-4">
             <div className="text-center mb-16">
-              <h2 id="benefits-heading" className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              <h2 id="features-heading" className="text-3xl md:text-4xl font-bold text-foreground mb-4">
                 Why TimeHatch?
               </h2>
             </div>
             
-            <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
               <div className="text-center">
                 <div className="w-16 h-16 bg-gradient-to-r from-primary/10 to-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <Zap className="w-8 h-8 text-primary" />
+                  <Timer className="w-8 h-8 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-4">Fast setup – start tracking instantly</h3>
+                <h3 className="text-xl font-semibold text-foreground mb-4">Track Time</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  No complex configuration or lengthy onboarding. Create your account and start tracking time within seconds.
+                  Start, stop, and sync timers across devices – distraction-free with Pomodoro integration and focus tracking.
+                </p>
+              </div>
+              
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-accent/10 to-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <Users className="w-8 h-8 text-accent" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-4">Manage Projects & Clients</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Organize work, assign time entries, and keep everything in one place with seamless project organization.
+                </p>
+              </div>
+              
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-primary/10 to-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <DollarSign className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-4">Create Invoices</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Turn tracked hours into branded PDF invoices with tax calculation and multi-currency support.
                 </p>
               </div>
               
@@ -116,38 +137,118 @@ const NewLandingPage = () => {
                 <div className="w-16 h-16 bg-gradient-to-r from-accent/10 to-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
                   <BarChart3 className="w-8 h-8 text-accent" />
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-4">Accurate reports – for projects and clients</h3>
+                <h3 className="text-xl font-semibold text-foreground mb-4">Gain Insights</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Generate professional reports with precise time breakdowns. Perfect for billing clients and analyzing project profitability.
-                </p>
-              </div>
-              
-              <div className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-r from-primary/10 to-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <Shield className="w-8 h-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-4">Focus mode – keep it simple, no clutter</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Clean, distraction-free interface designed to help you stay focused on what matters most – your work.
+                  Export reports, view focus stats, and stay on top of your productivity with detailed analytics.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
+        {/* Security Section */}
+        <section id="security" className="py-20 bg-muted/20" aria-labelledby="security-heading">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 id="security-heading" className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Built with Security from Day One
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+                Your data is protected with enterprise-grade security features designed for modern businesses.
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-primary/10 to-primary/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Smartphone className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">Multi-Factor Authentication</h3>
+                  <p className="text-muted-foreground text-sm">MFA with Google Authenticator for enhanced account security.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-accent/10 to-accent/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Key className="w-6 h-6 text-accent" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">Recovery Codes & Trusted Devices</h3>
+                  <p className="text-muted-foreground text-sm">Secure backup access methods and device management.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-primary/10 to-primary/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Lock className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">Data Encryption & Audit Logging</h3>
+                  <p className="text-muted-foreground text-sm">End-to-end encryption with comprehensive security audit trails.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-accent/10 to-accent/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Shield className="w-6 h-6 text-accent" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">Rate Limiting Protection</h3>
+                  <p className="text-muted-foreground text-sm">Advanced protection against brute force attacks and abuse.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* How It Works Section */}
-        <section id="how-it-works" className="py-20 bg-muted/20" aria-labelledby="how-it-works-heading">
+        <section id="how-it-works" className="py-20 bg-background" aria-labelledby="how-it-works-heading">
           <div className="container mx-auto px-4">
             <div className="text-center mb-16">
               <h2 id="how-it-works-heading" className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                How TimeHatch Helps You
+                How TimeHatch Works
               </h2>
-              <div className="max-w-3xl mx-auto">
-                <p className="text-lg text-muted-foreground leading-relaxed">
-                  TimeHatch streamlines your workflow with an intuitive process: start a timer with one click, 
-                  track your work sessions with optional notes, assign time entries to specific projects and clients, 
-                  then export professional reports for billing or analysis. It's designed to be simple and reliable, 
-                  so you can focus on your work instead of managing complicated time tracking software.
+            </div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center mx-auto mb-6 text-white font-bold text-xl">
+                  1
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-4">Start your timer</h3>
+                <p className="text-muted-foreground">
+                  Click start and begin tracking your work time instantly.
+                </p>
+              </div>
+              
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center mx-auto mb-6 text-white font-bold text-xl">
+                  2
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-4">Assign tracked time</h3>
+                <p className="text-muted-foreground">
+                  Organize your time entries by project or client.
+                </p>
+              </div>
+              
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center mx-auto mb-6 text-white font-bold text-xl">
+                  3
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-4">Generate reports or invoices</h3>
+                <p className="text-muted-foreground">
+                  Create clean reports or PDF invoices instantly.
+                </p>
+              </div>
+              
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center mx-auto mb-6 text-white font-bold text-xl">
+                  4
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-4">Stay focused & organized</h3>
+                <p className="text-muted-foreground">
+                  Keep your workflow simple, secure, and productive.
                 </p>
               </div>
             </div>
@@ -155,23 +256,23 @@ const NewLandingPage = () => {
         </section>
 
         {/* Early Access Reminder Section */}
-        <section id="early-access" className="py-20 bg-background" aria-labelledby="early-access-heading">
+        <section id="early-access" className="py-20 bg-gradient-to-br from-muted/30 to-background" aria-labelledby="early-access-heading">
           <div className="container mx-auto px-4">
             <div className="text-center mb-16">
               <h2 id="early-access-heading" className="text-3xl md:text-4xl font-bold text-foreground mb-4">
                 Be the First to Try TimeHatch
               </h2>
               <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-                Join early adopters and secure a special launch price.
+                Early access, special price, and exclusive updates.
               </p>
               
-              <div className="max-w-md mx-auto mb-8">
-                <LeadForm variant="hero" />
+              <div className="max-w-lg mx-auto mb-8">
+                <LeadForm variant="compact" className="space-y-6" />
               </div>
               
               <p className="text-sm text-muted-foreground">
                 <Timer className="w-4 h-4 inline mr-2" />
-                No spam. Only one email when we launch.
+                Early access, special price, and exclusive updates.
               </p>
             </div>
           </div>
@@ -186,7 +287,7 @@ const NewLandingPage = () => {
               <div>
                 <BrandLogo size="sm" showWordmark className="mb-4" />
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  Simple, reliable time tracking for freelancers and small teams. Track your time, grow your business.
+                  Effortless time tracking and smart invoicing for freelancers and small teams.
                 </p>
               </div>
               
@@ -200,7 +301,7 @@ const NewLandingPage = () => {
                   </li>
                   <li>
                     <Link to="/imprint" className="text-muted-foreground hover:text-foreground transition-colors">
-                      Legal Notice
+                      Imprint
                     </Link>
                   </li>
                   <li>
@@ -229,7 +330,7 @@ const NewLandingPage = () => {
             
             <div className="border-t border-border/50 mt-12 pt-8 text-center">
               <p className="text-sm text-muted-foreground">
-                © 2025 TimeHatch. All rights reserved.
+                © 2025 TimeHatch · Made in Switzerland 🇨🇭
               </p>
             </div>
           </div>
