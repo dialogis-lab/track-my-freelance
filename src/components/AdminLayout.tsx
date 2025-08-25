@@ -6,13 +6,14 @@ import { NavLink } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BrandLogo } from '@/components/BrandLogo';
-import { BarChart3, Users, FileText, Settings, LogOut, ShieldCheck } from 'lucide-react';
+import { BarChart3, Users, FileText, Settings, LogOut, ShieldCheck, Mail } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const adminMenuItems = [
   { title: 'Overview', url: '/admin', icon: BarChart3 },
   { title: 'Users', url: '/admin/users', icon: Users },
   { title: 'Invoices', url: '/admin/invoices', icon: FileText },
+  { title: 'Waitlist', url: '/admin/waitlist', icon: Mail },
   { title: 'System', url: '/admin/system', icon: Settings },
 ];
 

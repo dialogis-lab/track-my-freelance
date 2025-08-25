@@ -34,6 +34,7 @@ import { AdminLayout } from "@/components/AdminLayout";
 import { AdminOverview } from "@/pages/admin/AdminOverview";
 import { AdminUsers } from "@/pages/admin/AdminUsers";
 import { AdminInvoices } from "@/pages/admin/AdminInvoices";
+import { AdminWaitlist } from "@/pages/admin/AdminWaitlist";
 import { AdminSystem } from "@/pages/admin/AdminSystem";
 
 const queryClient = new QueryClient();
@@ -84,6 +85,13 @@ const App = () => (
               <ProtectedRoute>
                 <AdminLayout>
                   <AdminInvoices />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/waitlist" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <AdminWaitlist />
                 </AdminLayout>
               </ProtectedRoute>
             } />
