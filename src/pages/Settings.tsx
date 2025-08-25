@@ -4,14 +4,12 @@ import { SettingsSidebar } from '@/components/SettingsSidebar';
 import { ProfileForm } from '@/components/ProfileForm';
 import { SettingsAccount } from '@/components/SettingsAccount';
 import { SettingsTimerStyle } from '@/components/SettingsTimerStyle';
-import { SettingsPomodoroPrefs } from '@/components/SettingsPomodoroPrefs';
 import { SettingsReminders } from '@/components/SettingsReminders';
 import { SettingsCurrency } from '@/components/SettingsCurrency';
 import { SettingsTimezone } from '@/components/SettingsTimezone';
 import { SettingsSecurity } from '@/components/SettingsSecurity';
 import { SettingsCookies } from '@/components/SettingsCookies';
 import { SettingsAbout } from '@/components/SettingsAbout';
-import { TimerModeSettings } from '@/components/settings/TimerModeSettings';
 
 export default function Settings() {
   return (
@@ -30,9 +28,7 @@ export default function Settings() {
               <Routes>
                 <Route path="/" element={<ProfileForm />} />
                 <Route path="/account" element={<SettingsAccount />} />
-                <Route path="/timer-mode" element={<TimerModeSettings />} />
                 <Route path="/timer-style" element={<SettingsTimerStyle />} />
-                <Route path="/pomodoro" element={<SettingsPomodoroPrefs />} />
                 <Route path="/reminders" element={<SettingsReminders />} />
                 <Route path="/currency" element={<SettingsCurrency />} />
                 <Route path="/timezone" element={<SettingsTimezone />} />

@@ -3,7 +3,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDashboardTimers } from '@/hooks/useDashboardTimers';
-import { usePomodoro } from '@/hooks/usePomodoro';
 
 export type TimerMode = 'stopwatch' | 'pomodoro';
 
@@ -25,7 +24,6 @@ export function useUnifiedTimer() {
   const [isLoading, setIsLoading] = useState(true);
 
   const dashboardTimers = useDashboardTimers();
-  const pomodoro = usePomodoro();
 
   useEffect(() => {
     if (user) {
@@ -132,12 +130,12 @@ export function useUnifiedTimer() {
         isRunning: dashboardTimers.isPomodoroRunning,
         displayTime: dashboardTimers.getPomodoroDisplayTime(),
         session: dashboardTimers.pomodoro,
-        pomodoroState: pomodoro.state,
-        pomodoroPhase: pomodoro.phase,
-        pomodoroTimeRemaining: pomodoro.timeRemaining,
-        settings: pomodoro.settings,
-        todaySessions: pomodoro.todaySessions,
-        currentStreak: pomodoro.currentStreak,
+        pomodoroState: 'idle',
+        pomodoroPhase: 'focus',
+        pomodoroTimeRemaining: 0,
+        settings: null,
+        todaySessions: 0,
+        currentStreak: 0,
       };
     }
   };
@@ -172,6 +170,5 @@ export function useUnifiedTimer() {
     getTimerState,
     playAlarmSound,
     dashboardTimers,
-    pomodoro,
   };
 }
