@@ -309,6 +309,18 @@ export function usePomodoro() {
     console.log('Starting focus session with project:', projectId);
 
     try {
+      // First, stop any existing running timers
+      const { error: stopError } = await supabase
+        .from('time_entries')
+        .update({ stopped_at: new Date().toISOString() })
+        .eq('user_id', user!.id)
+        .is('stopped_at', null);
+
+      if (stopError) {
+        console.error('Error stopping existing timers:', stopError);
+        // Continue anyway, the constraint will catch it
+      }
+
       // Create time entry for focus session
       const { data, error } = await supabase
         .from('time_entries')
