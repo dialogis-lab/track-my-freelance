@@ -57,7 +57,11 @@ export function TimerWidget() {
     console.log('Setting up timer sync for user:', user.id);
     
     const channel = supabase
-      .channel(`timer-sync-${user.id}`)
+      .channel(`timer-sync-${user.id}`, {
+        config: {
+          broadcast: { self: false }
+        }
+      })
       .on(
         'postgres_changes',
         {
@@ -67,12 +71,25 @@ export function TimerWidget() {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('Timer sync update received:', payload);
-          // Reload active entry to sync timer state
-          setTimeout(() => {
-            loadActiveEntry();
-            triggerTimerUpdate();
-          }, 100);
+          console.log('Timer sync update received:', payload.eventType, payload);
+          
+          // Immediately update the timer state based on the event
+          if (payload.eventType === 'INSERT' && !payload.new.stopped_at) {
+            // Timer started
+            const newEntry = payload.new as ActiveEntry;
+            setActiveEntry(newEntry);
+            setSelectedProjectId(newEntry.project_id);
+            setNotes(newEntry.notes || '');
+            console.log('Timer started on another device');
+          } else if (payload.eventType === 'UPDATE' && payload.new.stopped_at) {
+            // Timer stopped
+            setActiveEntry(null);
+            setElapsedTime(0);
+            setNotes('');
+            console.log('Timer stopped on another device');
+          }
+          
+          triggerTimerUpdate();
         }
       )
       .subscribe((status) => {
