@@ -209,8 +209,17 @@ export function useDashboardTimers() {
       return;
     }
 
+    // Always reload state from database for consistency across devices
+    // This ensures all devices see the same state immediately
+    const reloadState = () => {
+      setTimeout(() => {
+        debugLog('Reloading stopwatch state after realtime event:', payload.eventType);
+        loadStopwatchState();
+      }, 50); // Reduced delay for faster sync
+    };
+
     if (payload.eventType === 'INSERT' && payload.new && !payload.new.stopped_at) {
-      // New running timer
+      // New running timer - immediately update state and reload for consistency
       if (payload.new.id && payload.new.started_at) {
         const newState = {
           id: payload.new.id,
@@ -220,26 +229,16 @@ export function useDashboardTimers() {
         };
         debugLog('Setting new stopwatch state from INSERT:', newState);
         setState(prev => ({ ...prev, stopwatch: newState }));
-        
-        // Force reload after a brief delay to ensure consistency
-        setTimeout(() => {
-          debugLog('Force reloading stopwatch state after INSERT');
-          loadStopwatchState();
-        }, 200);
+        reloadState();
       }
     } else if (payload.eventType === 'UPDATE' && payload.new) {
       if (payload.new.stopped_at) {
-        // Timer stopped
+        // Timer stopped - clear state immediately and reload
         debugLog('Clearing stopwatch state - timer stopped');
         setState(prev => ({ ...prev, stopwatch: null }));
-        
-        // Force reload after a brief delay to ensure consistency
-        setTimeout(() => {
-          debugLog('Force reloading stopwatch state after UPDATE (stopped)');
-          loadStopwatchState();
-        }, 200);
+        reloadState();
       } else if (payload.new.id && payload.new.started_at && !payload.new.stopped_at) {
-        // Timer updated but still running
+        // Timer updated but still running - update and reload
         const updatedState = {
           id: payload.new.id,
           started_at: payload.new.started_at,
@@ -248,12 +247,34 @@ export function useDashboardTimers() {
         };
         debugLog('Updating stopwatch state from UPDATE:', updatedState);
         setState(prev => ({ ...prev, stopwatch: updatedState }));
+        reloadState();
       }
+    } else if (payload.eventType === 'DELETE') {
+      // Timer deleted - clear state and reload
+      debugLog('Clearing stopwatch state - timer deleted');
+      setState(prev => ({ ...prev, stopwatch: null }));
+      reloadState();
     }
   };
 
   const handlePomodoroUpdate = (payload: TimerPayload) => {
-    if (!payload.new) return;
+    debugLog('Pomodoro update:', payload.eventType, payload.new?.status);
+    
+    // Always reload state from database for consistency across devices
+    const reloadState = () => {
+      setTimeout(() => {
+        debugLog('Reloading pomodoro state after realtime event:', payload.eventType);
+        loadPomodoroState();
+      }, 50); // Reduced delay for faster sync
+    };
+
+    if (payload.eventType === 'DELETE' || !payload.new) {
+      // Pomodoro session deleted - clear state and reload
+      debugLog('Clearing pomodoro state - session deleted or invalid');
+      setState(prev => ({ ...prev, pomodoro: null }));
+      reloadState();
+      return;
+    }
 
     const newState = {
       id: payload.new.id,
@@ -264,11 +285,18 @@ export function useDashboardTimers() {
       elapsed_ms: payload.new.elapsed_ms || 0
     };
 
-    if (payload.new.status === 'completed' || payload.new.status === 'idle') {
+    if (payload.new.status === 'stopped' || payload.new.status === 'completed') {
+      // Session stopped or completed - clear state immediately
+      debugLog('Clearing pomodoro state - session stopped/completed');
       setState(prev => ({ ...prev, pomodoro: null }));
-    } else {
+    } else if (payload.new.status === 'running' || payload.new.status === 'paused') {
+      // Session is active - update state immediately
+      debugLog('Updating pomodoro state:', newState);
       setState(prev => ({ ...prev, pomodoro: newState }));
     }
+    
+    // Always reload for consistency
+    reloadState();
   };
 
   // Calculate display time with server offset

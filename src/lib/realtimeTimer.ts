@@ -25,6 +25,7 @@ class RealtimeTimerManager {
   private debug = true; // Enable debug temporarily
   private subscriptionCount: Map<string, number> = new Map();
   private callbacks: Map<string, TimerCallbacks[]> = new Map();
+  private connectionStatus: Map<string, 'connecting' | 'connected' | 'error'> = new Map();
 
   private log(message: string, ...args: any[]) {
     if (this.debug) {
@@ -55,10 +56,12 @@ class RealtimeTimerManager {
 
     // Check if we already have an active channel
     const existingChannel = this.channels.get(channelKey);
-    if (existingChannel) {
+    const status = this.connectionStatus.get(channelKey);
+    
+    if (existingChannel && status === 'connected') {
       this.log(`Reusing existing channel for ${table}`);
-      // Trigger onSubscribed for the new callback
-      callbacks.onSubscribed?.();
+      // Trigger onSubscribed for the new callback immediately
+      setTimeout(() => callbacks.onSubscribed?.(), 10);
       
       // Return subscription that just manages the count and callbacks
       return {
@@ -76,8 +79,17 @@ class RealtimeTimerManager {
       };
     }
 
+    // Set status to connecting
+    this.connectionStatus.set(channelKey, 'connecting');
+
     const channel = supabase
-      .channel(channelKey)
+      .channel(channelKey, {
+        config: {
+          presence: {
+            key: userId
+          }
+        }
+      })
       .on(
         'postgres_changes',
         {
@@ -87,7 +99,7 @@ class RealtimeTimerManager {
           filter: `user_id=eq.${userId}`
         },
         (payload: any) => {
-          this.log(`Event received for ${table}:`, payload.eventType, payload);
+          this.log(`Event received for ${table}:`, payload.eventType, payload.new?.id || payload.old?.id);
           
           const timerPayload: TimerPayload = {
             eventType: payload.eventType,
@@ -96,49 +108,57 @@ class RealtimeTimerManager {
             table
           };
 
-          // Validate payload has required data
+          // Validate payload has required data for non-DELETE events
           if (payload.eventType !== 'DELETE' && (!payload.new || typeof payload.new !== 'object')) {
             this.log(`Invalid payload for ${table} - missing 'new' data:`, payload);
-            // Fallback: try to fetch the row by ID if we have it
-            if (payload.new?.id) {
-              this.fetchRowById(table, payload.new.id, userId)
-                .then(row => {
-                  if (row) {
-                    const fallbackPayload = { ...timerPayload, new: row };
-                    // Notify all callbacks
-                    const allCallbacks = this.callbacks.get(channelKey) || [];
-                    allCallbacks.forEach(cb => cb.onUpdate?.(fallbackPayload));
-                  }
-                })
-                .catch(error => {
-                  this.log(`Failed to fetch fallback row:`, error);
-                  // Notify all callbacks of error
-                  const allCallbacks = this.callbacks.get(channelKey) || [];
-                  allCallbacks.forEach(cb => cb.onError?.(error));
-                });
-            }
             return;
           }
 
-          // Notify all callbacks
-          const allCallbacks = this.callbacks.get(channelKey) || [];
-          allCallbacks.forEach(cb => cb.onUpdate?.(timerPayload));
+          // Notify all callbacks with a small delay to prevent race conditions
+          setTimeout(() => {
+            const allCallbacks = this.callbacks.get(channelKey) || [];
+            allCallbacks.forEach(cb => {
+              try {
+                cb.onUpdate?.(timerPayload);
+              } catch (error) {
+                this.log(`Error in callback for ${table}:`, error);
+                cb.onError?.(error);
+              }
+            });
+          }, 10);
         }
       )
       .subscribe((status) => {
         this.log(`Subscription status for ${table}:`, status);
         
         if (status === 'SUBSCRIBED') {
+          this.connectionStatus.set(channelKey, 'connected');
           this.log(`Subscription ready for ${table}, triggering reload`);
-          // Notify all callbacks
-          const allCallbacks = this.callbacks.get(channelKey) || [];
-          allCallbacks.forEach(cb => cb.onSubscribed?.());
-        } else if (status === 'CHANNEL_ERROR') {
+          
+          // Notify all callbacks with a small delay to ensure subscription is ready
+          setTimeout(() => {
+            const allCallbacks = this.callbacks.get(channelKey) || [];
+            allCallbacks.forEach(cb => {
+              try {
+                cb.onSubscribed?.();
+              } catch (error) {
+                this.log(`Error in onSubscribed callback for ${table}:`, error);
+                cb.onError?.(error);
+              }
+            });
+          }, 50);
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          this.connectionStatus.set(channelKey, 'error');
           this.log(`Channel error for ${table}:`, status);
-          const error = new Error(`Channel error for ${table}`);
+          const error = new Error(`Channel error for ${table}: ${status}`);
+          
           // Notify all callbacks
           const allCallbacks = this.callbacks.get(channelKey) || [];
           allCallbacks.forEach(cb => cb.onError?.(error));
+          
+          // Clean up the failed connection
+          this.channels.delete(channelKey);
+          this.connectionStatus.delete(channelKey);
         }
       });
 
@@ -186,6 +206,7 @@ class RealtimeTimerManager {
       this.channels.delete(channelKey);
       this.subscriptionCount.delete(channelKey);
       this.callbacks.delete(channelKey);
+      this.connectionStatus.delete(channelKey);
     }
   }
 
@@ -197,6 +218,7 @@ class RealtimeTimerManager {
     this.channels.clear();
     this.subscriptionCount.clear();
     this.callbacks.clear();
+    this.connectionStatus.clear();
   }
 }
 
