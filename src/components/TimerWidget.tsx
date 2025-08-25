@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTimerContext } from '@/contexts/TimerContext';
-import { useDashboardTimers } from '@/hooks/useDashboardTimers';
-import { useTimerSkin } from '@/hooks/useTimerSkin';
-import { usePomodoro } from '@/hooks/usePomodoro';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Play, Pause, Square, Timer } from 'lucide-react';
-import { formatTime, hoursToMinutes, calculateDurationMinutes, formatDuration } from '@/lib/timeUtils';
+import { Play, Pause, Square, Timer, AlertCircle } from 'lucide-react';
+import { useTimerSkin } from '@/hooks/useTimerSkin';
+import { ModeToggle, TimerMode } from '@/components/ModeToggle';
+import { CompactPomodoroDisplay } from '@/components/CompactPomodoroDisplay';
 import { PomodoroControls } from '@/components/PomodoroControls';
+import { useUnifiedTimer } from '@/hooks/useUnifiedTimer';
+import { formatTime } from '@/lib/timeUtils';
 
 interface Project {
   id: string;
@@ -23,38 +23,29 @@ interface Project {
   clients?: { name: string } | null;
 }
 
-interface ActiveEntry {
-  id: string;
-  project_id: string;
-  started_at: string;
-  notes: string;
-}
-
 export function TimerWidget() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
-  const [clientElapsedTime, setClientElapsedTime] = useState(0); // Client-side timer for smooth display
+  const [clientElapsedTime, setClientElapsedTime] = useState(0);
+  
   const { user } = useAuth();
   const { triggerTimerUpdate } = useTimerContext();
   const { timerSkin } = useTimerSkin();
-  const { isEnabled: pomodoroEnabled, setIsEnabled: setPomodoroEnabled, state: pomodoroState } = usePomodoro();
   const { toast } = useToast();
   
-  // Use shared timer state from useDashboardTimers
-  const { 
-    stopwatch: activeEntry,
-    getStopwatchDisplayTime,
-    isStopwatchRunning
-  } = useDashboardTimers();
-  
-  // Smooth client-side timer update
+  // Use unified timer system
+  const unifiedTimer = useUnifiedTimer();
+  const timerState = unifiedTimer.getTimerState();
+  const isRunning = unifiedTimer.getIsRunning();
+
+  // Smooth client-side timer update for stopwatch mode
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
-    if (isStopwatchRunning && activeEntry?.started_at) {
-      const startTime = new Date(activeEntry.started_at).getTime();
+    if (unifiedTimer.mode === 'stopwatch' && isRunning && timerState.session?.started_at) {
+      const startTime = new Date(timerState.session.started_at).getTime();
       
       // Initialize with current elapsed time
       setClientElapsedTime(Math.floor((Date.now() - startTime) / 1000));
@@ -70,12 +61,18 @@ export function TimerWidget() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isStopwatchRunning, activeEntry?.started_at]);
+  }, [unifiedTimer.mode, isRunning, timerState.session?.started_at]);
   
-  // Use client elapsed time for display, fallback to dashboard time
-  const elapsedTime = isStopwatchRunning ? clientElapsedTime : Math.floor(getStopwatchDisplayTime() / 1000);
+  // Get display time based on mode
+  const getDisplayTime = () => {
+    if (unifiedTimer.mode === 'stopwatch') {
+      return isRunning ? clientElapsedTime : Math.floor(timerState.displayTime / 1000);
+    } else {
+      return timerState.pomodoroTimeRemaining || 0;
+    }
+  };
 
-  // Load projects and sync state with active entry
+  // Load projects
   useEffect(() => {
     if (user) {
       loadProjects();
@@ -84,14 +81,12 @@ export function TimerWidget() {
 
   // Sync form state when active entry changes
   useEffect(() => {
-    if (activeEntry?.id) {
-      // Load full entry details to get project_id and notes
-      loadEntryDetails(activeEntry.id);
-    } else {
+    if (unifiedTimer.mode === 'stopwatch' && timerState.session?.id) {
+      loadEntryDetails(timerState.session.id);
+    } else if (unifiedTimer.mode === 'stopwatch' && !timerState.session) {
       setNotes('');
-      // Keep selectedProjectId for new entries
     }
-  }, [activeEntry]);
+  }, [unifiedTimer.mode, timerState.session]);
 
   const loadEntryDetails = async (entryId: string) => {
     try {
@@ -130,8 +125,7 @@ export function TimerWidget() {
     }
   };
 
-
-  const startTimer = async () => {
+  const startStopwatchTimer = async () => {
     if (!selectedProjectId) {
       toast({
         title: "Please select a project",
@@ -141,7 +135,6 @@ export function TimerWidget() {
       return;
     }
 
-    console.log('[TimerWidget] Starting timer for project:', selectedProjectId);
     setLoading(true);
     
     try {
@@ -157,22 +150,21 @@ export function TimerWidget() {
         .single();
 
       if (error) {
-        console.error('[TimerWidget] Error starting timer:', error);
+        console.error('Error starting timer:', error);
         toast({
           title: "Error starting timer",
           description: error.message,
           variant: "destructive",
         });
       } else {
-        console.log('[TimerWidget] Timer started successfully:', data);
-        triggerTimerUpdate(); // Notify other components
+        triggerTimerUpdate();
         toast({
           title: "Timer started",
           description: "Time tracking has begun for the selected project.",
         });
       }
     } catch (err) {
-      console.error('[TimerWidget] Exception starting timer:', err);
+      console.error('Exception starting timer:', err);
       toast({
         title: "Error starting timer",
         description: "An unexpected error occurred",
@@ -183,10 +175,9 @@ export function TimerWidget() {
     setLoading(false);
   };
 
-  const stopTimer = async () => {
-    if (!activeEntry) return;
+  const stopStopwatchTimer = async () => {
+    if (!timerState.session) return;
 
-    console.log('[TimerWidget] Stopping timer:', activeEntry.id);
     setLoading(true);
     
     try {
@@ -196,26 +187,25 @@ export function TimerWidget() {
           stopped_at: new Date().toISOString(),
           notes: notes,
         })
-        .eq('id', activeEntry.id);
+        .eq('id', timerState.session.id);
 
       if (error) {
-        console.error('[TimerWidget] Error stopping timer:', error);
+        console.error('Error stopping timer:', error);
         toast({
           title: "Error stopping timer",
           description: error.message,
           variant: "destructive",
         });
       } else {
-        console.log('[TimerWidget] Timer stopped successfully');
         setNotes('');
-        triggerTimerUpdate(); // Notify other components
+        triggerTimerUpdate();
         toast({
           title: "Timer stopped",
           description: "Time entry has been saved successfully.",
         });
       }
     } catch (err) {
-      console.error('[TimerWidget] Exception stopping timer:', err);
+      console.error('Exception stopping timer:', err);
       toast({
         title: "Error stopping timer",
         description: "An unexpected error occurred",
@@ -227,13 +217,13 @@ export function TimerWidget() {
   };
 
   const updateNotes = async () => {
-    if (!activeEntry?.id) return;
+    if (!timerState.session?.id) return;
 
     try {
       const { error } = await supabase
         .from('time_entries')
         .update({ notes })
-        .eq('id', activeEntry.id);
+        .eq('id', timerState.session.id);
 
       if (error) {
         console.error('Error updating notes:', error);
@@ -251,7 +241,6 @@ export function TimerWidget() {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-
   const getProjectDisplay = (project: Project) => {
     if (project.clients?.name) {
       return `${project.clients.name} - ${project.name}`;
@@ -260,55 +249,72 @@ export function TimerWidget() {
   };
 
   // Show warning if timer has been running for more than 8 hours
-  const showLongRunningWarning = elapsedTime > 8 * 60 * 60;
+  const displayTime = getDisplayTime();
+  const showLongRunningWarning = unifiedTimer.mode === 'stopwatch' && displayTime > 8 * 60 * 60;
+
+  if (unifiedTimer.isLoading) {
+    return (
+      <Card data-skin={timerSkin} className={`timer-skin-${timerSkin}`}>
+        <CardContent className="py-8">
+          <div className="flex items-center justify-center">
+            <div className="text-muted-foreground">Loading timer...</div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card data-skin={timerSkin} className={`timer-skin-${timerSkin}`}>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-semibold">Time Tracker</CardTitle>
-          <Tabs value={pomodoroEnabled ? 'pomodoro' : 'standard'} onValueChange={(value) => setPomodoroEnabled(value === 'pomodoro')}>
-            <TabsList className="grid w-[200px] grid-cols-2">
-              <TabsTrigger value="standard">Standard</TabsTrigger>
-              <TabsTrigger value="pomodoro">
-                <Timer className="w-4 h-4 mr-1" />
-                Pomodoro
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <ModeToggle
+            mode={unifiedTimer.mode}
+            onModeChange={unifiedTimer.handleModeChange}
+            disabled={loading}
+          />
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {pomodoroEnabled ? (
+        {unifiedTimer.mode === 'pomodoro' ? (
           <>
+            {/* Compact Pomodoro Display */}
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="timer-display">
+                <div 
+                  className={`timer-digits ${timerSkin === 'gradient' ? 'gradient' : ''}`}
+                  data-testid="timer-display"
+                >
+                  {formatTimeDisplay(displayTime)}
+                </div>
+              </div>
+            </div>
+
+            <CompactPomodoroDisplay
+              phase={timerState.pomodoroPhase || 'focus'}
+              timeRemaining={displayTime}
+              currentStreak={timerState.currentStreak || 0}
+              longBreakEvery={timerState.settings?.longBreakEvery || 4}
+              formatTime={formatTimeDisplay}
+            />
+
             <PomodoroControls
               projects={projects}
               selectedProjectId={selectedProjectId}
               onProjectChange={setSelectedProjectId}
             />
-            
-            {/* Minimal Focus View Button */}
-            <div className="pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={() => window.location.href = '/focus'}
-                className="w-full"
-                disabled={pomodoroState === 'idle'}
-              >
-                📱 Minimal Focus View
-              </Button>
-            </div>
           </>
         ) : (
           <>
-            {/* Standard Timer Display */}
+            {/* Standard Stopwatch Display */}
             <div className="flex flex-col items-center justify-center py-12">
               <div className="timer-display">
                 <div 
                   className={`timer-digits ${timerSkin === 'gradient' ? 'gradient' : ''} ${showLongRunningWarning ? 'warning' : ''}`}
                   data-testid="timer-display"
                 >
-                  {formatTimeDisplay(elapsedTime)}
+                  {formatTimeDisplay(displayTime)}
                 </div>
               </div>
             </div>
@@ -317,7 +323,7 @@ export function TimerWidget() {
             {showLongRunningWarning && (
               <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-destructive rounded-full" />
+                  <AlertCircle className="w-4 h-4 text-destructive" />
                   <p className="text-sm text-destructive font-medium">
                     Timer has been running for more than 8 hours. Consider stopping and reviewing your entry.
                   </p>
@@ -328,14 +334,14 @@ export function TimerWidget() {
             {/* Project Selection */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Project</label>
-                <Select
-                  value={selectedProjectId}
-                  onValueChange={setSelectedProjectId}
-                  disabled={!!activeEntry || loading}
-                >
-                  <SelectTrigger data-testid="project-select">
-                    <SelectValue placeholder="Select a project" />
-                  </SelectTrigger>
+              <Select
+                value={selectedProjectId}
+                onValueChange={setSelectedProjectId}
+                disabled={isRunning || loading}
+              >
+                <SelectTrigger data-testid="project-select">
+                  <SelectValue placeholder="Select a project" />
+                </SelectTrigger>
                 <SelectContent>
                   {projects.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
@@ -360,9 +366,9 @@ export function TimerWidget() {
 
             {/* Control Buttons */}
             <div className="pt-2">
-              {!isStopwatchRunning ? (
+              {!isRunning ? (
                 <Button
-                  onClick={startTimer}
+                  onClick={startStopwatchTimer}
                   disabled={loading || !selectedProjectId}
                   size="lg"
                   className="w-full"
@@ -373,8 +379,8 @@ export function TimerWidget() {
                 </Button>
               ) : (
                 <Button
-                  onClick={stopTimer}
-                  disabled={loading || !activeEntry}
+                  onClick={stopStopwatchTimer}
+                  disabled={loading || !timerState.session}
                   size="lg"
                   variant="destructive"
                   className="w-full"
@@ -383,20 +389,6 @@ export function TimerWidget() {
                   <Square className="w-4 h-4 mr-2" />
                   Stop Timer
                 </Button>
-              )}
-              
-              {/* Debug Info for Button State */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="mt-2 p-2 bg-yellow-100 rounded text-xs">
-                  <div>Active Entry: {activeEntry ? `YES (${activeEntry.id})` : 'NO'}</div>
-                  <div>Running: {isStopwatchRunning ? 'YES' : 'NO'}</div>
-                  <div>Loading: {loading ? 'YES' : 'NO'}</div>
-                  <div>Selected Project: {selectedProjectId || 'NONE'}</div>
-                  <div>Display Time: {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}</div>
-                  <div>Dashboard State: {isStopwatchRunning ? 'RUNNING' : 'STOPPED'}</div>
-                  <div>Dashboard Time: {Math.floor(getStopwatchDisplayTime() / 1000 / 60)}:{(Math.floor(getStopwatchDisplayTime() / 1000) % 60).toString().padStart(2, '0')}</div>
-                  <div>Button Shows: {(!activeEntry && !isStopwatchRunning) ? 'START' : 'STOP'}</div>
-                </div>
               )}
             </div>
           </>

@@ -11,6 +11,7 @@ import { SettingsTimezone } from '@/components/SettingsTimezone';
 import { SettingsSecurity } from '@/components/SettingsSecurity';
 import { SettingsCookies } from '@/components/SettingsCookies';
 import { SettingsAbout } from '@/components/SettingsAbout';
+import { TimerModeSettings } from '@/components/settings/TimerModeSettings';
 
 export default function Settings() {
   return (
@@ -29,6 +30,7 @@ export default function Settings() {
               <Routes>
                 <Route path="/" element={<ProfileForm />} />
                 <Route path="/account" element={<SettingsAccount />} />
+                <Route path="/timer-mode" element={<TimerModeSettings />} />
                 <Route path="/timer-style" element={<SettingsTimerStyle />} />
                 <Route path="/pomodoro" element={<SettingsPomodoroPrefs />} />
                 <Route path="/reminders" element={<SettingsReminders />} />

@@ -400,10 +400,12 @@ export type Database = {
       pomodoro_settings: {
         Row: {
           auto_advance: boolean
+          auto_start_on_mode_switch: boolean
           desktop_notifications: boolean
           focus_ms: number
           long_break_every: number
           long_break_ms: number
+          preferred_timer_mode: string | null
           revised_at: string
           short_break_ms: number
           sound_on: boolean
@@ -411,10 +413,12 @@ export type Database = {
         }
         Insert: {
           auto_advance?: boolean
+          auto_start_on_mode_switch?: boolean
           desktop_notifications?: boolean
           focus_ms?: number
           long_break_every?: number
           long_break_ms?: number
+          preferred_timer_mode?: string | null
           revised_at?: string
           short_break_ms?: number
           sound_on?: boolean
@@ -422,10 +426,12 @@ export type Database = {
         }
         Update: {
           auto_advance?: boolean
+          auto_start_on_mode_switch?: boolean
           desktop_notifications?: boolean
           focus_ms?: number
           long_break_every?: number
           long_break_ms?: number
+          preferred_timer_mode?: string | null
           revised_at?: string
           short_break_ms?: number
           sound_on?: boolean
