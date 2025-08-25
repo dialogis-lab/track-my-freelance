@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTimerContext } from '@/contexts/TimerContext';
 import { supabase } from '@/integrations/supabase/client';
 import { subscribeToTimeEntries, subscribeToPomodoroSessions, type TimerPayload } from '@/lib/realtimeTimer';
 
@@ -35,6 +36,7 @@ export function useDashboardTimers() {
   });
   
   const { user } = useAuth();
+  const { timerUpdated } = useTimerContext();
   const subscriptionsRef = useRef<Array<{ unsubscribe: () => void }>>([]);
 
   // Calculate server offset on mount
@@ -94,6 +96,15 @@ export function useDashboardTimers() {
       subscriptionsRef.current = [];
     };
   }, [user]);
+
+  // Listen to timer context updates for cross-device sync
+  useEffect(() => {
+    if (!user || state.loading) return;
+    
+    debugLog('Timer context updated, reloading states');
+    loadStopwatchState();
+    loadPomodoroState();
+  }, [timerUpdated]);
 
   const calculateServerOffset = async () => {
     try {
