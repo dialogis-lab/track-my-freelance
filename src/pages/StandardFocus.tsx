@@ -37,6 +37,33 @@ export default function StandardFocus() {
     }
   }, [user]);
 
+  // Real-time subscription for timer updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('standard-focus-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'time_entries',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Standard focus update received:', payload);
+          // Reload active entry when any timer change occurs
+          loadActiveEntry();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   // Timer effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -91,9 +118,16 @@ export default function StandardFocus() {
 
       if (!error && data) {
         setActiveEntry(data);
+      } else {
+        // No active entry found, redirect to dashboard
+        setActiveEntry(null);
+        if (!error || error.code === 'PGRST116') {
+          navigate('/dashboard');
+        }
       }
     } catch (error) {
       console.error('Error loading active entry:', error);
+      navigate('/dashboard');
     }
   };
 

@@ -55,6 +55,41 @@ export function usePomodoro() {
     }
   }, [user]);
 
+  // Real-time subscription for timer updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('pomodoro-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'time_entries',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Pomodoro timer update received:', payload);
+          // If a timer was stopped externally, reset pomodoro state
+          if (payload.eventType === 'UPDATE' && payload.new?.stopped_at && payload.old?.stopped_at === null) {
+            if (activeEntryId === payload.new.id) {
+              setState('idle');
+              setTargetTime(null);
+              setTimeRemaining(0);
+              setActiveEntryId(null);
+              triggerTimerUpdate();
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, activeEntryId]);
+
   // Timer tick effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
