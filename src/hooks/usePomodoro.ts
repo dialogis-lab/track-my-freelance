@@ -113,18 +113,27 @@ export function usePomodoro() {
             return;
           }
           
-          // Session is still valid
-          const remaining = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
-          setPhase((data.phase as PomodoroPhase) || 'focus');
-          setState('running');
-          setTimeRemaining(remaining);
-          setTargetTime(endTime);
-        } else if (data.status === 'paused') {
-          const elapsedSeconds = data.elapsed_ms ? Math.floor(data.elapsed_ms / 1000) : 0;
-          setPhase((data.phase as PomodoroPhase) || 'focus');
-          setState('paused');
-          setTimeRemaining(elapsedSeconds);
+          // For running sessions, be conservative - don't auto-restore
+          // Let the coupling logic in CombinedTimerCard handle the restoration
+          console.log('Found running session but being conservative - not auto-restoring');
+          console.log('Session will be validated by coupling logic in UI component');
+          
+          // Just set to idle and let the UI component decide
+          setPhase('focus');
+          setState('idle');
+          setTimeRemaining(0);
           setTargetTime(null);
+          setActiveEntryId(null);
+        } else if (data.status === 'paused') {
+          // For paused sessions, also be conservative
+          console.log('Found paused session but being conservative - not auto-restoring');
+          
+          // Just set to idle and let the UI component decide
+          setPhase('focus');
+          setState('idle');
+          setTimeRemaining(0);
+          setTargetTime(null);
+          setActiveEntryId(null);
         } else {
           // Invalid session state, stop it and reset
           console.log('Invalid session state, stopping and resetting');

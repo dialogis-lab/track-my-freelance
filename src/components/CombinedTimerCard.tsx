@@ -118,7 +118,30 @@ export function CombinedTimerCard() {
         .single();
       
       if (data) {
-        setCoupling(data.couple_with_stopwatch_default || false);
+        const defaultCoupling = data.couple_with_stopwatch_default || false;
+        setCoupling(defaultCoupling);
+        debugLog('Loaded coupling default:', defaultCoupling);
+        
+        // If coupling is OFF but Pomodoro is running, stop it immediately
+        if (!defaultCoupling && isPomodoroRunning) {
+          debugLog('Stopping orphaned Pomodoro - coupling is OFF');
+          try {
+            await supabase.rpc('pomo_stop');
+            toast({ title: "Pomodoro stopped", description: "Stopped orphaned Pomodoro session." });
+          } catch (error) {
+            console.error('Error stopping orphaned pomodoro on load:', error);
+          }
+        }
+        // If coupling is ON but stopwatch is NOT running, stop Pomodoro
+        else if (defaultCoupling && !isStopwatchRunning && isPomodoroRunning) {
+          debugLog('Stopping orphaned Pomodoro - stopwatch not running');
+          try {
+            await supabase.rpc('pomo_stop');
+            toast({ title: "Pomodoro stopped", description: "Stopped orphaned Pomodoro session." });
+          } catch (error) {
+            console.error('Error stopping orphaned pomodoro on load:', error);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading coupling default:', error);
