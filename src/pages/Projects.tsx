@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Plus, Archive, Edit2, ArchiveRestore, Play, Square, BarChart3 } from 'lucide-react';
 
 interface Client {
@@ -73,37 +73,64 @@ export default function Projects() {
 
 
   const loadProjects = async () => {
-    const { data, error } = await supabase
-      .from('projects')
-      .select(`
-        id, name, client_id, rate_hour, archived, created_at,
-        clients:client_id (name)
-      `)
-      .order('created_at', { ascending: false });
+    try {
+      console.log('Loading projects for user:', user?.id);
+      const { data, error } = await supabase
+        .from('projects')
+        .select(`
+          id, name, client_id, rate_hour, archived, created_at,
+          clients:client_id (name)
+        `)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error loading projects:', error);
+      if (error) {
+        console.error('Supabase error loading projects:', error);
+        toast({
+          title: "Database Error",
+          description: `Error loading projects: ${error.message}`,
+          variant: "destructive",
+        });
+      } else {
+        console.log('Projects loaded successfully:', data?.length || 0, 'projects');
+        setProjects(data || []);
+      }
+    } catch (error) {
+      console.error('Network error loading projects:', error);
       toast({
-        title: "Error loading projects",
-        description: error.message,
+        title: "Connection Error", 
+        description: "Unable to connect to the server. Check your internet connection.",
         variant: "destructive",
       });
-    } else {
-      setProjects(data || []);
     }
   };
 
   const loadClients = async () => {
-    const { data, error } = await supabase
-      .from('clients')
-      .select('id, name')
-      .eq('archived', false)
-      .order('name');
+    try {
+      console.log('Loading clients for user:', user?.id);
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, name')
+        .eq('archived', false)
+        .order('name');
 
-    if (error) {
-      console.error('Error loading clients:', error);
-    } else {
-      setClients(data || []);
+      if (error) {
+        console.error('Supabase error loading clients:', error);
+        toast({
+          title: "Database Error",
+          description: `Error loading clients: ${error.message}`,
+          variant: "destructive",
+        });
+      } else {
+        console.log('Clients loaded successfully:', data?.length || 0, 'clients');
+        setClients(data || []);
+      }
+    } catch (error) {
+      console.error('Network error loading clients:', error);
+      toast({
+        title: "Connection Error",
+        description: "Unable to load clients. Check your internet connection.",
+        variant: "destructive",
+      });
     }
   };
 
