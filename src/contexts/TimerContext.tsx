@@ -101,13 +101,17 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase
       .from('time_entries')
       .select(`
-        id, project_id, started_at, notes,
-        projects:project_id (
+        id, 
+        project_id, 
+        started_at, 
+        notes,
+        projects (
           name,
-          clients:client_id (name)
+          clients (name)
         )
       `)
       .is('stopped_at', null)
+      .eq('user_id', user.id)
       .order('started_at', { ascending: false })
       .limit(1)
       .maybeSingle();
