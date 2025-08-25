@@ -23,9 +23,8 @@ interface DashboardTimersState {
 
 // Debug logging only when enabled
 const debugLog = (message: string, ...args: any[]) => {
-  if (typeof window !== 'undefined' && import.meta.env.VITE_TIMER_DEBUG === 'true') {
-    console.log(`[DashboardTimers] ${message}`, ...args);
-  }
+  // Temporarily always enable debug to diagnose tab switching
+  console.log(`[DashboardTimers] ${message}`, ...args);
 };
 
 export function useDashboardTimers() {
@@ -63,7 +62,7 @@ export function useDashboardTimers() {
     initializeDashboard();
   }, [user?.id]);
 
-  // Set up realtime subscriptions with version gating
+  // Set up realtime subscriptions with version gating and recovery
   useEffect(() => {
     if (!user) return;
 
@@ -81,8 +80,8 @@ export function useDashboardTimers() {
       },
       onSubscribed: () => {
         debugLog('Stopwatch channel subscribed - loading current state');
-        // Re-fetch current state once on subscription
-        loadCurrentTimerStates();
+        // Always re-fetch current state when subscription is ready
+        setTimeout(() => loadCurrentTimerStates(), 100);
       },
       onError: (error) => {
         debugLog('Stopwatch subscription error:', error);
@@ -99,8 +98,8 @@ export function useDashboardTimers() {
       },
       onSubscribed: () => {
         debugLog('Pomodoro channel subscribed - loading current state');
-        // Re-fetch current state once on subscription
-        loadCurrentTimerStates();
+        // Always re-fetch current state when subscription is ready
+        setTimeout(() => loadCurrentTimerStates(), 100);
       },
       onError: (error) => {
         debugLog('Pomodoro subscription error:', error);
@@ -136,6 +135,26 @@ export function useDashboardTimers() {
       }
     };
   }, []);
+
+  // Add visibility change handler to recover on tab switch
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        debugLog('Tab became visible - recovering timer states');
+        // Recalculate server offset and reload states when tab becomes visible
+        setTimeout(async () => {
+          await calculateServerOffset();
+          await loadCurrentTimerStates();
+        }, 200);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user]);
 
   // Select active mode on mount without side effects
   const selectActiveModeOnMount = async () => {
