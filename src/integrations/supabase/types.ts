@@ -442,96 +442,6 @@ export type Database = {
         }
         Relationships: []
       }
-      pomodoro_sessions: {
-        Row: {
-          cycle_in_round: number
-          elapsed_ms: number
-          expected_end_at: string | null
-          id: string
-          phase: string
-          phase_index: number
-          revised_at: string
-          started_at: string | null
-          status: string
-          user_id: string
-        }
-        Insert: {
-          cycle_in_round?: number
-          elapsed_ms?: number
-          expected_end_at?: string | null
-          id?: string
-          phase: string
-          phase_index?: number
-          revised_at?: string
-          started_at?: string | null
-          status: string
-          user_id: string
-        }
-        Update: {
-          cycle_in_round?: number
-          elapsed_ms?: number
-          expected_end_at?: string | null
-          id?: string
-          phase?: string
-          phase_index?: number
-          revised_at?: string
-          started_at?: string | null
-          status?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      pomodoro_settings: {
-        Row: {
-          auto_advance: boolean
-          auto_start_on_mode_switch: boolean
-          couple_with_stopwatch_default: boolean
-          coupling_policy: string | null
-          desktop_notifications: boolean
-          focus_ms: number
-          long_break_every: number
-          long_break_ms: number
-          pomodoro_requires_stopwatch: boolean
-          preferred_timer_mode: string | null
-          revised_at: string
-          short_break_ms: number
-          sound_on: boolean
-          user_id: string
-        }
-        Insert: {
-          auto_advance?: boolean
-          auto_start_on_mode_switch?: boolean
-          couple_with_stopwatch_default?: boolean
-          coupling_policy?: string | null
-          desktop_notifications?: boolean
-          focus_ms?: number
-          long_break_every?: number
-          long_break_ms?: number
-          pomodoro_requires_stopwatch?: boolean
-          preferred_timer_mode?: string | null
-          revised_at?: string
-          short_break_ms?: number
-          sound_on?: boolean
-          user_id: string
-        }
-        Update: {
-          auto_advance?: boolean
-          auto_start_on_mode_switch?: boolean
-          couple_with_stopwatch_default?: boolean
-          coupling_policy?: string | null
-          desktop_notifications?: boolean
-          focus_ms?: number
-          long_break_every?: number
-          long_break_ms?: number
-          pomodoro_requires_stopwatch?: boolean
-          preferred_timer_mode?: string | null
-          revised_at?: string
-          short_break_ms?: number
-          sound_on?: boolean
-          user_id?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           address: string | null
@@ -541,7 +451,6 @@ export type Database = {
           created_at: string
           id: string
           logo_url: string | null
-          pomodoro_settings: Json | null
           timer_skin: string
           updated_at: string
           vat_id: string | null
@@ -555,7 +464,6 @@ export type Database = {
           created_at?: string
           id: string
           logo_url?: string | null
-          pomodoro_settings?: Json | null
           timer_skin?: string
           updated_at?: string
           vat_id?: string | null
@@ -569,7 +477,6 @@ export type Database = {
           created_at?: string
           id?: string
           logo_url?: string | null
-          pomodoro_settings?: Json | null
           timer_skin?: string
           updated_at?: string
           vat_id?: string | null
@@ -733,10 +640,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
-      coupling_reconcile: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
       expense_calculate_amounts: {
         Args: { p_quantity: number; p_unit_cents: number; p_vat_rate: number }
         Returns: {
@@ -815,125 +718,6 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
-      }
-      pomo_get_or_create_session: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          cycle_in_round: number
-          elapsed_ms: number
-          expected_end_at: string
-          id: string
-          phase: string
-          phase_index: number
-          revised_at: string
-          started_at: string
-          status: string
-          user_id: string
-        }[]
-      }
-      pomo_get_or_init_settings: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          auto_advance: boolean
-          desktop_notifications: boolean
-          focus_ms: number
-          long_break_every: number
-          long_break_ms: number
-          revised_at: string
-          short_break_ms: number
-          sound_on: boolean
-          user_id: string
-        }[]
-      }
-      pomo_next: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          cycle_in_round: number
-          elapsed_ms: number
-          expected_end_at: string
-          id: string
-          phase: string
-          phase_index: number
-          revised_at: string
-          started_at: string
-          status: string
-          user_id: string
-        }[]
-      }
-      pomo_pause: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          cycle_in_round: number
-          elapsed_ms: number
-          expected_end_at: string
-          id: string
-          phase: string
-          phase_index: number
-          revised_at: string
-          started_at: string
-          status: string
-          user_id: string
-        }[]
-      }
-      pomo_reconcile: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          cycle_in_round: number
-          elapsed_ms: number
-          expected_end_at: string
-          id: string
-          phase: string
-          phase_index: number
-          revised_at: string
-          started_at: string
-          status: string
-          user_id: string
-        }[]
-      }
-      pomo_resume: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          cycle_in_round: number
-          elapsed_ms: number
-          expected_end_at: string
-          id: string
-          phase: string
-          phase_index: number
-          revised_at: string
-          started_at: string
-          status: string
-          user_id: string
-        }[]
-      }
-      pomo_start: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          cycle_in_round: number
-          elapsed_ms: number
-          expected_end_at: string
-          id: string
-          phase: string
-          phase_index: number
-          revised_at: string
-          started_at: string
-          status: string
-          user_id: string
-        }[]
-      }
-      pomo_stop: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          cycle_in_round: number
-          elapsed_ms: number
-          expected_end_at: string
-          id: string
-          phase: string
-          phase_index: number
-          revised_at: string
-          started_at: string
-          status: string
-          user_id: string
-        }[]
       }
       server_time: {
         Args: Record<PropertyKey, never>
