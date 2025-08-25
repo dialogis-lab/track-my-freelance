@@ -74,11 +74,13 @@ export function usePomodoro() {
 
       if (error) {
         console.error('Error loading current session:', error);
-        // Fallback to idle state
+        // Force reset to idle state
+        console.log('Forcing reset to idle state due to error');
         setPhase('focus');
         setState('idle');
         setTimeRemaining(0);
         setTargetTime(null);
+        setActiveEntryId(null);
         return;
       }
 
@@ -101,11 +103,13 @@ export function usePomodoro() {
               })
               .eq('id', data.id);
             
-            // Set to idle
+            // Force reset to idle
+            console.log('Forcing reset to idle - session expired');
             setPhase('focus');
             setState('idle');
             setTimeRemaining(0);
             setTargetTime(null);
+            setActiveEntryId(null);
             return;
           }
           
@@ -122,7 +126,8 @@ export function usePomodoro() {
           setTimeRemaining(elapsedSeconds);
           setTargetTime(null);
         } else {
-          // Invalid session state, stop it
+          // Invalid session state, stop it and reset
+          console.log('Invalid session state, stopping and resetting');
           await supabase
             .from('pomodoro_sessions')
             .update({ 
@@ -131,25 +136,31 @@ export function usePomodoro() {
             })
             .eq('id', data.id);
           
+          // Force reset to idle
           setPhase('focus');
           setState('idle');
           setTimeRemaining(0);
           setTargetTime(null);
+          setActiveEntryId(null);
         }
       } else {
-        // No active session - set to idle
+        // No active session - force reset to idle
+        console.log('No active session found - forcing reset to idle');
         setPhase('focus');
         setState('idle');
         setTimeRemaining(0);
         setTargetTime(null);
+        setActiveEntryId(null);
       }
     } catch (error) {
       console.error('Error loading current session:', error);
-      // Fallback to idle state
+      // Force reset to idle state on any error
+      console.log('Forcing reset to idle state due to catch error');
       setPhase('focus');
       setState('idle');
       setTimeRemaining(0);
       setTargetTime(null);
+      setActiveEntryId(null);
     }
   };
 
