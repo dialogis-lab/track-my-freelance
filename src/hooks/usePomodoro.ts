@@ -341,9 +341,24 @@ export function usePomodoro() {
       const now = new Date();
       const endTime = new Date(now.getTime() + duration);
 
+      // First stop any existing pomodoro sessions
+      const { error: stopSessionError } = await supabase
+        .from('pomodoro_sessions')
+        .update({ 
+          status: 'stopped',
+          revised_at: now.toISOString()
+        })
+        .eq('user_id', user!.id)
+        .in('status', ['running', 'paused']);
+
+      if (stopSessionError) {
+        console.error('Error stopping existing sessions:', stopSessionError);
+      }
+
+      // Create new pomodoro session for cross-device sync
       const { error: sessionError } = await supabase
         .from('pomodoro_sessions')
-        .upsert({
+        .insert({
           user_id: user!.id,
           status: 'running',
           phase: 'focus',
@@ -351,8 +366,6 @@ export function usePomodoro() {
           expected_end_at: endTime.toISOString(),
           elapsed_ms: 0,
           revised_at: now.toISOString()
-        }, {
-          onConflict: 'user_id'
         });
 
       if (sessionError) {
