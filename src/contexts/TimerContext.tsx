@@ -59,9 +59,12 @@ export function TimerProvider({ children }: { children: ReactNode }) {
           console.log('Cross-device timer update received:', payload);
           
           if (payload.eventType === 'INSERT' && !payload.new.stopped_at) {
-            // New timer started - reload immediately 
-            loadActiveTimer();
-            triggerTimerUpdate();
+            // New timer started - only sync if it's not a Pomodoro timer
+            const isPomodoro = payload.new?.tags?.includes('pomodoro');
+            if (!isPomodoro) {
+              loadActiveTimer();
+              triggerTimerUpdate();
+            }
           } else if (payload.eventType === 'UPDATE') {
             const wasStopped = payload.old?.stopped_at === null && payload.new?.stopped_at !== null;
             if (wasStopped) {
@@ -108,6 +111,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         project_id, 
         started_at, 
         notes,
+        tags,
         projects (
           name,
           clients (name)
@@ -115,6 +119,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       `)
       .is('stopped_at', null)
       .eq('user_id', user.id)
+      .not('tags', 'cs', '["pomodoro"]') // Exclude Pomodoro entries
       .order('started_at', { ascending: false })
       .limit(1)
       .maybeSingle();
