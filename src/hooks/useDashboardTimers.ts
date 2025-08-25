@@ -36,7 +36,6 @@ export function useDashboardTimers() {
   });
   
   const { user } = useAuth();
-  const { timerUpdated } = useTimerContext();
   const subscriptionsRef = useRef<Array<{ unsubscribe: () => void }>>([]);
 
   // Calculate server offset on mount
@@ -98,20 +97,6 @@ export function useDashboardTimers() {
       subscriptionsRef.current = [];
     };
   }, [user?.id]);
-
-  // Listen to timer context updates for cross-device sync
-  useEffect(() => {
-    if (!user || state.loading) return;
-    
-    debugLog('Timer context updated, reloading states');
-    // Use a small delay to ensure database operations are completed
-    const timer = setTimeout(() => {
-      loadStopwatchState();
-      loadPomodoroState();
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, [timerUpdated]);
 
   const calculateServerOffset = async () => {
     try {

@@ -60,15 +60,16 @@ export default function Dashboard() {
     }
   }, []);
 
-  // Refresh dashboard when timer events occur
+  // Refresh dashboard when timer events occur 
   useEffect(() => {
     if (user && timerUpdated > 0) {
-      loadDashboardData();
+      // Small delay to allow database operations to complete
+      const timer = setTimeout(() => {
+        loadDashboardData();
+      }, 50);
+      return () => clearTimeout(timer);
     }
   }, [user, timerUpdated]);
-
-  // Refresh dashboard when timer events occur (handled by useDashboardTimers)
-  // No need for additional realtime subscription here
 
   const loadDashboardData = async () => {
     await Promise.all([
