@@ -384,17 +384,85 @@ export function AdminSystem() {
 
   const fetchAuditLogs = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch recent audit logs and auth events
+      const { data: auditData, error: auditError } = await supabase
         .from('audit_logs')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(20);
 
-      if (error) throw error;
-      setAuditLogs(data || []);
+      if (auditError) throw auditError;
+      
+      // Transform audit logs into activity items
+      const activities = (auditData || []).map(log => ({
+        id: log.id,
+        type: getActivityType(log.event_type),
+        title: getActivityTitle(log.event_type),
+        description: getActivityDescription(log.event_type, log.details),
+        timestamp: log.created_at,
+        severity: getActivitySeverity(log.event_type),
+        user_id: log.user_id,
+        ip_address: log.ip_address
+      }));
+
+      setAuditLogs(activities);
     } catch (error: any) {
       console.error('Error fetching audit logs:', error);
+      // Set empty array on error to show "No recent activity"
+      setAuditLogs([]);
     }
+  };
+
+  const getActivityType = (eventType: string) => {
+    if (eventType.includes('login') || eventType.includes('auth')) return 'security';
+    if (eventType.includes('profile') || eventType.includes('encrypted')) return 'data';
+    if (eventType.includes('admin')) return 'admin';
+    if (eventType.includes('error')) return 'error';
+    return 'system';
+  };
+
+  const getActivityTitle = (eventType: string) => {
+    switch (eventType) {
+      case 'profile_encrypted_access':
+        return 'Encrypted Profile Access';
+      case 'profile_encrypted_update':
+        return 'Encrypted Profile Update';
+      case 'user_login':
+        return 'User Login';
+      case 'user_logout':
+        return 'User Logout';
+      case 'mfa_setup':
+        return 'MFA Setup';
+      case 'mfa_verification':
+        return 'MFA Verification';
+      case 'admin_action':
+        return 'Admin Action';
+      case 'system_error':
+        return 'System Error';
+      default:
+        return eventType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+  };
+
+  const getActivityDescription = (eventType: string, details: any) => {
+    switch (eventType) {
+      case 'profile_encrypted_access':
+        const hasBank = details?.has_encrypted_bank_details ? 'bank details' : '';
+        const hasVat = details?.has_encrypted_vat_id ? 'VAT ID' : '';
+        const fields = [hasBank, hasVat].filter(Boolean).join(', ');
+        return `Accessed encrypted ${fields || 'profile data'}`;
+      case 'profile_encrypted_update':
+        const updatedFields = details?.fields_updated?.join(', ') || 'profile fields';
+        return `Updated ${updatedFields}`;
+      default:
+        return details?.message || 'System activity logged';
+    }
+  };
+
+  const getActivitySeverity = (eventType: string) => {
+    if (eventType.includes('error')) return 'high';
+    if (eventType.includes('encrypted') || eventType.includes('admin')) return 'medium';
+    return 'low';
   };
 
   const getHealthColor = (status: 'healthy' | 'warning' | 'error') => {
@@ -651,33 +719,53 @@ export function AdminSystem() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {auditLogs.map((log) => (
-              <div key={log.id} className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium">{log.event_type.replace(/_/g, ' ')}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(log.created_at).toLocaleString()}
-                    </span>
+            {auditLogs.length > 0 ? (
+              auditLogs.map((activity) => (
+                <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                  <div className={`p-2 rounded-full ${
+                    activity.severity === 'high' ? 'bg-red-100 text-red-600' :
+                    activity.severity === 'medium' ? 'bg-yellow-100 text-yellow-600' :
+                    'bg-blue-100 text-blue-600'
+                  }`}>
+                    {activity.type === 'security' && <Key className="h-4 w-4" />}
+                    {activity.type === 'data' && <Database className="h-4 w-4" />}
+                    {activity.type === 'admin' && <Server className="h-4 w-4" />}
+                    {activity.type === 'error' && <AlertTriangle className="h-4 w-4" />}
+                    {activity.type === 'system' && <Clock className="h-4 w-4" />}
                   </div>
-                  {log.details && (
-                    <div className="text-sm text-muted-foreground mt-1">
-                      {typeof log.details === 'object' 
-                        ? JSON.stringify(log.details, null, 2)
-                        : log.details
-                      }
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">{activity.title}</span>
+                      <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                        <span>{new Date(activity.timestamp).toLocaleString()}</span>
+                        {activity.severity === 'high' && (
+                          <Badge variant="destructive" className="h-4 text-xs">Critical</Badge>
+                        )}
+                        {activity.severity === 'medium' && (
+                          <Badge variant="secondary" className="h-4 text-xs">Important</Badge>
+                        )}
+                      </div>
                     </div>
-                  )}
+                    <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
+                    {activity.ip_address && (
+                      <div className="text-xs text-muted-foreground mt-1 flex items-center space-x-3">
+                        <span>IP: {activity.ip_address}</span>
+                        {activity.user_id && <span>User: {activity.user_id.slice(0, 8)}...</span>}
+                      </div>
+                    )}
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">No recent activity</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Security events, profile changes, and system activities will appear here
+                </p>
               </div>
-            ))}
+            )}
           </div>
-          
-          {auditLogs.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">No recent activity</p>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>
