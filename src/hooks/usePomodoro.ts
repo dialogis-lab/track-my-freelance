@@ -359,8 +359,10 @@ export function usePomodoro() {
         
         setTimeRemaining(remaining);
         
+        // Only call handlePhaseComplete once when reaching zero
         if (remaining === 0) {
           console.log('Timer reached zero, calling handlePhaseComplete');
+          clearInterval(interval); // Clear interval immediately
           handlePhaseComplete();
         }
       }, 1000);
@@ -372,7 +374,7 @@ export function usePomodoro() {
         clearInterval(interval);
       }
     };
-  }, [state, targetTime, handlePhaseComplete, phase]);
+  }, [state, targetTime, phase]); // Removed handlePhaseComplete from deps to prevent recreation
 
   const loadSettings = async () => {
     try {
