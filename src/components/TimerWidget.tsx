@@ -4,6 +4,7 @@ import { useTimerContext } from '@/contexts/TimerContext';
 import { useTimerSkin } from '@/hooks/useTimerSkin';
 import { usePomodoro } from '@/hooks/usePomodoro';
 import { supabase } from '@/integrations/supabase/client';
+import { subscribeToTimeEntries, type TimerPayload } from '@/lib/realtimeTimer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -54,61 +55,46 @@ export function TimerWidget() {
   useEffect(() => {
     if (!user) return;
 
-    console.log('Setting up timer sync for user:', user.id);
-    
-    const channel = supabase
-      .channel(`timer-sync-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'time_entries',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Timer sync update received:', payload.eventType, payload);
+    const subscription = subscribeToTimeEntries(user.id, {
+      onUpdate: (payload: TimerPayload) => {
+        // Skip if this is a pomodoro entry
+        if (payload.new && 'tags' in payload.new && Array.isArray(payload.new.tags) && payload.new.tags.includes('pomodoro')) {
+          return;
+        }
+        
+        // Robust null-guarded payload handling
+        if (payload.eventType === 'INSERT' && payload.new && !payload.new.stopped_at) {
+          const newEntry = payload.new as ActiveEntry;
           
-          // Skip if this is a pomodoro entry
-          if (payload.new && 'tags' in payload.new && Array.isArray(payload.new.tags) && payload.new.tags.includes('pomodoro')) {
-            console.log('Ignoring pomodoro timer entry for regular timer sync');
-            return;
-          }
-          
-          // Handle timer start from another device
-          if (payload.eventType === 'INSERT' && !payload.new.stopped_at) {
-            const newEntry = payload.new as ActiveEntry;
-            console.log('Timer started on another device, syncing UI:', newEntry);
-            
+          // Null-guard all fields
+          if (newEntry.id && newEntry.project_id) {
             setActiveEntry(newEntry);
             setSelectedProjectId(newEntry.project_id);
             setNotes(newEntry.notes || '');
             setElapsedTime(0);
-          } 
-          // Handle timer stop from another device
-          else if (payload.eventType === 'UPDATE' && payload.new.stopped_at) {
-            console.log('Timer stopped on another device, clearing UI');
-            
+          }
+        } 
+        else if (payload.eventType === 'UPDATE' && payload.new && payload.new.stopped_at) {
+          // Only clear if this was our active entry
+          if (activeEntry && payload.new.id === activeEntry.id) {
             setActiveEntry(null);
             setElapsedTime(0);
             setNotes('');
             setSelectedProjectId('');
           }
         }
-      )
-      .subscribe((status) => {
-        console.log('Timer sync subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          console.log('Timer sync subscription ready, reloading active entry');
-          loadActiveEntry();
-        }
-      });
+      },
+      onSubscribed: () => {
+        // Reload active entry after subscription is ready
+        loadActiveEntry();
+      },
+      onError: (error) => {
+        console.error('Timer sync error:', error);
+      }
+    });
 
-    return () => {
-      console.log('Cleaning up timer sync channel');
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
+    return () => subscription.unsubscribe();
+  }, [user, activeEntry]);
 
   // Timer effect
   useEffect(() => {
@@ -205,7 +191,6 @@ export function TimerWidget() {
         title: "Timer started",
         description: "Time tracking has begun for the selected project.",
       });
-      triggerTimerUpdate(); // Trigger dashboard update
     }
     
     setLoading(false);
@@ -238,7 +223,6 @@ export function TimerWidget() {
         title: "Timer stopped",
         description: "Time entry has been saved successfully.",
       });
-      triggerTimerUpdate(); // Trigger dashboard update
     }
     
     setLoading(false);

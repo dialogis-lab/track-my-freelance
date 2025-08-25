@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTimerContext } from '@/contexts/TimerContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { subscribeToPomodoroSessions, type TimerPayload } from '@/lib/realtimeTimer';
 
 export type PomodoroPhase = 'focus' | 'break' | 'longBreak';
 export type PomodoroState = 'idle' | 'running' | 'paused';
@@ -70,49 +71,44 @@ export function usePomodoro() {
   useEffect(() => {
     if (!user) return;
 
-    console.log('Setting up Pomodoro DB sync for user:', user.id);
-    
-    const channel = supabase
-      .channel(`pomodoro-db-sync-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'pomodoro_sessions',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Pomodoro DB sync received:', payload);
+    const subscription = subscribeToPomodoroSessions(user.id, {
+      onUpdate: (payload: TimerPayload) => {
+        if (payload.new && typeof payload.new === 'object') {
+          const session = payload.new;
           
-          if (payload.new && typeof payload.new === 'object') {
-            const session = payload.new as any;
-            console.log('Updating Pomodoro state from DB:', session);
-            
-            if (session.phase) setPhase(session.phase as PomodoroPhase);
-            if (session.status) setState(session.status as PomodoroState);
-            
-            if (session.status === 'running' && session.expected_end_at) {
-              const endTime = new Date(session.expected_end_at);
-              const now = new Date();
-              const remaining = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
-              setTimeRemaining(remaining);
-              setTargetTime(endTime);
-            } else {
-              setTimeRemaining(session.elapsed_ms ? Math.floor(session.elapsed_ms / 1000) : 0);
-              setTargetTime(null);
-            }
+          // Robust null-guarded field updates
+          if (session.phase && typeof session.phase === 'string') {
+            setPhase(session.phase as PomodoroPhase);
+          }
+          if (session.status && typeof session.status === 'string') {
+            setState(session.status as PomodoroState);
+          }
+          
+          if (session.status === 'running' && session.expected_end_at) {
+            const endTime = new Date(session.expected_end_at);
+            const now = new Date();
+            const remaining = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
+            setTimeRemaining(remaining);
+            setTargetTime(endTime);
+          } else {
+            const elapsedSeconds = session.elapsed_ms && typeof session.elapsed_ms === 'number' 
+              ? Math.floor(session.elapsed_ms / 1000) 
+              : 0;
+            setTimeRemaining(elapsedSeconds);
+            setTargetTime(null);
           }
         }
-      )
-      .subscribe((status) => {
-        console.log('Pomodoro DB sync subscription status:', status);
-      });
+      },
+      onSubscribed: () => {
+        // Reload current session after subscription is ready
+        loadCurrentSession();
+      },
+      onError: (error) => {
+        console.error('Pomodoro sync error:', error);
+      }
+    });
 
-    return () => {
-      console.log('Cleaning up Pomodoro DB sync channel');
-      supabase.removeChannel(channel);
-    };
+    return () => subscription.unsubscribe();
   }, [user]);
 
   // Timer tick effect
@@ -373,8 +369,6 @@ export function usePomodoro() {
       setTimeRemaining(durationSeconds);
       setTargetTime(newTargetTime);
       
-      triggerTimerUpdate();
-      
       toast({
         title: "Focus session started",
         description: `${settings.focusMinutes} minutes of focused work ahead!`,
@@ -453,7 +447,6 @@ export function usePomodoro() {
       setTodaySessions(newSessionsToday);
       setCurrentStreak(newStreak);
       setLongestStreak(newLongestStreak);
-      triggerTimerUpdate();
 
       // Show streak milestone notification
       if (newStreak > 0 && newStreak % 4 === 0) {
@@ -496,7 +489,6 @@ export function usePomodoro() {
       await resetStreak();
       
       setActiveEntryId(null);
-      triggerTimerUpdate();
       
       toast({
         title: "Focus session stopped",
