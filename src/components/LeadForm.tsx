@@ -142,7 +142,7 @@ const LeadForm = ({ className = "", variant = "hero" }: LeadFormProps) => {
                 Joining...
               </>
             ) : (
-              "Join Waitlist"
+              "Get Early Access + 30% Launch Discount"
             )}
           </Button>
         </div>
@@ -202,9 +202,9 @@ const LeadForm = ({ className = "", variant = "hero" }: LeadFormProps) => {
               <Loader2 className="w-4 h-4 animate-spin mr-2" />
               Joining...
             </>
-          ) : (
-            "Join the Waitlist"
-          )}
+           ) : (
+             "Get Early Access + 30% Launch Discount"
+           )}
         </Button>
       )}
       
