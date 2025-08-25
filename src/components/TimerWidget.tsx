@@ -69,49 +69,37 @@ export function TimerWidget() {
         (payload) => {
           console.log('Timer sync update received:', payload.eventType, payload);
           
-          // Immediately update the timer state based on the event
+          // Skip if this is a pomodoro entry
+          if (payload.new && 'tags' in payload.new && Array.isArray(payload.new.tags) && payload.new.tags.includes('pomodoro')) {
+            console.log('Ignoring pomodoro timer entry for regular timer sync');
+            return;
+          }
+          
+          // Handle timer start from another device
           if (payload.eventType === 'INSERT' && !payload.new.stopped_at) {
-            // Check if this is a pomodoro entry - ignore it for regular timer
-            if (payload.new.tags && payload.new.tags.includes('pomodoro')) {
-              console.log('Ignoring pomodoro timer entry for regular timer sync');
-              return;
-            }
-            
-            // Timer started - force state update
             const newEntry = payload.new as ActiveEntry;
-            console.log('Timer started on another device, updating UI:', newEntry);
+            console.log('Timer started on another device, syncing UI:', newEntry);
             
             setActiveEntry(newEntry);
             setSelectedProjectId(newEntry.project_id);
             setNotes(newEntry.notes || '');
-            setElapsedTime(0); // Reset elapsed time
-            
-            // Force re-render
-            triggerTimerUpdate();
-          } else if (payload.eventType === 'UPDATE' && payload.new.stopped_at) {
-            // Check if this is a pomodoro entry - ignore it for regular timer
-            if (payload.new.tags && payload.new.tags.includes('pomodoro')) {
-              console.log('Ignoring pomodoro timer entry for regular timer sync');
-              return;
-            }
-            
-            // Timer stopped - force state update
+            setElapsedTime(0);
+          } 
+          // Handle timer stop from another device
+          else if (payload.eventType === 'UPDATE' && payload.new.stopped_at) {
             console.log('Timer stopped on another device, clearing UI');
             
             setActiveEntry(null);
             setElapsedTime(0);
             setNotes('');
             setSelectedProjectId('');
-            
-            // Force re-render
-            triggerTimerUpdate();
           }
         }
       )
       .subscribe((status) => {
         console.log('Timer sync subscription status:', status);
         if (status === 'SUBSCRIBED') {
-          // Reload active entry when subscription is ready
+          console.log('Timer sync subscription ready, reloading active entry');
           loadActiveEntry();
         }
       });
