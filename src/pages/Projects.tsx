@@ -39,7 +39,9 @@ export default function Projects() {
     client_id: '',
     rate_hour: ''
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [localActiveTimer, setLocalActiveTimer] = useState<string | null>(null);
   const { user } = useAuth();
   const { activeTimer, triggerTimerUpdate } = useTimerContext();
@@ -57,11 +59,18 @@ export default function Projects() {
   }, [activeTimer]);
 
   useEffect(() => {
-    if (user) {
-      console.log('=== PROJECTS USEEFFECT TRIGGERED ===');
-      console.log('User available, loading data...');
-      loadProjects();
-      loadClients();
+    console.log('=== PROJECTS USEEFFECT TRIGGERED ===');
+    console.log('User available:', !!user);
+    console.log('Data loaded:', dataLoaded);
+    
+    if (user && !dataLoaded) {
+      console.log('Loading data for first time...');
+      setLoading(true);
+      Promise.all([loadProjects(), loadClients()])
+        .finally(() => {
+          setLoading(false);
+          setDataLoaded(true);
+        });
       
       // Handle query parameters for pre-selecting client
       const params = new URLSearchParams(location.search);
@@ -70,8 +79,10 @@ export default function Projects() {
         setFormData(prev => ({ ...prev, client_id: clientId }));
         setIsDialogOpen(true);
       }
-    } else {
+    } else if (!user) {
       console.log('=== PROJECTS USEEFFECT: No user yet ===');
+      setLoading(false);
+      setDataLoaded(false);
     }
   }, [user, location.search]);
 
@@ -182,7 +193,7 @@ export default function Projects() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setFormLoading(true);
 
     const projectData = {
       name: formData.name,
@@ -198,7 +209,7 @@ export default function Projects() {
         description: "Please select a client for this project.",
         variant: "destructive",
       });
-      setLoading(false);
+      setFormLoading(false);
       return;
     }
 
@@ -231,7 +242,7 @@ export default function Projects() {
       loadProjects();
     }
 
-    setLoading(false);
+    setFormLoading(false);
   };
 
   const toggleArchive = async (project: Project) => {
@@ -411,7 +422,7 @@ export default function Projects() {
                 </div>
 
                 <div className="flex space-x-2">
-                  <Button type="submit" disabled={loading || !formData.client_id}>
+                  <Button type="submit" disabled={formLoading || !formData.client_id}>
                     {editingProject ? 'Update' : 'Create'} Project
                   </Button>
                   <Button type="button" variant="outline" onClick={resetForm}>
@@ -430,7 +441,13 @@ export default function Projects() {
           </TabsList>
           
           <TabsContent value="active" className="space-y-4">
-            {activeProjects.length === 0 ? (
+            {loading ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">Loading projects...</p>
+                </CardContent>
+              </Card>
+            ) : activeProjects.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <p className="text-muted-foreground">No active projects yet.</p>
@@ -514,7 +531,13 @@ export default function Projects() {
           </TabsContent>
           
           <TabsContent value="archived" className="space-y-4">
-            {archivedProjects.length === 0 ? (
+            {loading ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">Loading archived projects...</p>
+                </CardContent>
+              </Card>
+            ) : archivedProjects.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <p className="text-muted-foreground">No archived projects.</p>
