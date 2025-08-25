@@ -318,7 +318,6 @@ export function usePomodoro() {
 
       if (stopError) {
         console.error('Error stopping existing timers:', stopError);
-        // Continue anyway, the constraint will catch it
       }
 
       // Create time entry for focus session
@@ -341,14 +340,37 @@ export function usePomodoro() {
 
       console.log('Time entry created:', data);
 
+      // Create/update pomodoro session for cross-device sync
+      const duration = settings.focusMinutes * 60 * 1000; // milliseconds
+      const now = new Date();
+      const endTime = new Date(now.getTime() + duration);
+
+      const { error: sessionError } = await supabase
+        .from('pomodoro_sessions')
+        .upsert({
+          user_id: user!.id,
+          status: 'running',
+          phase: 'focus',
+          started_at: now.toISOString(),
+          expected_end_at: endTime.toISOString(),
+          elapsed_ms: 0,
+          revised_at: now.toISOString()
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (sessionError) {
+        console.error('Error updating pomodoro session:', sessionError);
+      }
+
       // Set local state directly
-      const duration = settings.focusMinutes * 60;
-      const newTargetTime = new Date(Date.now() + duration * 1000);
+      const durationSeconds = settings.focusMinutes * 60;
+      const newTargetTime = new Date(Date.now() + durationSeconds * 1000);
 
       setActiveEntryId(data.id);
       setPhase('focus');
       setState('running');
-      setTimeRemaining(duration);
+      setTimeRemaining(durationSeconds);
       setTargetTime(newTargetTime);
       
       triggerTimerUpdate();
@@ -487,6 +509,25 @@ export function usePomodoro() {
         description: "Timer has been reset.",
       });
     }
+
+    // Update pomodoro session to stopped
+    const { error: sessionError } = await supabase
+      .from('pomodoro_sessions')
+      .upsert({
+        user_id: user!.id,
+        status: 'stopped',
+        phase: 'focus',
+        started_at: null,
+        expected_end_at: null,
+        elapsed_ms: 0,
+        revised_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id'
+      });
+
+    if (sessionError) {
+      console.error('Error updating pomodoro session:', sessionError);
+    }
   };
 
   const resetStreak = async () => {
@@ -519,6 +560,25 @@ export function usePomodoro() {
       console.log('Pausing pomodoro');
       setState('paused');
       setTargetTime(null);
+
+      // Update pomodoro session to paused
+      const { error: sessionError } = await supabase
+        .from('pomodoro_sessions')
+        .upsert({
+          user_id: user!.id,
+          status: 'paused',
+          phase,
+          started_at: null,
+          expected_end_at: null,
+          elapsed_ms: (settings.focusMinutes * 60 - timeRemaining) * 1000,
+          revised_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (sessionError) {
+        console.error('Error updating pomodoro session:', sessionError);
+      }
     }
   };
 
@@ -526,7 +586,27 @@ export function usePomodoro() {
     if (state === 'paused' && timeRemaining > 0) {
       console.log('Resuming pomodoro');
       setState('running');
-      setTargetTime(new Date(Date.now() + timeRemaining * 1000));
+      const newTargetTime = new Date(Date.now() + timeRemaining * 1000);
+      setTargetTime(newTargetTime);
+
+      // Update pomodoro session to running
+      const { error: sessionError } = await supabase
+        .from('pomodoro_sessions')
+        .upsert({
+          user_id: user!.id,
+          status: 'running',
+          phase,
+          started_at: new Date().toISOString(),
+          expected_end_at: newTargetTime.toISOString(),
+          elapsed_ms: (settings.focusMinutes * 60 - timeRemaining) * 1000,
+          revised_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (sessionError) {
+        console.error('Error updating pomodoro session:', sessionError);
+      }
     }
   };
 
