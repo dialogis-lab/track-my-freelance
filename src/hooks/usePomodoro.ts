@@ -284,27 +284,33 @@ export function usePomodoro() {
   const handlePhaseComplete = useCallback(() => {
     console.log('Phase complete called:', { phase, state });
     
-    // Prevent multiple calls
+    // Prevent multiple calls by checking state and immediately setting to idle
     if (state !== 'running') {
       console.log('Ignoring phase complete - not running');
       return;
     }
     
+    // Immediately set to idle to prevent multiple calls
     setState('idle');
     setTargetTime(null);
+    
+    // Play sound once
     playSound();
 
     if (phase === 'focus') {
       // Focus completed - finish the time entry
       finishFocusSession();
       
+      // Single notification
       showNotification(
         'Focus completed!',
         `Great job! Time for a ${getNextPhase() === 'longBreak' ? 'long ' : ''}break.`
       );
 
       if (settings.autoStartBreak) {
-        setTimeout(() => startBreak(), 1000);
+        setTimeout(() => {
+          startBreak();
+        }, 1000);
       } else {
         const nextPhase = getNextPhase();
         setPhase(nextPhase);
@@ -323,7 +329,6 @@ export function usePomodoro() {
       if (settings.autoStartFocus) {
         setTimeout(() => {
           setPhase('focus');
-          // Don't auto-start focus, just prepare
         }, 1000);
       } else {
         setPhase('focus');
