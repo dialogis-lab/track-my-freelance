@@ -78,8 +78,9 @@ export function TimerWidget() {
             loadActiveEntry();
             triggerTimerUpdate();
             
-            // If Pomodoro mode is enabled, sync the state
-            if (pomodoroEnabled) {
+            // Don't sync Pomodoro state if it's not a Pomodoro entry
+            const isPomodoro = payload.new?.tags?.includes('pomodoro');
+            if (pomodoroEnabled && isPomodoro && loadPomodoroStateFromDatabase) {
               loadPomodoroStateFromDatabase();
             }
           } else if (payload.eventType === 'UPDATE') {

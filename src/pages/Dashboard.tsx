@@ -137,6 +137,7 @@ export default function Dashboard() {
           clients:client_id (name)
         )
       `)
+      .not('stopped_at', 'is', null) // Only show completed entries
       .order('started_at', { ascending: false })
       .limit(5);
 
