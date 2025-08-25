@@ -108,7 +108,6 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         )
       `)
       .is('stopped_at', null)
-      .is('tags', null)
       .order('started_at', { ascending: false })
       .limit(1)
       .maybeSingle();
