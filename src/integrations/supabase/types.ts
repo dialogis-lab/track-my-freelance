@@ -486,10 +486,12 @@ export type Database = {
           auto_advance: boolean
           auto_start_on_mode_switch: boolean
           couple_with_stopwatch_default: boolean
+          coupling_policy: string | null
           desktop_notifications: boolean
           focus_ms: number
           long_break_every: number
           long_break_ms: number
+          pomodoro_requires_stopwatch: boolean
           preferred_timer_mode: string | null
           revised_at: string
           short_break_ms: number
@@ -500,10 +502,12 @@ export type Database = {
           auto_advance?: boolean
           auto_start_on_mode_switch?: boolean
           couple_with_stopwatch_default?: boolean
+          coupling_policy?: string | null
           desktop_notifications?: boolean
           focus_ms?: number
           long_break_every?: number
           long_break_ms?: number
+          pomodoro_requires_stopwatch?: boolean
           preferred_timer_mode?: string | null
           revised_at?: string
           short_break_ms?: number
@@ -514,10 +518,12 @@ export type Database = {
           auto_advance?: boolean
           auto_start_on_mode_switch?: boolean
           couple_with_stopwatch_default?: boolean
+          coupling_policy?: string | null
           desktop_notifications?: boolean
           focus_ms?: number
           long_break_every?: number
           long_break_ms?: number
+          pomodoro_requires_stopwatch?: boolean
           preferred_timer_mode?: string | null
           revised_at?: string
           short_break_ms?: number
@@ -724,6 +730,10 @@ export type Database = {
         Returns: undefined
       }
       cleanup_stale_timers: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      coupling_reconcile: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }

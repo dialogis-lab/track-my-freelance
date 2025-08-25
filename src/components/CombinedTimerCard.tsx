@@ -91,21 +91,19 @@ export function CombinedTimerCard() {
     prevStatusRef.current = pomodoro?.status;
   }, [pomodoro?.phase, pomodoro?.status, coupling, isStopwatchRunning]);
 
-  // Ensure Pomodoro only runs when coupled and stopwatch is running
+  // Legacy coupling enforcement - now handled server-side with stronger guarantees
   useEffect(() => {
-    const shouldPomodoroRun = coupling && isStopwatchRunning;
-    
-    if (!shouldPomodoroRun && isPomodoroRunning) {
-      // Stop pomodoro if it shouldn't be running
-      debugLog('Stopping orphaned Pomodoro session - coupling:', coupling, 'stopwatch running:', isStopwatchRunning);
-      const stopOrphanedPomodoro = async () => {
+    // Only reconcile if coupling status changed, let server handle enforcement
+    if (coupling && !isStopwatchRunning && isPomodoroRunning) {
+      debugLog('Coupling mismatch detected, calling server reconciliation');
+      const reconcile = async () => {
         try {
-          await supabase.rpc('pomo_stop');
+          await supabase.rpc('coupling_reconcile');
         } catch (error) {
-          console.error('Error stopping orphaned pomodoro:', error);
+          console.error('Error during reconciliation:', error);
         }
       };
-      stopOrphanedPomodoro();
+      reconcile();
     }
   }, [coupling, isStopwatchRunning, isPomodoroRunning]);
 
@@ -113,38 +111,26 @@ export function CombinedTimerCard() {
     try {
       const { data } = await supabase
         .from('pomodoro_settings')
-        .select('couple_with_stopwatch_default')
+        .select('couple_with_stopwatch_default, pomodoro_requires_stopwatch')
         .eq('user_id', user!.id)
         .single();
       
       if (data) {
-        const defaultCoupling = data.couple_with_stopwatch_default || false;
-        setCoupling(defaultCoupling);
-        debugLog('Loaded coupling default:', defaultCoupling);
+        // Use new field if available, fallback to old field for backward compatibility
+        const couplingEnabled = data.pomodoro_requires_stopwatch ?? data.couple_with_stopwatch_default ?? false;
+        setCoupling(couplingEnabled);
+        debugLog('Loaded coupling settings:', { couplingEnabled });
         
-        // If coupling is OFF but Pomodoro is running, stop it immediately
-        if (!defaultCoupling && isPomodoroRunning) {
-          debugLog('Stopping orphaned Pomodoro - coupling is OFF');
-          try {
-            await supabase.rpc('pomo_stop');
-            toast({ title: "Pomodoro stopped", description: "Stopped orphaned Pomodoro session." });
-          } catch (error) {
-            console.error('Error stopping orphaned pomodoro on load:', error);
-          }
-        }
-        // If coupling is ON but stopwatch is NOT running, stop Pomodoro
-        else if (defaultCoupling && !isStopwatchRunning && isPomodoroRunning) {
-          debugLog('Stopping orphaned Pomodoro - stopwatch not running');
-          try {
-            await supabase.rpc('pomo_stop');
-            toast({ title: "Pomodoro stopped", description: "Stopped orphaned Pomodoro session." });
-          } catch (error) {
-            console.error('Error stopping orphaned pomodoro on load:', error);
-          }
+        // Call server-side reconcile to handle any mismatches
+        try {
+          await supabase.rpc('coupling_reconcile');
+          debugLog('Coupling reconciliation completed');
+        } catch (error) {
+          console.error('Error during coupling reconciliation:', error);
         }
       }
     } catch (error) {
-      console.error('Error loading coupling default:', error);
+      console.error('Error loading coupling settings:', error);
     }
   };
 
@@ -175,7 +161,10 @@ export function CombinedTimerCard() {
       await supabase.rpc('pomo_get_or_init_settings');
       await supabase
         .from('pomodoro_settings')
-        .update({ couple_with_stopwatch_default: newCoupling })
+        .update({ 
+          pomodoro_requires_stopwatch: newCoupling,
+          couple_with_stopwatch_default: newCoupling // Keep for backward compatibility
+        })
         .eq('user_id', user!.id);
     } catch (error) {
       console.error('Error saving coupling default:', error);

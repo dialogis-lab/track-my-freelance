@@ -4,22 +4,81 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { usePomodoro, type PomodoroSettings } from '@/hooks/usePomodoro';
-import { Timer, Coffee, Bell, Volume2 } from 'lucide-react';
+import { Timer, Coffee, Bell, Volume2, Link } from 'lucide-react';
+
+interface CouplingSettings {
+  pomodoro_requires_stopwatch: boolean;
+  coupling_policy: 'mirror_start' | 'pause_pomo';
+}
 
 export function SettingsPomodoroPrefs() {
+  const { user } = useAuth();
   const { settings, updateSettings, requestNotificationPermission } = usePomodoro();
   const { toast } = useToast();
   const [localSettings, setLocalSettings] = useState<PomodoroSettings>(settings);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+  const [couplingSettings, setCouplingSettings] = useState<CouplingSettings>({
+    pomodoro_requires_stopwatch: true,
+    coupling_policy: 'mirror_start'
+  });
 
   useEffect(() => {
     setLocalSettings(settings);
     if ('Notification' in window) {
       setNotificationPermission(Notification.permission);
     }
+    loadCouplingSettings();
   }, [settings]);
+
+  const loadCouplingSettings = async () => {
+    if (!user) return;
+    
+    try {
+      const { data } = await supabase
+        .from('pomodoro_settings')
+        .select('pomodoro_requires_stopwatch, coupling_policy')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (data) {
+        setCouplingSettings({
+          pomodoro_requires_stopwatch: data.pomodoro_requires_stopwatch ?? true,
+          coupling_policy: (data.coupling_policy as 'mirror_start' | 'pause_pomo') ?? 'mirror_start'
+        });
+      }
+    } catch (error) {
+      console.error('Error loading coupling settings:', error);
+    }
+  };
+
+  const saveCouplingSettings = async (newSettings: CouplingSettings) => {
+    if (!user) return;
+    
+    try {
+      await supabase.rpc('pomo_get_or_init_settings');
+      await supabase
+        .from('pomodoro_settings')
+        .update(newSettings)
+        .eq('user_id', user.id);
+        
+      toast({
+        title: "Coupling settings saved",
+        description: "Your Pomodoro coupling preferences have been updated.",
+      });
+    } catch (error) {
+      console.error('Error saving coupling settings:', error);
+      toast({
+        title: "Error saving settings",
+        description: "Failed to save coupling settings. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSave = () => {
     updateSettings(localSettings);
@@ -61,6 +120,72 @@ export function SettingsPomodoroPrefs() {
       </div>
 
       <div className="grid gap-6">
+        {/* Coupling Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Link className="w-5 h-5" />
+              Stopwatch Coupling
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Pomodoro requires Stopwatch</Label>
+                <p className="text-sm text-muted-foreground">
+                  Enforce strict coupling - Pomodoro can never run without a running stopwatch
+                </p>
+              </div>
+              <Switch
+                checked={couplingSettings.pomodoro_requires_stopwatch}
+                onCheckedChange={(checked) => {
+                  const newSettings = { ...couplingSettings, pomodoro_requires_stopwatch: checked };
+                  setCouplingSettings(newSettings);
+                  saveCouplingSettings(newSettings);
+                }}
+              />
+            </div>
+            
+            {couplingSettings.pomodoro_requires_stopwatch && (
+              <div className="space-y-3">
+                <Label>When mismatch occurs</Label>
+                <RadioGroup
+                  value={couplingSettings.coupling_policy}
+                  onValueChange={(value: 'mirror_start' | 'pause_pomo') => {
+                    const newSettings = { ...couplingSettings, coupling_policy: value };
+                    setCouplingSettings(newSettings);
+                    saveCouplingSettings(newSettings);
+                  }}
+                  className="space-y-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="mirror_start" id="mirror_start" />
+                    <Label htmlFor="mirror_start" className="flex-1">
+                      <div>
+                        <div className="font-medium">Start Stopwatch</div>
+                        <div className="text-sm text-muted-foreground">
+                          If Pomodoro is running but Stopwatch isn't, automatically start the Stopwatch
+                        </div>
+                      </div>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="pause_pomo" id="pause_pomo" />
+                    <Label htmlFor="pause_pomo" className="flex-1">
+                      <div>
+                        <div className="font-medium">Pause Pomodoro</div>
+                        <div className="text-sm text-muted-foreground">
+                          If Pomodoro is running but Stopwatch isn't, automatically pause the Pomodoro
+                        </div>
+                      </div>
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Duration Settings */}
         <Card>
           <CardHeader>
