@@ -56,21 +56,21 @@ export function usePomodoro() {
   }, [user]);
 
   // Real-time synchronization for Pomodoro state
+  const [pomodoroChannel, setPomodoroChannel] = useState<any>(null);
+  
   useEffect(() => {
     if (!user) return;
 
     console.log('Setting up Pomodoro sync for user:', user.id);
     
     const channel = supabase
-      .channel(`pomodoro-sync-${user.id}`, {
-        config: {
-          broadcast: { self: false }
-        }
-      })
+      .channel(`pomodoro-sync-${user.id}`)
       .on('broadcast', { event: 'pomodoro-state' }, (payload) => {
         console.log('Pomodoro sync received:', payload);
         
         const { phase: newPhase, state: newState, timeRemaining: newTimeRemaining, targetTime: newTargetTime, activeEntryId: newActiveEntryId } = payload.payload;
+        
+        console.log('Updating Pomodoro state:', { newPhase, newState, newTimeRemaining, newTargetTime, newActiveEntryId });
         
         setPhase(newPhase);
         setState(newState);
@@ -80,10 +80,14 @@ export function usePomodoro() {
       })
       .subscribe((status) => {
         console.log('Pomodoro sync subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          setPomodoroChannel(channel);
+        }
       });
 
     return () => {
       console.log('Cleaning up Pomodoro sync channel');
+      setPomodoroChannel(null);
       supabase.removeChannel(channel);
     };
   }, [user]);
@@ -181,21 +185,28 @@ export function usePomodoro() {
     targetTime?: Date | null;
     activeEntryId?: string | null;
   }) => {
-    if (!user) return;
+    if (!user || !pomodoroChannel) {
+      console.log('Cannot broadcast: no user or channel');
+      return;
+    }
+    
+    const payload = {
+      phase: customState?.phase ?? phase,
+      state: customState?.state ?? state,
+      timeRemaining: customState?.timeRemaining ?? timeRemaining,
+      targetTime: (customState?.targetTime ?? targetTime)?.toISOString() || null,
+      activeEntryId: customState?.activeEntryId ?? activeEntryId,
+    };
+    
+    console.log('Broadcasting Pomodoro state:', payload);
     
     try {
-      const channel = supabase.channel(`pomodoro-sync-${user.id}`);
-      await channel.send({
+      await pomodoroChannel.send({
         type: 'broadcast',
         event: 'pomodoro-state',
-        payload: {
-          phase: customState?.phase ?? phase,
-          state: customState?.state ?? state,
-          timeRemaining: customState?.timeRemaining ?? timeRemaining,
-          targetTime: (customState?.targetTime ?? targetTime)?.toISOString() || null,
-          activeEntryId: customState?.activeEntryId ?? activeEntryId,
-        }
+        payload
       });
+      console.log('Broadcast sent successfully');
     } catch (error) {
       console.error('Error broadcasting Pomodoro state:', error);
     }
