@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { useCookieContext } from "@/components/CookieProvider";
 import { BrandLogo } from "./BrandLogo";
 import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -16,6 +17,11 @@ import {
 const NewLandingPage = () => {
   const { openModal } = useCookieContext();
   const { user } = useAuth();
+  const [logoClickCount, setLogoClickCount] = useState(0);
+
+  const handleLogoClick = () => {
+    setLogoClickCount(prev => prev + 1);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -24,46 +30,32 @@ const NewLandingPage = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between min-h-[3rem]">
             <div className="ml-2">
-              <BrandLogo size="md" showWordmark />
+              <div onClick={handleLogoClick} className="cursor-pointer">
+                <BrandLogo size="md" showWordmark />
+              </div>
             </div>
             
             <div className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
               <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
               <a href="#faq" className="text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
-              <div className="flex items-center space-x-4 ml-6">
-                {user ? (
-                  <Link to="/dashboard">
-                    <Button size="sm">Dashboard</Button>
+              
+              {/* Hidden login access - shows only after clicking logo 3 times */}
+              {logoClickCount >= 3 && (
+                <div className="flex items-center space-x-4 ml-6">
+                  <Link to="/login">
+                    <Button size="sm" variant="outline">Access Login</Button>
                   </Link>
-                ) : (
-                  <>
-                    <Link to="/register" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
-                      Sign Up
-                </Link>
-                    <Link to="/login">
-                      <Button size="sm">Sign In</Button>
-                    </Link>
-                  </>
-                )}
-              </div>
+                </div>
+              )}
             </div>
             
-            {/* Mobile menu with auth buttons */}
+            {/* Mobile menu - hidden login also for mobile */}
             <div className="md:hidden flex items-center space-x-3">
-              {user ? (
-                <Link to="/dashboard">
-                  <Button size="sm">Dashboard</Button>
+              {logoClickCount >= 3 && (
+                <Link to="/login">
+                  <Button size="sm" variant="outline">Login</Button>
                 </Link>
-              ) : (
-                <>
-                  <Link to="/register" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
-                    Sign Up
-                  </Link>
-                  <Link to="/login">
-                    <Button size="sm">Sign In</Button>
-                  </Link>
-                </>
               )}
             </div>
           </div>
@@ -75,7 +67,9 @@ const NewLandingPage = () => {
         <div className="container mx-auto px-4">
           <div className="text-center max-w-4xl mx-auto">
             <div className="mb-6 flex justify-center">
-              <BrandLogo size="xl" noLink />
+              <div onClick={handleLogoClick} className="cursor-pointer">
+                <BrandLogo size="xl" noLink />
+              </div>
             </div>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
               Track your time.{" "}
