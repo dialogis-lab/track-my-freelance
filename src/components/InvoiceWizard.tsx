@@ -88,16 +88,66 @@ export function InvoiceWizard({ open, onOpenChange, clientId, clientName }: Invo
   };
 
   const loadProfile = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('company_name, address, vat_id, bank_details, logo_url')
-      .eq('id', user!.id)
-      .single();
+    try {
+      // Use the encrypted profile fetch endpoint for secure data
+      const { data: session } = await supabase.auth.getSession();
+      const token = session?.session?.access_token;
+      
+      if (!token) {
+        console.error('No authentication token available for profile fetch');
+        return;
+      }
 
-    if (error && error.code !== 'PGRST116') {
+      const response = await fetch('https://ollbuhgghkporvzmrzau.supabase.co/functions/v1/encrypted-profile-fetch', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+      
+      if (!response.ok) {
+        console.error('Error loading encrypted profile:', result.message);
+        // Fallback to basic profile data without sensitive fields
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('company_name, address, logo_url')
+          .eq('id', user!.id)
+          .single();
+
+        if (!error && data) {
+          setProfile({
+            ...data,
+            vat_id: null,
+            bank_details: null,
+          });
+        }
+        return;
+      }
+
+      setProfile(result.profile);
+    } catch (error) {
       console.error('Error loading profile:', error);
-    } else if (data) {
-      setProfile(data);
+      // Fallback to basic profile data without sensitive fields
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('company_name, address, logo_url')
+          .eq('id', user!.id)
+          .single();
+
+        if (!error && data) {
+          setProfile({
+            ...data,
+            vat_id: null,
+            bank_details: null,
+          });
+        }
+      } catch (fallbackError) {
+        console.error('Fallback profile load failed:', fallbackError);
+      }
     }
   };
 
