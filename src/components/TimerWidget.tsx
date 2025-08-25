@@ -57,11 +57,7 @@ export function TimerWidget() {
     console.log('Setting up timer sync for user:', user.id);
     
     const channel = supabase
-      .channel(`timer-sync-${user.id}`, {
-        config: {
-          broadcast: { self: false }
-        }
-      })
+      .channel(`timer-sync-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -112,7 +108,7 @@ export function TimerWidget() {
       console.log('Cleaning up timer sync channel');
       supabase.removeChannel(channel);
     };
-  }, [user, triggerTimerUpdate]);
+  }, [user]);
 
   // Timer effect
   useEffect(() => {
