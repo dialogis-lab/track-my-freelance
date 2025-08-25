@@ -27,7 +27,7 @@ export function SettingsTimezone() {
         <div className="space-y-2">
           <Label>Current Time</Label>
           <Input 
-            value={new Date().toLocaleString()} 
+            value={new Date().toLocaleString('en-US')} 
             disabled 
           />
         </div>

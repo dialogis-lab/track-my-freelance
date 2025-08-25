@@ -376,7 +376,7 @@ export function InvoiceWizard({ open, onOpenChange, clientId, clientName }: Invo
                 <CardTitle className="flex items-center justify-between">
                   <span>Invoice Preview</span>
                   <div className="text-sm text-muted-foreground">
-                    {new Date().toLocaleDateString()}
+                     {new Date().toLocaleDateString('en-US')}
                   </div>
                 </CardTitle>
               </CardHeader>
@@ -412,7 +412,7 @@ export function InvoiceWizard({ open, onOpenChange, clientId, clientName }: Invo
                   <div className="text-right">
                     <div className="text-lg font-semibold">INVOICE</div>
                     <div className="text-sm text-muted-foreground">
-                      Date: {new Date().toLocaleDateString()}
+                      Date: {new Date().toLocaleDateString('en-US')}
                     </div>
                   </div>
                 </div>

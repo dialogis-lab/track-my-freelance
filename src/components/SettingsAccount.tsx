@@ -168,7 +168,7 @@ export function SettingsAccount() {
           <div className="space-y-2">
             <Label>Account Created</Label>
             <Input 
-              value={user?.created_at ? new Date(user.created_at).toLocaleDateString() : ''} 
+              value={user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US') : ''} 
               disabled 
             />
           </div>

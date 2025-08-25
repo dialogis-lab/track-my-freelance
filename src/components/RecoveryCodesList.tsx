@@ -21,7 +21,7 @@ export function RecoveryCodesList({ codes, onClose }: RecoveryCodesListProps) {
   };
 
   const handleDownload = () => {
-    const codesText = `TimeHatch Recovery Codes\n\nGenerated: ${new Date().toLocaleString()}\n\n${codes.join('\n')}\n\nKeep these codes secure. Each code can only be used once.`;
+    const codesText = `TimeHatch Recovery Codes\n\nGenerated: ${new Date().toLocaleString('en-US')}\n\n${codes.join('\n')}\n\nKeep these codes secure. Each code can only be used once.`;
     const blob = new Blob([codesText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

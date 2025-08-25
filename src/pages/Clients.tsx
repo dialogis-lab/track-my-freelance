@@ -52,7 +52,7 @@ export default function Clients() {
     address_street: '',
     address_city: '',
     address_postal_code: '',
-    address_country: 'Germany',
+    address_country: '',
     vat_id: '',
     tax_number: '',
     website: '',
@@ -134,7 +134,7 @@ export default function Clients() {
       address_street: formData.address_street || null,
       address_city: formData.address_city || null,
       address_postal_code: formData.address_postal_code || null,
-      address_country: formData.address_country || 'Germany',
+      address_country: formData.address_country || null,
       vat_id: formData.vat_id || null,
       tax_number: formData.tax_number || null,
       website: formData.website || null,
@@ -273,7 +273,7 @@ export default function Clients() {
       address_street: '',
       address_city: '',
       address_postal_code: '',
-      address_country: 'Germany',
+      address_country: '',
       vat_id: '',
       tax_number: '',
       website: '',
@@ -294,7 +294,7 @@ export default function Clients() {
       address_street: client.address_street || '',
       address_city: client.address_city || '',
       address_postal_code: client.address_postal_code || '',
-      address_country: client.address_country || 'Germany',
+      address_country: client.address_country || '',
       vat_id: client.vat_id || '',
       tax_number: client.tax_number || '',
       website: client.website || '',
@@ -458,7 +458,7 @@ export default function Clients() {
                         id="address_country"
                         value={formData.address_country}
                         onChange={(e) => setFormData({ ...formData, address_country: e.target.value })}
-                        placeholder="Germany"
+                        placeholder="Country"
                       />
                     </div>
                   </div>
@@ -671,7 +671,7 @@ export default function Clients() {
                       )}
                       
                       <div className="flex justify-between items-center text-xs text-muted-foreground">
-                        <span>Created: {new Date(client.created_at).toLocaleDateString()}</span>
+                        <span>Created: {new Date(client.created_at).toLocaleDateString('en-US')}</span>
                         {client.vat_id && (
                           <span className="text-xs bg-accent/10 text-accent px-2 py-1 rounded">VAT: {client.vat_id}</span>
                         )}

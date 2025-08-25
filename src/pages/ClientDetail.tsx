@@ -80,7 +80,7 @@ export default function ClientDetail() {
     address_street: '',
     address_city: '',
     address_postal_code: '',
-    address_country: 'Germany',
+    address_country: '',
     vat_id: '',
     tax_number: '',
     website: '',
@@ -309,7 +309,7 @@ export default function ClientDetail() {
       address_street: client.address_street || '',
       address_city: client.address_city || '',
       address_postal_code: client.address_postal_code || '',
-      address_country: client.address_country || 'Germany',
+      address_country: client.address_country || '',
       vat_id: client.vat_id || '',
       tax_number: client.tax_number || '',
       website: client.website || '',
@@ -333,7 +333,7 @@ export default function ClientDetail() {
       address_street: formData.address_street || null,
       address_city: formData.address_city || null,
       address_postal_code: formData.address_postal_code || null,
-      address_country: formData.address_country || 'Germany',
+      address_country: formData.address_country || null,
       vat_id: formData.vat_id || null,
       tax_number: formData.tax_number || null,
       website: formData.website || null,
@@ -374,7 +374,7 @@ export default function ClientDetail() {
       address_street: '',
       address_city: '',
       address_postal_code: '',
-      address_country: 'Germany',
+      address_country: '',
       vat_id: '',
       tax_number: '',
       website: '',
@@ -834,7 +834,7 @@ export default function ClientDetail() {
                       id="edit-address_country"
                       value={formData.address_country}
                       onChange={(e) => setFormData({ ...formData, address_country: e.target.value })}
-                      placeholder="Germany"
+                      placeholder="Country"
                     />
                   </div>
                 </div>

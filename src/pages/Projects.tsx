@@ -424,7 +424,7 @@ export default function Projects() {
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground mt-2">
-                        Created: {new Date(project.created_at).toLocaleDateString()}
+                        Created: {new Date(project.created_at).toLocaleDateString('en-US')}
                       </p>
                       
                       {/* Click to view reports hint */}
