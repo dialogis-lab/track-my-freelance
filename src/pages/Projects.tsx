@@ -39,8 +39,7 @@ export default function Projects() {
     client_id: '',
     rate_hour: ''
   });
-  const [loading, setLoading] = useState(true);
-  const [dataLoaded, setDataLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [localActiveTimer, setLocalActiveTimer] = useState<string | null>(null);
   const { user } = useAuth();
@@ -57,35 +56,6 @@ export default function Projects() {
       setLocalActiveTimer(null);
     }
   }, [activeTimer]);
-
-  useEffect(() => {
-    console.log('=== PROJECTS USEEFFECT TRIGGERED ===');
-    console.log('User available:', !!user);
-    console.log('Data loaded:', dataLoaded);
-    
-    if (user && !dataLoaded) {
-      console.log('Loading data for first time...');
-      setLoading(true);
-      Promise.all([loadProjects(), loadClients()])
-        .finally(() => {
-          setLoading(false);
-          setDataLoaded(true);
-        });
-      
-      // Handle query parameters for pre-selecting client
-      const params = new URLSearchParams(location.search);
-      const clientId = params.get('client');
-      if (clientId) {
-        setFormData(prev => ({ ...prev, client_id: clientId }));
-        setIsDialogOpen(true);
-      }
-    } else if (!user) {
-      console.log('=== PROJECTS USEEFFECT: No user yet ===');
-      setLoading(false);
-      setDataLoaded(false);
-    }
-  }, [user, location.search]);
-
 
   const loadProjects = async () => {
     try {
@@ -190,6 +160,30 @@ export default function Projects() {
       });
     }
   };
+
+  useEffect(() => {
+    console.log('=== PROJECTS COMPONENT MOUNTED ===');
+    console.log('User:', user?.id);
+    
+    // Load data whenever component mounts or user changes
+    if (user) {
+      console.log('User available, loading data...');
+      setLoading(true);
+      
+      // Load data immediately
+      Promise.all([loadProjects(), loadClients()])
+        .catch(error => console.error('Error loading data:', error))
+        .finally(() => setLoading(false));
+      
+      // Handle query parameters for pre-selecting client
+      const params = new URLSearchParams(location.search);
+      const clientId = params.get('client');
+      if (clientId) {
+        setFormData(prev => ({ ...prev, client_id: clientId }));
+        setIsDialogOpen(true);
+      }
+    }
+  }, [user]); // Only depend on user
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
