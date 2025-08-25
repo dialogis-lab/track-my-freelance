@@ -109,6 +109,26 @@ export function TimerWidget() {
       return;
     }
 
+    // Check if there's already an active timer
+    const { data: existingTimer } = await supabase
+      .from('time_entries')
+      .select('id, project_id')
+      .is('stopped_at', null)
+      .eq('user_id', user!.id)
+      .or('tags.is.null,not.tags.cs.{pomodoro}') // Check for non-Pomodoro timers
+      .single();
+
+    if (existingTimer) {
+      toast({
+        title: "Timer already running",
+        description: "Please stop the current timer before starting a new one.",
+        variant: "destructive",
+      });
+      // Force reload the active timer to show it in UI
+      triggerTimerUpdate();
+      return;
+    }
+
     setLoading(true);
     
     const { data, error } = await supabase

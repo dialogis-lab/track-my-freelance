@@ -124,7 +124,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       `)
       .is('stopped_at', null)
       .eq('user_id', user.id)
-      .not('tags', 'cs', '["pomodoro"]') // Exclude Pomodoro entries
+      .or('tags.is.null,not.tags.cs.{pomodoro}') // Better filtering: null tags OR doesn't contain 'pomodoro'
       .order('started_at', { ascending: false })
       .limit(1)
       .maybeSingle();
