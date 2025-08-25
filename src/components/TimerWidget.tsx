@@ -77,12 +77,17 @@ export function TimerWidget() {
               return;
             }
             
-            // Timer started
+            // Timer started - force state update
             const newEntry = payload.new as ActiveEntry;
+            console.log('Timer started on another device, updating UI:', newEntry);
+            
             setActiveEntry(newEntry);
             setSelectedProjectId(newEntry.project_id);
             setNotes(newEntry.notes || '');
-            console.log('Timer started on another device');
+            setElapsedTime(0); // Reset elapsed time
+            
+            // Force re-render
+            triggerTimerUpdate();
           } else if (payload.eventType === 'UPDATE' && payload.new.stopped_at) {
             // Check if this is a pomodoro entry - ignore it for regular timer
             if (payload.new.tags && payload.new.tags.includes('pomodoro')) {
@@ -90,18 +95,25 @@ export function TimerWidget() {
               return;
             }
             
-            // Timer stopped
+            // Timer stopped - force state update
+            console.log('Timer stopped on another device, clearing UI');
+            
             setActiveEntry(null);
             setElapsedTime(0);
             setNotes('');
-            console.log('Timer stopped on another device');
+            setSelectedProjectId('');
+            
+            // Force re-render
+            triggerTimerUpdate();
           }
-          
-          triggerTimerUpdate();
         }
       )
       .subscribe((status) => {
         console.log('Timer sync subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          // Reload active entry when subscription is ready
+          loadActiveEntry();
+        }
       });
 
     return () => {
