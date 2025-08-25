@@ -156,7 +156,7 @@ export function CombinedTimerCard() {
         return;
       }
 
-      await supabase
+      const { error } = await supabase
         .from('time_entries')
         .insert([{
           user_id: user!.id,
@@ -164,6 +164,8 @@ export function CombinedTimerCard() {
           started_at: new Date().toISOString(),
           notes: 'Dashboard timer'
         }]);
+
+      if (error) throw error;
 
       if (coupling) {
         await supabase.rpc('pomo_start');

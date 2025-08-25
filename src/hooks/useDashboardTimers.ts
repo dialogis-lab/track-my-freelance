@@ -23,7 +23,7 @@ interface DashboardTimersState {
 
 // Debug logging only when enabled
 const debugLog = (message: string, ...args: any[]) => {
-  if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_TIMER_DEBUG === '1') {
+  if (typeof window !== 'undefined' && import.meta.env.VITE_TIMER_DEBUG === 'true') {
     console.log(`[DashboardTimers] ${message}`, ...args);
   }
 };
