@@ -55,39 +55,51 @@ export function usePomodoro() {
     }
   }, [user]);
 
-  // Real-time synchronization for Pomodoro state
-  const [pomodoroChannel, setPomodoroChannel] = useState<any>(null);
-  
+  // Real-time synchronization for Pomodoro state via database
   useEffect(() => {
     if (!user) return;
 
-    console.log('Setting up Pomodoro sync for user:', user.id);
+    console.log('Setting up Pomodoro DB sync for user:', user.id);
     
     const channel = supabase
-      .channel(`pomodoro-sync-${user.id}`)
-      .on('broadcast', { event: 'pomodoro-state' }, (payload) => {
-        console.log('Pomodoro sync received:', payload);
-        
-        const { phase: newPhase, state: newState, timeRemaining: newTimeRemaining, targetTime: newTargetTime, activeEntryId: newActiveEntryId } = payload.payload;
-        
-        console.log('Updating Pomodoro state:', { newPhase, newState, newTimeRemaining, newTargetTime, newActiveEntryId });
-        
-        setPhase(newPhase);
-        setState(newState);
-        setTimeRemaining(newTimeRemaining);
-        setTargetTime(newTargetTime ? new Date(newTargetTime) : null);
-        setActiveEntryId(newActiveEntryId);
-      })
-      .subscribe((status) => {
-        console.log('Pomodoro sync subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          setPomodoroChannel(channel);
+      .channel(`pomodoro-db-sync-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pomodoro_sessions',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Pomodoro DB sync received:', payload);
+          
+          if (payload.new && typeof payload.new === 'object') {
+            const session = payload.new as any;
+            console.log('Updating Pomodoro state from DB:', session);
+            
+            if (session.phase) setPhase(session.phase);
+            if (session.status) setState(session.status);
+            
+            if (session.status === 'running' && session.expected_end_at) {
+              const endTime = new Date(session.expected_end_at);
+              const now = new Date();
+              const remaining = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
+              setTimeRemaining(remaining);
+              setTargetTime(endTime);
+            } else {
+              setTimeRemaining(session.elapsed_ms ? Math.floor(session.elapsed_ms / 1000) : 0);
+              setTargetTime(null);
+            }
+          }
         }
+      )
+      .subscribe((status) => {
+        console.log('Pomodoro DB sync subscription status:', status);
       });
 
     return () => {
-      console.log('Cleaning up Pomodoro sync channel');
-      setPomodoroChannel(null);
+      console.log('Cleaning up Pomodoro DB sync channel');
       supabase.removeChannel(channel);
     };
   }, [user]);
@@ -174,41 +186,6 @@ export function usePomodoro() {
           variant: "destructive",
         });
       }
-    }
-  };
-
-  // Broadcast Pomodoro state to other devices
-  const broadcastPomodoroState = async (customState?: {
-    phase?: PomodoroPhase;
-    state?: PomodoroState;
-    timeRemaining?: number;
-    targetTime?: Date | null;
-    activeEntryId?: string | null;
-  }) => {
-    if (!user || !pomodoroChannel) {
-      console.log('Cannot broadcast: no user or channel');
-      return;
-    }
-    
-    const payload = {
-      phase: customState?.phase ?? phase,
-      state: customState?.state ?? state,
-      timeRemaining: customState?.timeRemaining ?? timeRemaining,
-      targetTime: (customState?.targetTime ?? targetTime)?.toISOString() || null,
-      activeEntryId: customState?.activeEntryId ?? activeEntryId,
-    };
-    
-    console.log('Broadcasting Pomodoro state:', payload);
-    
-    try {
-      await pomodoroChannel.send({
-        type: 'broadcast',
-        event: 'pomodoro-state',
-        payload
-      });
-      console.log('Broadcast sent successfully');
-    } catch (error) {
-      console.error('Error broadcasting Pomodoro state:', error);
     }
   };
 
@@ -334,25 +311,12 @@ export function usePomodoro() {
 
       if (error) throw error;
 
-      const newPhase: PomodoroPhase = 'focus';
-      const newState: PomodoroState = 'running';
-      const duration = settings.focusMinutes * 60;
-      const newTargetTime = new Date(Date.now() + duration * 1000);
+      // Use Supabase RPC to start Pomodoro session
+      const { data: sessionData, error: sessionError } = await supabase.rpc('pomo_start');
+      
+      if (sessionError) throw sessionError;
 
       setActiveEntryId(data.id);
-      setPhase(newPhase);
-      setState(newState);
-      setTimeRemaining(duration);
-      setTargetTime(newTargetTime);
-
-      // Broadcast state to other devices with correct values
-      await broadcastPomodoroState({
-        phase: newPhase,
-        state: newState,
-        timeRemaining: duration,
-        targetTime: newTargetTime,
-        activeEntryId: data.id
-      });
       
       triggerTimerUpdate();
       
@@ -371,28 +335,22 @@ export function usePomodoro() {
   };
 
   const startBreak = async () => {
-    const nextPhase = getNextPhase();
-    const duration = nextPhase === 'longBreak' ? settings.longBreakMinutes : settings.breakMinutes;
-    const newTargetTime = new Date(Date.now() + duration * 60 * 1000);
-    
-    setPhase(nextPhase);
-    setState('running');
-    setTimeRemaining(duration * 60);
-    setTargetTime(newTargetTime);
+    try {
+      // Use Supabase RPC to transition to next phase
+      const { data: sessionData, error: sessionError } = await supabase.rpc('pomo_next');
+      
+      if (sessionError) throw sessionError;
 
-    // Broadcast state to other devices with correct values
-    await broadcastPomodoroState({
-      phase: nextPhase,
-      state: 'running',
-      timeRemaining: duration * 60,
-      targetTime: newTargetTime,
-      activeEntryId
-    });
+      const nextPhase = getNextPhase();
+      const duration = nextPhase === 'longBreak' ? settings.longBreakMinutes : settings.breakMinutes;
 
-    toast({
-      title: `${nextPhase === 'longBreak' ? 'Long b' : 'B'}reak started`,
-      description: `Take a ${duration}-minute break. You've earned it!`,
-    });
+      toast({
+        title: `${nextPhase === 'longBreak' ? 'Long b' : 'B'}reak started`,
+        description: `Take a ${duration}-minute break. You've earned it!`,
+      });
+    } catch (error) {
+      console.error('Error starting break:', error);
+    }
   };
 
   const finishFocusSession = async () => {
@@ -460,48 +418,44 @@ export function usePomodoro() {
   };
 
   const stopPomodoro = async () => {
-    const newState: PomodoroState = 'idle';
-    
-    setState(newState);
-    setTargetTime(null);
-    setTimeRemaining(0);
+    try {
+      // Use Supabase RPC to stop session
+      const { data: sessionData, error: sessionError } = await supabase.rpc('pomo_stop');
+      
+      if (sessionError) throw sessionError;
 
-    // Broadcast state to other devices with correct values
-    await broadcastPomodoroState({
-      state: newState,
-      targetTime: null,
-      timeRemaining: 0
-    });
+      if (phase === 'focus' && activeEntryId) {
+        // If stopping during focus, finish the time entry but break the streak
+        const { error: entryError } = await supabase
+          .from('time_entries')
+          .update({
+            stopped_at: new Date().toISOString(),
+          })
+          .eq('id', activeEntryId);
 
-    if (phase === 'focus' && activeEntryId) {
-      // If stopping during focus, finish the time entry but break the streak
-      const { error: entryError } = await supabase
-        .from('time_entries')
-        .update({
-          stopped_at: new Date().toISOString(),
-        })
-        .eq('id', activeEntryId);
+        if (entryError) {
+          console.error('Error stopping focus session:', entryError);
+        }
 
-      if (entryError) {
-        console.error('Error stopping focus session:', entryError);
+        // Reset streak on incomplete session
+        await resetStreak();
+        
+        setActiveEntryId(null);
+        triggerTimerUpdate();
+        
+        toast({
+          title: "Focus session stopped",
+          description: "Your partial session has been saved. Streak reset.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Pomodoro stopped",
+          description: "Timer has been reset.",
+        });
       }
-
-      // Reset streak on incomplete session
-      await resetStreak();
-      
-      setActiveEntryId(null);
-      triggerTimerUpdate();
-      
-      toast({
-        title: "Focus session stopped",
-        description: "Your partial session has been saved. Streak reset.",
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Pomodoro stopped",
-        description: "Timer has been reset.",
-      });
+    } catch (error) {
+      console.error('Error stopping pomodoro:', error);
     }
   };
 
@@ -532,32 +486,23 @@ export function usePomodoro() {
 
   const pausePomodoro = async () => {
     if (state === 'running') {
-      const newState: PomodoroState = 'paused';
-      
-      setState(newState);
-      setTargetTime(null);
-      
-      // Broadcast state to other devices with correct values
-      await broadcastPomodoroState({
-        state: newState,
-        targetTime: null
-      });
+      try {
+        const { data: sessionData, error: sessionError } = await supabase.rpc('pomo_pause');
+        if (sessionError) throw sessionError;
+      } catch (error) {
+        console.error('Error pausing pomodoro:', error);
+      }
     }
   };
 
   const resumePomodoro = async () => {
     if (state === 'paused' && timeRemaining > 0) {
-      const newState: PomodoroState = 'running';
-      const newTargetTime = new Date(Date.now() + timeRemaining * 1000);
-      
-      setState(newState);
-      setTargetTime(newTargetTime);
-      
-      // Broadcast state to other devices with correct values
-      await broadcastPomodoroState({
-        state: newState,
-        targetTime: newTargetTime
-      });
+      try {
+        const { data: sessionData, error: sessionError } = await supabase.rpc('pomo_resume');
+        if (sessionError) throw sessionError;
+      } catch (error) {
+        console.error('Error resuming pomodoro:', error);
+      }
     }
   };
 
