@@ -88,8 +88,10 @@ export function useDashboardTimers() {
 
     subscriptionsRef.current = [stopwatchSub, pomodoroSub];
 
-    // Initial load
-    loadInitialStates();
+    // Initial load with delay to ensure subscriptions are ready
+    setTimeout(() => {
+      loadInitialStates();
+    }, 100);
 
     return () => {
       subscriptionsRef.current.forEach(sub => sub.unsubscribe());
@@ -102,8 +104,13 @@ export function useDashboardTimers() {
     if (!user || state.loading) return;
     
     debugLog('Timer context updated, reloading states');
-    loadStopwatchState();
-    loadPomodoroState();
+    // Use a small delay to ensure database operations are completed
+    const timer = setTimeout(() => {
+      loadStopwatchState();
+      loadPomodoroState();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, [timerUpdated]);
 
   const calculateServerOffset = async () => {
@@ -214,12 +221,24 @@ export function useDashboardTimers() {
         };
         debugLog('Setting new stopwatch state from INSERT:', newState);
         setState(prev => ({ ...prev, stopwatch: newState }));
+        
+        // Force reload after a brief delay to ensure consistency
+        setTimeout(() => {
+          debugLog('Force reloading stopwatch state after INSERT');
+          loadStopwatchState();
+        }, 200);
       }
     } else if (payload.eventType === 'UPDATE' && payload.new) {
       if (payload.new.stopped_at) {
         // Timer stopped
         debugLog('Clearing stopwatch state - timer stopped');
         setState(prev => ({ ...prev, stopwatch: null }));
+        
+        // Force reload after a brief delay to ensure consistency
+        setTimeout(() => {
+          debugLog('Force reloading stopwatch state after UPDATE (stopped)');
+          loadStopwatchState();
+        }, 200);
       } else if (payload.new.id && payload.new.started_at && !payload.new.stopped_at) {
         // Timer updated but still running
         const updatedState = {
