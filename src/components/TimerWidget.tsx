@@ -45,17 +45,23 @@ export function TimerWidget() {
       setSelectedProjectId(activeTimer.project_id);
       setNotes(activeTimer.notes || '');
     } else {
-      setElapsedTime(0);
-      setNotes('');
+      // Only reset if we're not in the middle of starting a timer
+      if (!loading) {
+        setElapsedTime(0);
+        setNotes('');
+        setSelectedProjectId(''); // Reset project selection when no active timer
+      }
     }
-  }, [activeTimer]);
+  }, [activeTimer, loading]);
 
-  // Load projects
+  // Load projects and force timer context refresh
   useEffect(() => {
     if (user) {
       loadProjects();
+      // Force a timer context refresh on component mount
+      triggerTimerUpdate();
     }
-  }, [user]);
+  }, [user, triggerTimerUpdate]);
 
   // Timer tick effect - only runs when there's an active timer
   useEffect(() => {
@@ -245,15 +251,27 @@ export function TimerWidget() {
                 </div>
               </div>
               
-              {/* Active Timer Info */}
-              {activeTimer && (
-                <div className="mt-4 text-center">
-                  <div className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                    <div className="w-2 h-2 bg-primary rounded-full mr-2 animate-pulse" />
-                    Running on {activeTimer.projects?.clients?.name ? `${activeTimer.projects.clients.name} - ` : ''}{activeTimer.projects?.name || 'Selected Project'}
-                  </div>
+            {/* Active Timer Info */}
+            {activeTimer && (
+              <div className="mt-4 text-center">
+                <div className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
+                  <div className="w-2 h-2 bg-primary rounded-full mr-2 animate-pulse" />
+                  Running: {activeTimer.projects?.clients?.name ? `${activeTimer.projects.clients.name} - ` : ''}{activeTimer.projects?.name || 'Selected Project'}
                 </div>
-              )}
+                <div className="text-xs text-muted-foreground mt-1">
+                  Started: {new Date(activeTimer.started_at).toLocaleTimeString()}
+                </div>
+              </div>
+            )}
+            
+            {/* No Active Timer State */}
+            {!activeTimer && !loading && (
+              <div className="mt-4 text-center">
+                <div className="text-sm text-muted-foreground">
+                  No timer running
+                </div>
+              </div>
+            )}
             </div>
 
             {/* Long Running Warning */}

@@ -61,20 +61,25 @@ export function TimerProvider({ children }: { children: ReactNode }) {
           if (payload.eventType === 'INSERT' && !payload.new.stopped_at) {
             // New timer started - only sync if it's not a Pomodoro timer
             const isPomodoro = payload.new?.tags?.includes('pomodoro');
+            console.log('Timer INSERT event received:', { isPomodoro, payload: payload.new });
             if (!isPomodoro) {
+              console.log('Loading active timer after INSERT...');
               loadActiveTimer();
               triggerTimerUpdate();
             }
           } else if (payload.eventType === 'UPDATE') {
             const wasStopped = payload.old?.stopped_at === null && payload.new?.stopped_at !== null;
-            if (wasStopped) {
-              // Timer was stopped - clear immediately without reload
-              console.log('Timer was stopped, clearing active timer');
+            const isPomodoro = payload.new?.tags?.includes('pomodoro');
+            console.log('Timer UPDATE event received:', { wasStopped, isPomodoro, old: payload.old, new: payload.new });
+            if (wasStopped && !isPomodoro) {
+              // Timer was stopped on another device
+              console.log('Timer was stopped on another device, clearing active timer');
               setActiveTimer(null);
               triggerTimerUpdate();
-            } else if (!payload.new.stopped_at) {
+            } else if (!payload.new.stopped_at && !isPomodoro) {
               // Timer updated (notes changed, etc.) - update in place if possible
               if (activeTimer && activeTimer.id === payload.new.id) {
+                console.log('Updating active timer notes in place');
                 setActiveTimer(prev => prev ? {
                   ...prev,
                   notes: payload.new.notes || prev.notes
