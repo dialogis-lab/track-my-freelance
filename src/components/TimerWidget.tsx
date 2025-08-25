@@ -77,8 +77,9 @@ export function TimerWidget() {
             setSelectedProjectId(newEntry.project_id);
             setNotes(newEntry.notes || '');
             setElapsedTime(0);
+            triggerTimerUpdate(); // Notify dashboard and other components
           }
-        } 
+        }
         // Handle UPDATE events (timer stopped)
         else if (payload.eventType === 'UPDATE' && payload.new && payload.new.stopped_at) {
           console.log('[TimerWidget] Timer stopped:', payload.new);
@@ -88,6 +89,7 @@ export function TimerWidget() {
             setElapsedTime(0);
             setNotes('');
             setSelectedProjectId('');
+            triggerTimerUpdate(); // Notify dashboard and other components
           }
         }
       },
@@ -234,6 +236,7 @@ export function TimerWidget() {
       } else {
         console.log('[TimerWidget] Timer started successfully:', data);
         setActiveEntry(data);
+        triggerTimerUpdate(); // Notify other components
         toast({
           title: "Timer started",
           description: "Time tracking has begun for the selected project.",
@@ -278,6 +281,7 @@ export function TimerWidget() {
         setActiveEntry(null);
         setElapsedTime(0);
         setNotes('');
+        triggerTimerUpdate(); // Notify other components
         toast({
           title: "Timer stopped",
           description: "Time entry has been saved successfully.",
