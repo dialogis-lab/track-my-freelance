@@ -123,33 +123,68 @@ export function AdminSystem() {
         };
       }
 
-      // Check edge functions
+      // Check edge functions - use a simpler test approach
       try {
-        const response = await fetch('https://ollbuhgghkporvzmrzau.supabase.co/functions/v1/encrypted-profile-fetch', {
-          method: 'OPTIONS'
-        });
+        // Test with a lightweight authenticated request instead of OPTIONS
+        const { data: session } = await supabase.auth.getSession();
         
-        if (!response.ok) {
+        if (session?.session?.access_token) {
+          // Test the encrypted-profile-fetch function with authentication
+          const { error } = await supabase.functions.invoke('encrypted-profile-fetch', {
+            body: { test: 'health_check' }
+          });
+          
+          if (error) {
+            // Check if it's a configuration error vs connectivity
+            if (error.message?.includes('ENCRYPTION_KEY') || error.message?.includes('Server configuration error')) {
+              health.edge_functions = 'warning';
+              details.edge_functions = {
+                status: 'warning',
+                message: 'Edge functions responding but have configuration issues',
+                technicalDetails: `Function responded with config error: ${error.message}`,
+                lastChecked: now,
+                suggestions: [
+                  'Edge functions are reachable',
+                  'Check function-specific configuration',
+                  'Review function logs for details'
+                ]
+              };
+            } else {
+              health.edge_functions = 'error';
+              details.edge_functions = {
+                status: 'error',
+                message: 'Edge functions error',
+                technicalDetails: `Function error: ${error.message || 'Unknown error'}`,
+                lastChecked: now,
+                suggestions: [
+                  'Check edge function deployment',
+                  'Verify function configuration',
+                  'Check Supabase function logs'
+                ]
+              };
+            }
+          } else {
+            health.edge_functions = 'healthy';
+            details.edge_functions = {
+              status: 'healthy',
+              message: 'Edge functions are responding properly',
+              technicalDetails: 'Successfully connected to and tested edge functions',
+              lastChecked: now,
+              suggestions: ['Edge functions are operating normally']
+            };
+          }
+        } else {
           health.edge_functions = 'warning';
           details.edge_functions = {
             status: 'warning',
-            message: 'Edge functions may be unavailable',
-            technicalDetails: `HTTP ${response.status}: ${response.statusText}`,
+            message: 'Cannot test edge functions - authentication required',
+            technicalDetails: 'No valid session found for edge function testing',
             lastChecked: now,
             suggestions: [
-              'Check edge function deployment',
-              'Verify function is properly configured',
-              'Check Supabase function logs'
+              'User must be logged in to test edge functions',
+              'Check authentication status',
+              'Edge functions may still be working'
             ]
-          };
-        } else {
-          health.edge_functions = 'healthy';
-          details.edge_functions = {
-            status: 'healthy',
-            message: 'Edge functions are responding',
-            technicalDetails: `Successfully connected to edge functions. HTTP ${response.status}`,
-            lastChecked: now,
-            suggestions: ['Edge functions are operating normally']
           };
         }
       } catch (error: any) {
@@ -162,7 +197,8 @@ export function AdminSystem() {
           suggestions: [
             'Check network connectivity',
             'Verify Supabase edge functions are deployed',
-            'Check function URLs and configuration'
+            'Check function URLs and configuration',
+            'Review browser console for CORS errors'
           ]
         };
       }
