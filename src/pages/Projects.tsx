@@ -74,7 +74,13 @@ export default function Projects() {
 
   const loadProjects = async () => {
     try {
-      console.log('Loading projects for user:', user?.id);
+      console.log('=== PROJECTS LOADING DEBUG ===');
+      console.log('User ID:', user?.id);
+      console.log('Auth session:', await supabase.auth.getSession());
+      
+      // Test basic connectivity
+      console.log('Testing Supabase connectivity...');
+      
       const { data, error } = await supabase
         .from('projects')
         .select(`
@@ -84,7 +90,12 @@ export default function Projects() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Supabase error loading projects:', error);
+        console.error('Supabase error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         toast({
           title: "Database Error",
           description: `Error loading projects: ${error.message}`,
@@ -94,11 +105,25 @@ export default function Projects() {
         console.log('Projects loaded successfully:', data?.length || 0, 'projects');
         setProjects(data || []);
       }
-    } catch (error) {
-      console.error('Network error loading projects:', error);
+    } catch (error: any) {
+      console.error('Network error loading projects:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        cause: error.cause
+      });
+      
+      // Try to determine the specific issue
+      let errorMessage = "Unable to connect to the server.";
+      if (error.message.includes('Failed to fetch')) {
+        errorMessage = "Network connection failed. Check your internet connection, VPN, or firewall settings.";
+      } else if (error.message.includes('NetworkError')) {
+        errorMessage = "Network error. The server might be temporarily unavailable.";
+      }
+      
       toast({
         title: "Connection Error", 
-        description: "Unable to connect to the server. Check your internet connection.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -106,7 +131,9 @@ export default function Projects() {
 
   const loadClients = async () => {
     try {
-      console.log('Loading clients for user:', user?.id);
+      console.log('=== CLIENTS LOADING DEBUG ===');
+      console.log('User ID:', user?.id);
+      
       const { data, error } = await supabase
         .from('clients')
         .select('id, name')
@@ -114,7 +141,12 @@ export default function Projects() {
         .order('name');
 
       if (error) {
-        console.error('Supabase error loading clients:', error);
+        console.error('Supabase error loading clients:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         toast({
           title: "Database Error",
           description: `Error loading clients: ${error.message}`,
@@ -124,11 +156,21 @@ export default function Projects() {
         console.log('Clients loaded successfully:', data?.length || 0, 'clients');
         setClients(data || []);
       }
-    } catch (error) {
-      console.error('Network error loading clients:', error);
+    } catch (error: any) {
+      console.error('Network error loading clients:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      
+      let errorMessage = "Unable to load clients.";
+      if (error.message.includes('Failed to fetch')) {
+        errorMessage = "Network connection failed. Check your internet connection, VPN, or firewall settings.";
+      }
+      
       toast({
         title: "Connection Error",
-        description: "Unable to load clients. Check your internet connection.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
