@@ -35,6 +35,7 @@ export function TimerWidget() {
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
+  const [clientElapsedTime, setClientElapsedTime] = useState(0); // Client-side timer for smooth display
   const { user } = useAuth();
   const { triggerTimerUpdate } = useTimerContext();
   const { timerSkin } = useTimerSkin();
@@ -48,8 +49,31 @@ export function TimerWidget() {
     isStopwatchRunning
   } = useDashboardTimers();
   
-  // Calculate elapsed time in seconds for display
-  const elapsedTime = Math.floor(getStopwatchDisplayTime() / 1000);
+  // Smooth client-side timer update
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isStopwatchRunning && activeEntry?.started_at) {
+      const startTime = new Date(activeEntry.started_at).getTime();
+      
+      // Initialize with current elapsed time
+      setClientElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+      
+      // Update every second for smooth display
+      interval = setInterval(() => {
+        setClientElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+      }, 1000);
+    } else {
+      setClientElapsedTime(0);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isStopwatchRunning, activeEntry?.started_at]);
+  
+  // Use client elapsed time for display, fallback to dashboard time
+  const elapsedTime = isStopwatchRunning ? clientElapsedTime : Math.floor(getStopwatchDisplayTime() / 1000);
 
   // Load projects and sync state with active entry
   useEffect(() => {

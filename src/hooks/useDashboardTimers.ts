@@ -95,12 +95,17 @@ export function useDashboardTimers() {
     // Initial load
     loadInitialStates();
 
-    // Always start polling as backup (regardless of real-time status)
-    debugLog('Starting backup polling every 3 seconds');
+    // Start less frequent polling as backup (only for state validation)
+    debugLog('Starting backup polling every 30 seconds');
     pollingInterval = setInterval(() => {
-      loadStopwatchState();
-      loadPomodoroState();
-    }, 3000); // Poll every 3 seconds as backup
+      // Only poll if no timer is running to avoid display jumps
+      if (!state.stopwatch?.status || state.stopwatch.status !== 'running') {
+        loadStopwatchState();
+      }
+      if (!state.pomodoro?.status || state.pomodoro.status !== 'running') {
+        loadPomodoroState();
+      }
+    }, 30000); // Poll every 30 seconds as backup
 
     return () => {
       subscriptionsRef.current.forEach(sub => sub.unsubscribe());
