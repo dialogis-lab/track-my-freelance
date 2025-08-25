@@ -135,9 +135,10 @@ export function useDashboardTimers() {
 
   const loadStopwatchState = async () => {
     try {
+      debugLog('Loading stopwatch state...');
       const { data, error } = await supabase
         .from('time_entries')
-        .select('id, started_at, stopped_at')
+        .select('id, started_at, stopped_at, tags')
         .eq('user_id', user!.id)
         .is('stopped_at', null)
         .not('tags', 'cs', '{"pomodoro"}') // Exclude pomodoro entries
@@ -195,6 +196,8 @@ export function useDashboardTimers() {
   };
 
   const handleStopwatchUpdate = (payload: TimerPayload) => {
+    debugLog('Stopwatch update:', payload.eventType, payload.new?.id);
+    
     // Skip pomodoro entries
     if (payload.new && 'tags' in payload.new && Array.isArray(payload.new.tags) && payload.new.tags.includes('pomodoro')) {
       return;
@@ -209,20 +212,23 @@ export function useDashboardTimers() {
           status: 'running' as const,
           elapsed_ms: 0
         };
+        debugLog('Setting new stopwatch state from INSERT:', newState);
         setState(prev => ({ ...prev, stopwatch: newState }));
       }
     } else if (payload.eventType === 'UPDATE' && payload.new) {
       if (payload.new.stopped_at) {
         // Timer stopped
+        debugLog('Clearing stopwatch state - timer stopped');
         setState(prev => ({ ...prev, stopwatch: null }));
-      } else if (payload.new.id && payload.new.started_at) {
-        // Timer updated
+      } else if (payload.new.id && payload.new.started_at && !payload.new.stopped_at) {
+        // Timer updated but still running
         const updatedState = {
           id: payload.new.id,
           started_at: payload.new.started_at,
           status: 'running' as const,
           elapsed_ms: 0
         };
+        debugLog('Updating stopwatch state from UPDATE:', updatedState);
         setState(prev => ({ ...prev, stopwatch: updatedState }));
       }
     }
