@@ -115,8 +115,8 @@ const LeadForm = ({ className = "", variant = "hero" }: LeadFormProps) => {
       />
       
       {variant === "hero" ? (
-        <div className="flex flex-col sm:flex-row gap-4 max-w-md">
-          <div className="flex-1 space-y-2">
+        <div className="flex flex-col sm:flex-row gap-4 max-w-2xl w-full">
+          <div className="flex-[2] space-y-2">
             <Input
               type="email"
               placeholder="Enter your email"
