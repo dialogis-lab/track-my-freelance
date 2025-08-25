@@ -144,7 +144,7 @@ export function TimerWidget() {
       .from('time_entries')
       .select('*')
       .is('stopped_at', null)
-      .not('tags', 'cs', '{pomodoro}') // Exclude Pomodoro sessions
+      .or('tags.is.null,not.tags.cs.{pomodoro}') // Include null tags or exclude Pomodoro
       .order('started_at', { ascending: false })
       .limit(1)
       .maybeSingle();
