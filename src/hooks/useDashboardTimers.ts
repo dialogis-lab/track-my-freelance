@@ -72,10 +72,15 @@ export function useDashboardTimers() {
     subscriptionsRef.current.forEach(sub => sub.unsubscribe());
     subscriptionsRef.current = [];
 
-    // Subscribe to stopwatch (time_entries)
+    // Subscribe to stopwatch (time_entries) - CRITICAL: ensure we get all user events
     const stopwatchSub = subscribeToTimeEntries(user.id, {
       onUpdate: (payload: TimerPayload) => {
-        debugLog('Stopwatch realtime event:', payload.eventType, payload.new?.id);
+        debugLog('Stopwatch realtime event received:', {
+          eventType: payload.eventType,
+          id: payload.new?.id,
+          stopped_at: payload.new?.stopped_at,
+          started_at: payload.new?.started_at
+        });
         handleStopwatchUpdate(payload);
       },
       onSubscribed: () => {
@@ -93,7 +98,12 @@ export function useDashboardTimers() {
     // Subscribe to pomodoro sessions
     const pomodoroSub = subscribeToPomodoroSessions(user.id, {
       onUpdate: (payload: TimerPayload) => {
-        debugLog('Pomodoro realtime event:', payload.eventType, payload.new?.id);
+        debugLog('Pomodoro realtime event received:', {
+          eventType: payload.eventType,
+          id: payload.new?.id,
+          status: payload.new?.status,
+          phase: payload.new?.phase
+        });
         handlePomodoroUpdate(payload);
       },
       onSubscribed: () => {
@@ -310,9 +320,12 @@ export function useDashboardTimers() {
   };
 
   const handleStopwatchUpdate = (payload: TimerPayload) => {
+    debugLog('Stopwatch update received:', payload);
+    
     // Skip pomodoro entries
     if (payload.new && 'tags' in payload.new && Array.isArray(payload.new.tags) && 
         payload.new.tags.includes('pomodoro')) {
+      debugLog('Skipping pomodoro entry');
       return;
     }
 
@@ -320,10 +333,16 @@ export function useDashboardTimers() {
     const applyUpdate = (newState: TimerState | null) => {
       setState(prev => {
         const current = prev.stopwatch;
+        debugLog('Applying stopwatch update:', { 
+          current: current ? 'exists' : 'none', 
+          newState: newState ? 'exists' : 'none',
+          event: payload.eventType
+        });
+        
         if (!current || !newState || 
             new Date(newState.revised_at || newState.started_at) >= 
             new Date(current.revised_at || current.started_at)) {
-          debugLog('Applied stopwatch update - version check passed');
+          debugLog('Applied stopwatch update - version check passed', newState);
           return { ...prev, stopwatch: newState };
         } else {
           debugLog('Ignored stopwatch update - stale version');
@@ -333,6 +352,7 @@ export function useDashboardTimers() {
     };
 
     if (payload.eventType === 'INSERT' && payload.new && !payload.new.stopped_at) {
+      debugLog('Processing INSERT event for running timer');
       if (payload.new.id && payload.new.started_at) {
         applyUpdate({
           id: payload.new.id,
@@ -343,9 +363,12 @@ export function useDashboardTimers() {
         });
       }
     } else if (payload.eventType === 'UPDATE' && payload.new) {
+      debugLog('Processing UPDATE event');
       if (payload.new.stopped_at) {
+        debugLog('Timer stopped via UPDATE');
         applyUpdate(null);
       } else if (payload.new.id && payload.new.started_at && !payload.new.stopped_at) {
+        debugLog('Timer updated and still running');
         applyUpdate({
           id: payload.new.id,
           started_at: payload.new.started_at,
@@ -355,6 +378,7 @@ export function useDashboardTimers() {
         });
       }
     } else if (payload.eventType === 'DELETE') {
+      debugLog('Processing DELETE event');
       applyUpdate(null);
     }
   };
