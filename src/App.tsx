@@ -1,4 +1,3 @@
-import Timer from "./pages/Timer";
 import SystemCheck from '@/pages/SystemCheck';
 import SecurityCheck from '@/pages/SecurityCheck';
 import ClientDetail from "./pages/ClientDetail";
@@ -65,7 +64,6 @@ const App = () => (
             <Route path="/invoices/new" element={<ProtectedRoute><InvoiceNew /></ProtectedRoute>} />
             <Route path="/invoices/:id" element={<ProtectedRoute><InvoiceView /></ProtectedRoute>} />
              <Route path="/settings/*" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-             <Route path="/timer" element={<ProtectedRoute><Timer /></ProtectedRoute>} />
              <Route path="/focus" element={<ProtectedRoute><Focus /></ProtectedRoute>} />
             <Route path="/standard-focus" element={<ProtectedRoute><StandardFocus /></ProtectedRoute>} />
             

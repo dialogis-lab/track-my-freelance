@@ -19,7 +19,6 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Clock },
-    { name: 'Timer', href: '/timer', icon: Timer },
     { name: 'Projects', href: '/projects', icon: FolderOpen },
     { name: 'Clients', href: '/clients', icon: Users },
     { name: 'Reports', href: '/reports', icon: BarChart3 },
