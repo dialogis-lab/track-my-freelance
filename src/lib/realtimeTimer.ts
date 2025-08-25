@@ -22,7 +22,9 @@ interface TimerCallbacks {
 
 class RealtimeTimerManager {
   private channels: Map<string, RealtimeChannel> = new Map();
-  private debug = process.env.NODE_ENV === 'development' && globalThis.localStorage?.getItem('TIMER_DEBUG') === '1';
+  private debug = true; // Enable debug temporarily
+  private subscriptionCount: Map<string, number> = new Map();
+  private callbacks: Map<string, TimerCallbacks[]> = new Map();
 
   private log(message: string, ...args: any[]) {
     if (this.debug) {
@@ -41,10 +43,38 @@ class RealtimeTimerManager {
   ): RealtimeTimerSubscription {
     const channelKey = this.getChannelKey(userId, table);
     
-    // Clean up existing channel if any
-    this.unsubscribe(userId, table);
+    // Track subscription count and callbacks
+    const currentCount = this.subscriptionCount.get(channelKey) || 0;
+    this.subscriptionCount.set(channelKey, currentCount + 1);
+    
+    const existingCallbacks = this.callbacks.get(channelKey) || [];
+    existingCallbacks.push(callbacks);
+    this.callbacks.set(channelKey, existingCallbacks);
+    
+    this.log(`Setting up subscription for ${table} (count: ${currentCount + 1})`, { userId, table });
 
-    this.log(`Setting up subscription for ${table}`, { userId, table });
+    // Check if we already have an active channel
+    const existingChannel = this.channels.get(channelKey);
+    if (existingChannel) {
+      this.log(`Reusing existing channel for ${table}`);
+      // Trigger onSubscribed for the new callback
+      callbacks.onSubscribed?.();
+      
+      // Return subscription that just manages the count and callbacks
+      return {
+        unsubscribe: () => {
+          const callbacksList = this.callbacks.get(channelKey) || [];
+          const filteredCallbacks = callbacksList.filter(cb => cb !== callbacks);
+          this.callbacks.set(channelKey, filteredCallbacks);
+          
+          const count = this.subscriptionCount.get(channelKey) || 1;
+          this.subscriptionCount.set(channelKey, count - 1);
+          if (count <= 1) {
+            this.unsubscribe(userId, table);
+          }
+        }
+      };
+    }
 
     const channel = supabase
       .channel(channelKey)
@@ -74,18 +104,25 @@ class RealtimeTimerManager {
               this.fetchRowById(table, payload.new.id, userId)
                 .then(row => {
                   if (row) {
-                    callbacks.onUpdate?.({ ...timerPayload, new: row });
+                    const fallbackPayload = { ...timerPayload, new: row };
+                    // Notify all callbacks
+                    const allCallbacks = this.callbacks.get(channelKey) || [];
+                    allCallbacks.forEach(cb => cb.onUpdate?.(fallbackPayload));
                   }
                 })
                 .catch(error => {
                   this.log(`Failed to fetch fallback row:`, error);
-                  callbacks.onError?.(error);
+                  // Notify all callbacks of error
+                  const allCallbacks = this.callbacks.get(channelKey) || [];
+                  allCallbacks.forEach(cb => cb.onError?.(error));
                 });
             }
             return;
           }
 
-          callbacks.onUpdate?.(timerPayload);
+          // Notify all callbacks
+          const allCallbacks = this.callbacks.get(channelKey) || [];
+          allCallbacks.forEach(cb => cb.onUpdate?.(timerPayload));
         }
       )
       .subscribe((status) => {
@@ -93,17 +130,32 @@ class RealtimeTimerManager {
         
         if (status === 'SUBSCRIBED') {
           this.log(`Subscription ready for ${table}, triggering reload`);
-          callbacks.onSubscribed?.();
+          // Notify all callbacks
+          const allCallbacks = this.callbacks.get(channelKey) || [];
+          allCallbacks.forEach(cb => cb.onSubscribed?.());
         } else if (status === 'CHANNEL_ERROR') {
           this.log(`Channel error for ${table}:`, status);
-          callbacks.onError?.(new Error(`Channel error for ${table}`));
+          const error = new Error(`Channel error for ${table}`);
+          // Notify all callbacks
+          const allCallbacks = this.callbacks.get(channelKey) || [];
+          allCallbacks.forEach(cb => cb.onError?.(error));
         }
       });
 
     this.channels.set(channelKey, channel);
 
     return {
-      unsubscribe: () => this.unsubscribe(userId, table)
+      unsubscribe: () => {
+        const callbacksList = this.callbacks.get(channelKey) || [];
+        const filteredCallbacks = callbacksList.filter(cb => cb !== callbacks);
+        this.callbacks.set(channelKey, filteredCallbacks);
+        
+        const count = this.subscriptionCount.get(channelKey) || 1;
+        this.subscriptionCount.set(channelKey, count - 1);
+        if (count <= 1) {
+          this.unsubscribe(userId, table);
+        }
+      }
     };
   }
 
@@ -132,6 +184,8 @@ class RealtimeTimerManager {
       this.log(`Cleaning up subscription for ${table}`, { userId, table });
       supabase.removeChannel(channel);
       this.channels.delete(channelKey);
+      this.subscriptionCount.delete(channelKey);
+      this.callbacks.delete(channelKey);
     }
   }
 
@@ -141,6 +195,8 @@ class RealtimeTimerManager {
       supabase.removeChannel(channel);
     });
     this.channels.clear();
+    this.subscriptionCount.clear();
+    this.callbacks.clear();
   }
 }
 

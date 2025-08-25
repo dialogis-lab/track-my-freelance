@@ -67,7 +67,7 @@ export function TimerWidget() {
           return;
         }
         
-        // Handle INSERT events (new timer started)
+        // Handle INSERT events (new timer started)  
         if (payload.eventType === 'INSERT' && payload.new && !payload.new.stopped_at) {
           const newEntry = payload.new as ActiveEntry;
           console.log('[TimerWidget] New timer started:', newEntry);
@@ -95,12 +95,8 @@ export function TimerWidget() {
       },
       onSubscribed: () => {
         console.log('[TimerWidget] Real-time subscription ready, loading active entry');
-        // Only reload if we don't already have an active entry from real-time
-        setTimeout(() => {
-          if (!activeEntry) {
-            loadActiveEntry();
-          }
-        }, 100);
+        // Always reload to ensure sync
+        loadActiveEntry();
       },
       onError: (error) => {
         console.error('[TimerWidget] Timer sync error:', error);
