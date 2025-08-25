@@ -19,8 +19,9 @@ interface DashboardTimersState {
   loading: boolean;
 }
 
+// Enable debug logging temporarily to see what's happening
 const debugLog = (message: string, ...args: any[]) => {
-  if (typeof window !== 'undefined' && localStorage?.getItem('TIMER_DEBUG') === '1') {
+  if (typeof window !== 'undefined' && (localStorage?.getItem('TIMER_DEBUG') === '1' || true)) {
     console.log(`[DashboardTimers] ${message}`, ...args);
   }
 };
@@ -130,10 +131,9 @@ export function useDashboardTimers() {
         .is('stopped_at', null)
         .not('tags', 'cs', '{"pomodoro"}') // Exclude pomodoro entries
         .order('started_at', { ascending: false })
-        .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         debugLog('Error loading stopwatch state:', error);
         return;
       }
@@ -142,7 +142,7 @@ export function useDashboardTimers() {
         id: data.id,
         started_at: data.started_at,
         status: 'running' as const,
-        elapsed_ms: 0
+        elapsed_ms: 0 // For time_entries, we calculate this client-side
       } : null;
 
       debugLog('Loaded stopwatch state:', stopwatchState);
@@ -160,10 +160,9 @@ export function useDashboardTimers() {
         .eq('user_id', user!.id)
         .in('status', ['running', 'paused'])
         .order('revised_at', { ascending: false })
-        .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         debugLog('Error loading pomodoro state:', error);
         return;
       }
@@ -250,9 +249,18 @@ export function useDashboardTimers() {
     }
 
     const serverTime = Date.now() + state.serverOffsetMs;
-    const elapsedMs = (timerState.elapsed_ms || 0) + (serverTime - startedMs);
     
-    return Math.max(0, elapsedMs);
+    // For stopwatch (time_entries): calculate from started_at
+    // For pomodoro: use elapsed_ms + time since started_at
+    if (timerState.phase) {
+      // This is a pomodoro session
+      const elapsedMs = (timerState.elapsed_ms || 0) + (serverTime - startedMs);
+      return Math.max(0, elapsedMs);
+    } else {
+      // This is a stopwatch (time_entries)
+      const elapsedMs = serverTime - startedMs;
+      return Math.max(0, elapsedMs);
+    }
   };
 
   return {
