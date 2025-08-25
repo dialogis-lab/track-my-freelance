@@ -43,6 +43,8 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) return;
 
+    console.log('Setting up cross-device timer sync for user:', user.id);
+
     const channel = supabase
       .channel('cross-device-timer')
       .on(
@@ -54,38 +56,47 @@ export function TimerProvider({ children }: { children: ReactNode }) {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('Cross-device timer update:', payload);
+          console.log('Cross-device timer update received:', payload);
           
           if (payload.eventType === 'INSERT' && !payload.new.stopped_at) {
             // New timer started on another device
+            console.log('New timer started, reloading active timer');
             loadActiveTimer();
             triggerTimerUpdate();
           } else if (payload.eventType === 'UPDATE') {
             const wasStopped = payload.old?.stopped_at === null && payload.new?.stopped_at !== null;
             if (wasStopped) {
               // Timer was stopped on another device
+              console.log('Timer was stopped on another device, clearing active timer');
               setActiveTimer(null);
               triggerTimerUpdate();
             } else if (!payload.new.stopped_at) {
               // Timer updated (notes changed, etc.)
+              console.log('Timer updated (notes/etc), reloading active timer');
               loadActiveTimer();
             }
           } else if (payload.eventType === 'DELETE') {
             // Timer entry deleted
+            console.log('Timer entry deleted, reloading active timer');
             loadActiveTimer();
             triggerTimerUpdate();
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Cross-device timer subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up cross-device timer subscription');
       supabase.removeChannel(channel);
     };
   }, [user]);
 
   const loadActiveTimer = async () => {
     if (!user) return;
+
+    console.log('Loading active timer for user:', user.id);
 
     const { data, error } = await supabase
       .from('time_entries')
@@ -105,6 +116,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     if (error && error.code !== 'PGRST116') {
       console.error('Error loading active timer:', error);
     } else {
+      console.log('Active timer loaded:', data);
       setActiveTimer(data);
     }
   };
