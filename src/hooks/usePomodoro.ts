@@ -47,119 +47,13 @@ export function usePomodoro() {
   const [longestStreak, setLongestStreak] = useState(0);
   const [activeEntryId, setActiveEntryId] = useState<string | null>(null);
 
-  // Load active entry and sync Pomodoro state
+  // Load settings and today's stats
   useEffect(() => {
     if (user) {
       loadSettings();
       loadTodayStats();
     }
   }, [user]);
-
-  // Load Pomodoro state from active time entry
-  const loadPomodoroStateFromDatabase = useCallback(async () => {
-    if (!user || !isEnabled) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('time_entries')
-        .select('id, started_at, notes, tags')
-        .is('stopped_at', null)
-        .eq('user_id', user.id)
-        .contains('tags', ['pomodoro']) // Only get Pomodoro sessions
-        .order('started_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (!error && data) {
-        const startTime = new Date(data.started_at).getTime();
-        const now = new Date().getTime();
-        const elapsed = Math.floor((now - startTime) / 1000);
-        const focusDuration = settings.focusMinutes * 60;
-        const remaining = Math.max(0, focusDuration - elapsed);
-        
-        if (remaining > 0) {
-          // Resume the Pomodoro timer
-          setActiveEntryId(data.id);
-          setPhase('focus');
-          setState('running');
-          setTimeRemaining(remaining);
-          setTargetTime(new Date(startTime + focusDuration * 1000));
-          console.log('Synced Pomodoro state from database:', { remaining, elapsed });
-        } else {
-          // Timer should have finished, but entry is still active
-          setActiveEntryId(data.id);
-          setPhase('focus');
-          setState('idle');
-          setTimeRemaining(0);
-        }
-      } else if (!data) {
-        // No active Pomodoro session found
-        setActiveEntryId(null);
-        setState('idle');
-        setTimeRemaining(0);
-        setTargetTime(null);
-      }
-    } catch (error) {
-      console.error('Error loading Pomodoro state:', error);
-    }
-  }, [user, isEnabled, settings.focusMinutes]);
-
-  // Sync Pomodoro state when enabled
-  useEffect(() => {
-    if (user && isEnabled) {
-      loadPomodoroStateFromDatabase();
-    }
-  }, [user, isEnabled, loadPomodoroStateFromDatabase]);
-
-  // Real-time subscription for timer updates
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('pomodoro-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'time_entries',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Pomodoro timer update received:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            // New timer started, check if it's a Pomodoro
-            const isPomodoro = payload.new?.tags?.includes('pomodoro');
-            if (isPomodoro && isEnabled) {
-              console.log('New Pomodoro session detected, syncing state...');
-              loadPomodoroStateFromDatabase();
-            }
-          } else if (payload.eventType === 'UPDATE' && activeEntryId === payload.new?.id) {
-            const wasStopped = payload.old?.stopped_at === null && payload.new?.stopped_at !== null;
-            if (wasStopped) {
-              setState('idle');
-              setTargetTime(null);
-              setTimeRemaining(0);
-              setActiveEntryId(null);
-              triggerTimerUpdate();
-              
-              // Show notification about external stop
-              toast({
-                title: "Timer stopped",
-                description: "Your Pomodoro timer was stopped from another device.",
-                variant: "default",
-              });
-            }
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, activeEntryId, triggerTimerUpdate, toast, isEnabled]);
 
   // Timer tick effect
   useEffect(() => {
@@ -353,22 +247,6 @@ export function usePomodoro() {
     }
 
     try {
-      // First, stop any existing active timer
-      const { data: existingEntry, error: existingError } = await supabase
-        .from('time_entries')
-        .select('id')
-        .eq('user_id', user!.id)
-        .is('stopped_at', null)
-        .single();
-
-      if (existingEntry && !existingError) {
-        // Stop the existing timer
-        await supabase
-          .from('time_entries')
-          .update({ stopped_at: new Date().toISOString() })
-          .eq('id', existingEntry.id);
-      }
-
       // Create time entry for focus session
       const { data, error } = await supabase
         .from('time_entries')
@@ -596,7 +474,6 @@ export function usePomodoro() {
     resumePomodoro,
     updateSettings,
     requestNotificationPermission,
-    loadPomodoroStateFromDatabase,
 
     // Helpers
     formatTime,

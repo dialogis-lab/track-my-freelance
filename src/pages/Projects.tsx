@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTimerContext } from '@/contexts/TimerContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/AppLayout';
@@ -11,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { Plus, Archive, Edit2, ArchiveRestore, Play, Square, BarChart3 } from 'lucide-react';
 
 interface Client {
@@ -40,140 +39,17 @@ export default function Projects() {
     rate_hour: ''
   });
   const [loading, setLoading] = useState(false);
-  const [formLoading, setFormLoading] = useState(false);
-  const [localActiveTimer, setLocalActiveTimer] = useState<string | null>(null);
+  const [activeTimer, setActiveTimer] = useState<string | null>(null);
   const { user } = useAuth();
-  const { activeTimer, triggerTimerUpdate } = useTimerContext();
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Sync with global timer context
   useEffect(() => {
-    if (activeTimer) {
-      setLocalActiveTimer(activeTimer.project_id);
-    } else {
-      setLocalActiveTimer(null);
-    }
-  }, [activeTimer]);
-
-  const loadProjects = async () => {
-    try {
-      console.log('=== PROJECTS LOADING DEBUG ===');
-      console.log('User ID:', user?.id);
-      console.log('Auth session:', await supabase.auth.getSession());
-      
-      // Test basic connectivity
-      console.log('Testing Supabase connectivity...');
-      
-      const { data, error } = await supabase
-        .from('projects')
-        .select(`
-          id, name, client_id, rate_hour, archived, created_at,
-          clients:client_id (name)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Supabase error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        toast({
-          title: "Database Error",
-          description: `Error loading projects: ${error.message}`,
-          variant: "destructive",
-        });
-      } else {
-        console.log('Projects loaded successfully:', data?.length || 0, 'projects');
-        setProjects(data || []);
-      }
-    } catch (error: any) {
-      console.error('Network error loading projects:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-        cause: error.cause
-      });
-      
-      // Try to determine the specific issue
-      let errorMessage = "Unable to connect to the server.";
-      if (error.message.includes('Failed to fetch')) {
-        errorMessage = "Network connection failed. Check your internet connection, VPN, or firewall settings.";
-      } else if (error.message.includes('NetworkError')) {
-        errorMessage = "Network error. The server might be temporarily unavailable.";
-      }
-      
-      toast({
-        title: "Connection Error", 
-        description: errorMessage,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const loadClients = async () => {
-    try {
-      console.log('=== CLIENTS LOADING DEBUG ===');
-      console.log('User ID:', user?.id);
-      
-      const { data, error } = await supabase
-        .from('clients')
-        .select('id, name')
-        .eq('archived', false)
-        .order('name');
-
-      if (error) {
-        console.error('Supabase error loading clients:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        toast({
-          title: "Database Error",
-          description: `Error loading clients: ${error.message}`,
-          variant: "destructive",
-        });
-      } else {
-        console.log('Clients loaded successfully:', data?.length || 0, 'clients');
-        setClients(data || []);
-      }
-    } catch (error: any) {
-      console.error('Network error loading clients:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
-      
-      let errorMessage = "Unable to load clients.";
-      if (error.message.includes('Failed to fetch')) {
-        errorMessage = "Network connection failed. Check your internet connection, VPN, or firewall settings.";
-      }
-      
-      toast({
-        title: "Connection Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    }
-  };
-
-  useEffect(() => {
-    console.log('=== PROJECTS COMPONENT MOUNTED ===');
-    console.log('User:', user?.id);
-    
-    // Load data whenever component mounts or user changes
     if (user) {
-      console.log('User available, loading data...');
-      setLoading(true);
-      
-      // Load data immediately
-      Promise.all([loadProjects(), loadClients()])
-        .catch(error => console.error('Error loading data:', error))
-        .finally(() => setLoading(false));
+      loadProjects();
+      loadClients();
+      checkActiveTimer();
       
       // Handle query parameters for pre-selecting client
       const params = new URLSearchParams(location.search);
@@ -183,11 +59,58 @@ export default function Projects() {
         setIsDialogOpen(true);
       }
     }
-  }, [user]); // Only depend on user
+  }, [user, location.search]);
+
+  const checkActiveTimer = async () => {
+    const { data } = await supabase
+      .from('time_entries')
+      .select('project_id')
+      .is('stopped_at', null)
+      .single();
+    
+    if (data) {
+      setActiveTimer(data.project_id);
+    }
+  };
+
+  const loadProjects = async () => {
+    const { data, error } = await supabase
+      .from('projects')
+      .select(`
+        id, name, client_id, rate_hour, archived, created_at,
+        clients:client_id (name)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading projects:', error);
+      toast({
+        title: "Error loading projects",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setProjects(data || []);
+    }
+  };
+
+  const loadClients = async () => {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('id, name')
+      .eq('archived', false)
+      .order('name');
+
+    if (error) {
+      console.error('Error loading clients:', error);
+    } else {
+      setClients(data || []);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormLoading(true);
+    setLoading(true);
 
     const projectData = {
       name: formData.name,
@@ -203,7 +126,7 @@ export default function Projects() {
         description: "Please select a client for this project.",
         variant: "destructive",
       });
-      setFormLoading(false);
+      setLoading(false);
       return;
     }
 
@@ -236,7 +159,7 @@ export default function Projects() {
       loadProjects();
     }
 
-    setFormLoading(false);
+    setLoading(false);
   };
 
   const toggleArchive = async (project: Project) => {
@@ -277,7 +200,7 @@ export default function Projects() {
   };
 
   const startTimerForProject = async (projectId: string) => {
-    if (localActiveTimer) {
+    if (activeTimer) {
       toast({
         title: "Timer already running",
         description: "Please stop the current timer before starting a new one.",
@@ -301,22 +224,22 @@ export default function Projects() {
         variant: "destructive",
       });
     } else {
+      setActiveTimer(projectId);
       toast({
         title: "Timer started",
         description: "Timer has been started for this project.",
       });
-      triggerTimerUpdate(); // Sync with dashboard
     }
   };
 
   const stopTimer = async () => {
-    if (!localActiveTimer) return;
+    if (!activeTimer) return;
 
     const { error } = await supabase
       .from('time_entries')
       .update({ stopped_at: new Date().toISOString() })
       .is('stopped_at', null)
-      .eq('project_id', localActiveTimer);
+      .eq('project_id', activeTimer);
 
     if (error) {
       toast({
@@ -325,11 +248,11 @@ export default function Projects() {
         variant: "destructive",
       });
     } else {
+      setActiveTimer(null);
       toast({
         title: "Timer stopped",
         description: "Timer has been stopped.",
       });
-      triggerTimerUpdate(); // Sync with dashboard
     }
   };
 
@@ -416,7 +339,7 @@ export default function Projects() {
                 </div>
 
                 <div className="flex space-x-2">
-                  <Button type="submit" disabled={formLoading || !formData.client_id}>
+                  <Button type="submit" disabled={loading || !formData.client_id}>
                     {editingProject ? 'Update' : 'Create'} Project
                   </Button>
                   <Button type="button" variant="outline" onClick={resetForm}>
@@ -435,13 +358,7 @@ export default function Projects() {
           </TabsList>
           
           <TabsContent value="active" className="space-y-4">
-            {loading ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">Loading projects...</p>
-                </CardContent>
-              </Card>
-            ) : activeProjects.length === 0 ? (
+            {activeProjects.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <p className="text-muted-foreground">No active projects yet.</p>
@@ -459,25 +376,25 @@ export default function Projects() {
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
                         <span className="truncate">{project.name}</span>
-                         <div className="flex space-x-1" onClick={(e) => e.stopPropagation()}>
-                           {localActiveTimer === project.id ? (
-                             <Button
-                               variant="destructive"
-                               size="sm"
-                               onClick={stopTimer}
-                             >
-                               <Square className="w-4 h-4" />
-                             </Button>
-                           ) : (
-                             <Button
-                               variant="default"
-                               size="sm"
-                               onClick={() => startTimerForProject(project.id)}
-                               disabled={!!localActiveTimer}
-                             >
-                               <Play className="w-4 h-4" />
-                             </Button>
-                           )}
+                        <div className="flex space-x-1" onClick={(e) => e.stopPropagation()}>
+                          {activeTimer === project.id ? (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={stopTimer}
+                            >
+                              <Square className="w-4 h-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => startTimerForProject(project.id)}
+                              disabled={!!activeTimer}
+                            >
+                              <Play className="w-4 h-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -525,13 +442,7 @@ export default function Projects() {
           </TabsContent>
           
           <TabsContent value="archived" className="space-y-4">
-            {loading ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">Loading archived projects...</p>
-                </CardContent>
-              </Card>
-            ) : archivedProjects.length === 0 ? (
+            {archivedProjects.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <p className="text-muted-foreground">No archived projects.</p>

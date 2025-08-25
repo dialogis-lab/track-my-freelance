@@ -22,54 +22,41 @@ interface Project {
   clients?: { name: string } | null;
 }
 
+interface ActiveEntry {
+  id: string;
+  project_id: string;
+  started_at: string;
+  notes: string;
+}
+
 export function TimerWidget() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [activeEntry, setActiveEntry] = useState<ActiveEntry | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [notes, setNotes] = useState('');
   const [elapsedTime, setElapsedTime] = useState(0);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
-  const { activeTimer, triggerTimerUpdate } = useTimerContext();
+  const { triggerTimerUpdate } = useTimerContext();
   const { timerSkin } = useTimerSkin();
-  const { 
-    isEnabled: pomodoroEnabled, 
-    setIsEnabled: setPomodoroEnabled, 
-    state: pomodoroState,
-    loadPomodoroStateFromDatabase
-  } = usePomodoro();
+  const { isEnabled: pomodoroEnabled, setIsEnabled: setPomodoroEnabled, state: pomodoroState } = usePomodoro();
   const { toast } = useToast();
 
-  // Sync local state with global timer state
-  useEffect(() => {
-    if (activeTimer) {
-      setSelectedProjectId(activeTimer.project_id);
-      setNotes(activeTimer.notes || '');
-    } else {
-      // Only reset if we're not in the middle of starting a timer
-      if (!loading) {
-        setElapsedTime(0);
-        setNotes('');
-        setSelectedProjectId(''); // Reset project selection when no active timer
-      }
-    }
-  }, [activeTimer, loading]);
-
-  // Load projects and force timer context refresh
+  // Load projects and active entry
   useEffect(() => {
     if (user) {
       loadProjects();
-      // Force a timer context refresh on component mount
-      triggerTimerUpdate();
+      loadActiveEntry();
     }
-  }, [user, triggerTimerUpdate]);
+  }, [user]);
 
-  // Timer tick effect - only runs when there's an active timer
+  // Timer effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
-    if (activeTimer) {
+    if (activeEntry) {
       interval = setInterval(() => {
-        const startTime = new Date(activeTimer.started_at).getTime();
+        const startTime = new Date(activeEntry.started_at).getTime();
         const now = new Date().getTime();
         setElapsedTime(Math.floor((now - startTime) / 1000));
       }, 1000);
@@ -78,7 +65,7 @@ export function TimerWidget() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [activeTimer]);
+  }, [activeEntry]);
 
   const loadProjects = async () => {
     const { data, error } = await supabase
@@ -88,19 +75,33 @@ export function TimerWidget() {
         clients:client_id (name)
       `)
       .eq('archived', false)
-      .eq('user_id', user!.id)
       .order('name');
 
     if (error) {
       console.error('Error loading projects:', error);
     } else {
-      console.log('TimerWidget: Loaded projects:', data?.length || 0, 'for user:', user?.id);
       setProjects(data || []);
     }
   };
 
-  // Remove loadActiveEntry function since it's now handled by TimerContext
-  
+  const loadActiveEntry = async () => {
+    const { data, error } = await supabase
+      .from('time_entries')
+      .select('*')
+      .is('stopped_at', null)
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error loading active entry:', error);
+    } else if (data) {
+      setActiveEntry(data);
+      setSelectedProjectId(data.project_id);
+      setNotes(data.notes || '');
+    }
+  };
+
   const startTimer = async () => {
     if (!selectedProjectId) {
       toast({
@@ -108,26 +109,6 @@ export function TimerWidget() {
         description: "You need to select a project before starting the timer.",
         variant: "destructive",
       });
-      return;
-    }
-
-    // Check if there's already an active timer
-    const { data: existingTimer } = await supabase
-      .from('time_entries')
-      .select('id, project_id')
-      .is('stopped_at', null)
-      .eq('user_id', user!.id)
-      .or('tags.is.null,not.tags.cs.{pomodoro}') // Check for non-Pomodoro timers
-      .single();
-
-    if (existingTimer) {
-      toast({
-        title: "Timer already running",
-        description: "Please stop the current timer before starting a new one.",
-        variant: "destructive",
-      });
-      // Force reload the active timer to show it in UI
-      triggerTimerUpdate();
       return;
     }
 
@@ -151,18 +132,19 @@ export function TimerWidget() {
         variant: "destructive",
       });
     } else {
+      setActiveEntry(data);
       toast({
         title: "Timer started",
         description: "Time tracking has begun for the selected project.",
       });
-      // Don't call triggerTimerUpdate() here as real-time will handle it
+      triggerTimerUpdate(); // Trigger dashboard update
     }
     
     setLoading(false);
   };
 
   const stopTimer = async () => {
-    if (!activeTimer) return;
+    if (!activeEntry) return;
 
     setLoading(true);
     
@@ -172,7 +154,7 @@ export function TimerWidget() {
         stopped_at: new Date().toISOString(),
         notes: notes,
       })
-      .eq('id', activeTimer.id);
+      .eq('id', activeEntry.id);
 
     if (error) {
       toast({
@@ -181,26 +163,26 @@ export function TimerWidget() {
         variant: "destructive",
       });
     } else {
-      // Immediately clear local state for instant UI feedback
+      setActiveEntry(null);
       setElapsedTime(0);
       setNotes('');
       toast({
         title: "Timer stopped",
         description: "Time entry has been saved successfully.",
       });
-      // Don't call triggerTimerUpdate() here as real-time will handle it
+      triggerTimerUpdate(); // Trigger dashboard update
     }
     
     setLoading(false);
   };
 
   const updateNotes = async () => {
-    if (!activeTimer) return;
+    if (!activeEntry) return;
 
     const { error } = await supabase
       .from('time_entries')
       .update({ notes })
-      .eq('id', activeTimer.id);
+      .eq('id', activeEntry.id);
 
     if (error) {
       console.error('Error updating notes:', error);
@@ -272,28 +254,6 @@ export function TimerWidget() {
                   {formatTimeDisplay(elapsedTime)}
                 </div>
               </div>
-              
-            {/* Active Timer Info */}
-            {activeTimer && (
-              <div className="mt-4 text-center">
-                <div className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                  <div className="w-2 h-2 bg-primary rounded-full mr-2 animate-pulse" />
-                  Running: {activeTimer.projects?.clients?.name ? `${activeTimer.projects.clients.name} - ` : ''}{activeTimer.projects?.name || 'Selected Project'}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Started: {new Date(activeTimer.started_at).toLocaleTimeString()}
-                </div>
-              </div>
-            )}
-            
-            {/* No Active Timer State */}
-            {!activeTimer && !loading && (
-              <div className="mt-4 text-center">
-                <div className="text-sm text-muted-foreground">
-                  No timer running
-                </div>
-              </div>
-            )}
             </div>
 
             {/* Long Running Warning */}
@@ -314,7 +274,7 @@ export function TimerWidget() {
               <Select
                 value={selectedProjectId}
                 onValueChange={setSelectedProjectId}
-                disabled={!!activeTimer || loading}
+                disabled={!!activeEntry || loading}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a project" />
@@ -342,8 +302,8 @@ export function TimerWidget() {
             </div>
 
             {/* Control Buttons */}
-            <div className="pt-2 space-y-2">
-              {!activeTimer ? (
+            <div className="pt-2">
+              {!activeEntry ? (
                 <Button
                   onClick={startTimer}
                   disabled={loading || !selectedProjectId}
@@ -354,27 +314,16 @@ export function TimerWidget() {
                   Start Timer
                 </Button>
               ) : (
-                <>
-                  <Button
-                    onClick={stopTimer}
-                    disabled={loading}
-                    size="lg"
-                    variant="destructive"
-                    className="w-full"
-                  >
-                    <Square className="w-4 h-4 mr-2" />
-                    Stop Timer
-                  </Button>
-                  
-                  {/* Mobile Focus View Button */}
-                  <Button
-                    variant="outline"
-                    onClick={() => window.location.href = '/standard-focus'}
-                    className="w-full"
-                  >
-                    📱 Minimal Focus View
-                  </Button>
-                </>
+                <Button
+                  onClick={stopTimer}
+                  disabled={loading}
+                  size="lg"
+                  variant="destructive"
+                  className="w-full"
+                >
+                  <Square className="w-4 h-4 mr-2" />
+                  Stop Timer
+                </Button>
               )}
             </div>
           </>
