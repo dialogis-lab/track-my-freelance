@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTimerContext } from '@/contexts/TimerContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/AppLayout';
@@ -39,17 +40,26 @@ export default function Projects() {
     rate_hour: ''
   });
   const [loading, setLoading] = useState(false);
-  const [activeTimer, setActiveTimer] = useState<string | null>(null);
+  const [localActiveTimer, setLocalActiveTimer] = useState<string | null>(null);
   const { user } = useAuth();
+  const { activeTimer, triggerTimerUpdate } = useTimerContext();
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Sync with global timer context
+  useEffect(() => {
+    if (activeTimer) {
+      setLocalActiveTimer(activeTimer.project_id);
+    } else {
+      setLocalActiveTimer(null);
+    }
+  }, [activeTimer]);
 
   useEffect(() => {
     if (user) {
       loadProjects();
       loadClients();
-      checkActiveTimer();
       
       // Handle query parameters for pre-selecting client
       const params = new URLSearchParams(location.search);
@@ -61,17 +71,6 @@ export default function Projects() {
     }
   }, [user, location.search]);
 
-  const checkActiveTimer = async () => {
-    const { data } = await supabase
-      .from('time_entries')
-      .select('project_id')
-      .is('stopped_at', null)
-      .single();
-    
-    if (data) {
-      setActiveTimer(data.project_id);
-    }
-  };
 
   const loadProjects = async () => {
     const { data, error } = await supabase
@@ -200,7 +199,7 @@ export default function Projects() {
   };
 
   const startTimerForProject = async (projectId: string) => {
-    if (activeTimer) {
+    if (localActiveTimer) {
       toast({
         title: "Timer already running",
         description: "Please stop the current timer before starting a new one.",
@@ -224,22 +223,22 @@ export default function Projects() {
         variant: "destructive",
       });
     } else {
-      setActiveTimer(projectId);
       toast({
         title: "Timer started",
         description: "Timer has been started for this project.",
       });
+      triggerTimerUpdate(); // Sync with dashboard
     }
   };
 
   const stopTimer = async () => {
-    if (!activeTimer) return;
+    if (!localActiveTimer) return;
 
     const { error } = await supabase
       .from('time_entries')
       .update({ stopped_at: new Date().toISOString() })
       .is('stopped_at', null)
-      .eq('project_id', activeTimer);
+      .eq('project_id', localActiveTimer);
 
     if (error) {
       toast({
@@ -248,11 +247,11 @@ export default function Projects() {
         variant: "destructive",
       });
     } else {
-      setActiveTimer(null);
       toast({
         title: "Timer stopped",
         description: "Timer has been stopped.",
       });
+      triggerTimerUpdate(); // Sync with dashboard
     }
   };
 
@@ -376,25 +375,25 @@ export default function Projects() {
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
                         <span className="truncate">{project.name}</span>
-                        <div className="flex space-x-1" onClick={(e) => e.stopPropagation()}>
-                          {activeTimer === project.id ? (
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={stopTimer}
-                            >
-                              <Square className="w-4 h-4" />
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => startTimerForProject(project.id)}
-                              disabled={!!activeTimer}
-                            >
-                              <Play className="w-4 h-4" />
-                            </Button>
-                          )}
+                         <div className="flex space-x-1" onClick={(e) => e.stopPropagation()}>
+                           {localActiveTimer === project.id ? (
+                             <Button
+                               variant="destructive"
+                               size="sm"
+                               onClick={stopTimer}
+                             >
+                               <Square className="w-4 h-4" />
+                             </Button>
+                           ) : (
+                             <Button
+                               variant="default"
+                               size="sm"
+                               onClick={() => startTimerForProject(project.id)}
+                               disabled={!!localActiveTimer}
+                             >
+                               <Play className="w-4 h-4" />
+                             </Button>
+                           )}
                           <Button
                             variant="ghost"
                             size="sm"
