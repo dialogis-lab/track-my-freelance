@@ -91,6 +91,24 @@ export function CombinedTimerCard() {
     prevStatusRef.current = pomodoro?.status;
   }, [pomodoro?.phase, pomodoro?.status, coupling, isStopwatchRunning]);
 
+  // Ensure Pomodoro only runs when coupled and stopwatch is running
+  useEffect(() => {
+    const shouldPomodoroRun = coupling && isStopwatchRunning;
+    
+    if (!shouldPomodoroRun && isPomodoroRunning) {
+      // Stop pomodoro if it shouldn't be running
+      debugLog('Stopping orphaned Pomodoro session - coupling:', coupling, 'stopwatch running:', isStopwatchRunning);
+      const stopOrphanedPomodoro = async () => {
+        try {
+          await supabase.rpc('pomo_stop');
+        } catch (error) {
+          console.error('Error stopping orphaned pomodoro:', error);
+        }
+      };
+      stopOrphanedPomodoro();
+    }
+  }, [coupling, isStopwatchRunning, isPomodoroRunning]);
+
   const loadCouplingDefault = async () => {
     try {
       const { data } = await supabase
@@ -145,13 +163,21 @@ export function CombinedTimerCard() {
     setCoupling(newCoupling);
     await saveCouplingDefault(newCoupling);
     
-    // If turning ON while stopwatch is running, start pomodoro
     if (newCoupling && isStopwatchRunning) {
+      // If turning ON while stopwatch is running, start pomodoro
       try {
         await supabase.rpc('pomo_start');
         toast({ title: "Pomodoro coupled", description: "Started Pomodoro session with running timer." });
       } catch (error) {
         console.error('Error starting coupled pomodoro:', error);
+      }
+    } else if (!newCoupling && isPomodoroRunning) {
+      // If turning OFF while pomodoro is running, stop pomodoro
+      try {
+        await supabase.rpc('pomo_stop');
+        toast({ title: "Pomodoro uncoupled", description: "Stopped Pomodoro session." });
+      } catch (error) {
+        console.error('Error stopping pomodoro:', error);
       }
     }
   };
