@@ -88,11 +88,13 @@ export function TimerWidget() {
         clients:client_id (name)
       `)
       .eq('archived', false)
+      .eq('user_id', user!.id)
       .order('name');
 
     if (error) {
       console.error('Error loading projects:', error);
     } else {
+      console.log('TimerWidget: Loaded projects:', data?.length || 0, 'for user:', user?.id);
       setProjects(data || []);
     }
   };
