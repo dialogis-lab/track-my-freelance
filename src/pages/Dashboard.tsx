@@ -7,14 +7,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/AppLayout';
 import { CombinedTimerCard } from '@/components/CombinedTimerCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, FolderOpen, Users, TrendingUp, ExternalLink } from 'lucide-react';
+import { Clock, FolderOpen, Users, TrendingUp, ExternalLink, Receipt } from 'lucide-react';
 import { formatTime, hoursToMinutes, calculateDurationMinutes, formatDuration } from '@/lib/timeUtils';
+import { formatMoney, type Currency } from '@/lib/currencyUtils';
 
 interface DashboardStats {
   totalProjects: number;
   totalClients: number;
   todayHours: number;
   weekHours: number;
+  totalExpenses: Partial<Record<Currency, number>>;
 }
 
 interface RecentEntry {
@@ -31,6 +33,7 @@ export default function Dashboard() {
     totalClients: 0,
     todayHours: 0,
     weekHours: 0,
+    totalExpenses: {},
   });
   const [recentEntries, setRecentEntries] = useState<RecentEntry[]>([]);
   const { user } = useAuth();
@@ -85,7 +88,7 @@ export default function Dashboard() {
     const weekStart = new Date(today);
     weekStart.setDate(today.getDate() - today.getDay());
 
-    const [projectsData, clientsData, todayData, weekData] = await Promise.all([
+    const [projectsData, clientsData, todayData, weekData, expensesData] = await Promise.all([
       supabase.from('projects').select('id').eq('archived', false).eq('user_id', user!.id),
       supabase.from('clients').select(`
         id,
@@ -101,6 +104,11 @@ export default function Dashboard() {
         .select('started_at, stopped_at')
         .eq('user_id', user!.id)
         .gte('started_at', weekStart.toISOString()),
+      supabase
+        .from('expenses')
+        .select('gross_amount_cents, currency')
+        .eq('user_id', user!.id)
+        .eq('billable', true),
     ]);
 
     const calculateHours = (entries: any[]) => {
@@ -116,11 +124,20 @@ export default function Dashboard() {
       client.projects && client.projects.some((p: any) => !p.archived)
     ).length || 0;
 
+    // Calculate expense totals by currency
+    const expenseTotals = expensesData.data?.reduce((acc, expense) => {
+      const currency = expense.currency as Currency;
+      if (!acc[currency]) acc[currency] = 0;
+      acc[currency] += expense.gross_amount_cents;
+      return acc;
+    }, {} as Record<Currency, number>) || {};
+
     setStats({
       totalProjects: projectsData.data?.length || 0,
       totalClients: activeClientsCount,
       todayHours: calculateHours(todayData.data || []),
       weekHours: calculateHours(weekData.data || []),
+      totalExpenses: expenseTotals,
     });
   };
 
@@ -256,6 +273,29 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Second row of stats - Expenses */}
+        {Object.keys(stats.totalExpenses).length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="cursor-pointer card-hover transition-smooth group relative rounded-2xl">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+                <div className="flex items-center space-x-2">
+                  <Receipt className="h-4 w-4 text-brand-gradient" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1">
+                  {Object.entries(stats.totalExpenses).map(([currency, amount]) => (
+                    <div key={currency} className="text-lg font-bold text-brand-gradient">
+                      {formatMoney(amount, currency as Currency)}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Combined Timer Card */}

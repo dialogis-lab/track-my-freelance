@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Edit2, Archive, ArchiveRestore, Play, Square, BarChart3, Trash2 } from 'lucide-react';
+import { ExpensesList } from '@/components/ExpensesList';
 
 interface Project {
   id: string;
@@ -419,6 +420,16 @@ export default function ProjectDetail() {
                  ))}
               </div>
             )}
+           </CardContent>
+        </Card>
+
+        {/* Expenses Section */}
+        <Card>
+          <CardContent className="pt-6">
+            <ExpensesList 
+              projectId={project.id} 
+              clientId={project.client_id || undefined} 
+            />
           </CardContent>
         </Card>
       </div>
