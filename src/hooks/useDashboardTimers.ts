@@ -140,7 +140,7 @@ export function useDashboardTimers() {
 
   const loadStopwatchState = async () => {
     try {
-      debugLog('Loading stopwatch state...');
+      debugLog('Loading stopwatch state for user:', user!.id);
       const { data, error } = await supabase
         .from('time_entries')
         .select('id, started_at, stopped_at, tags')
@@ -154,6 +154,8 @@ export function useDashboardTimers() {
         return;
       }
 
+      debugLog('Raw query result:', data);
+
       const stopwatchState = data && !data.tags?.includes('pomodoro') ? {
         id: data.id,
         started_at: data.started_at,
@@ -161,7 +163,7 @@ export function useDashboardTimers() {
         elapsed_ms: 0 // For time_entries, we calculate this client-side
       } : null;
 
-      debugLog('Loaded stopwatch state:', stopwatchState);
+      debugLog('Processed stopwatch state:', stopwatchState);
       setState(prev => ({ ...prev, stopwatch: stopwatchState }));
     } catch (error) {
       debugLog('Failed to load stopwatch state:', error);
