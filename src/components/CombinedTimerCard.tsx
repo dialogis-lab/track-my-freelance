@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Play, Square, Timer } from 'lucide-react';
 
@@ -15,6 +17,9 @@ export function CombinedTimerCard() {
   const { toast } = useToast();
   const [coupling, setCoupling] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [notes, setNotes] = useState('');
+  const [projects, setProjects] = useState<Array<{id: string, name: string}>>([]);
   const notificationPermissionRequested = useRef(false);
   
   const {
@@ -28,10 +33,11 @@ export function CombinedTimerCard() {
     serverOffsetMs
   } = useDashboardTimers();
 
-  // Load coupling default on mount
+  // Load coupling default and projects on mount
   useEffect(() => {
     if (user) {
       loadCouplingDefault();
+      loadProjects();
     }
   }, [user]);
 
@@ -69,6 +75,28 @@ export function CombinedTimerCard() {
       }
     } catch (error) {
       console.error('Error loading coupling default:', error);
+    }
+  };
+
+  const loadProjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('id, name')
+        .eq('user_id', user!.id)
+        .eq('archived', false)
+        .order('name');
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setProjects(data);
+        if (!selectedProjectId) {
+          setSelectedProjectId(data[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading projects:', error);
     }
   };
 
@@ -135,21 +163,29 @@ export function CombinedTimerCard() {
   };
 
   const handleStopwatchStart = async () => {
+    if (!selectedProjectId) {
+      toast({
+        title: "Please select a project",
+        description: "You need to select a project to start time tracking.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      // Need a project for stopwatch - this is a simplified version
-      // In full implementation, would need project selection
-      const { data: projects } = await supabase
-        .from('projects')
+      // First check if there's already a running timer
+      const { data: runningTimer } = await supabase
+        .from('time_entries')
         .select('id')
         .eq('user_id', user!.id)
-        .eq('archived', false)
+        .is('stopped_at', null)
         .limit(1);
-      
-      if (!projects || projects.length === 0) {
+
+      if (runningTimer && runningTimer.length > 0) {
         toast({
-          title: "No projects found",
-          description: "Create a project first to start time tracking.",
+          title: "Timer already running",
+          description: "Please stop the current timer first.",
           variant: "destructive"
         });
         setLoading(false);
@@ -160,9 +196,9 @@ export function CombinedTimerCard() {
         .from('time_entries')
         .insert([{
           user_id: user!.id,
-          project_id: projects[0].id,
+          project_id: selectedProjectId,
           started_at: new Date().toISOString(),
-          notes: 'Dashboard timer'
+          notes: notes || null
         }]);
 
       if (error) throw error;
@@ -171,10 +207,16 @@ export function CombinedTimerCard() {
         await supabase.rpc('pomo_start');
       }
       
+      // Clear notes after starting
+      setNotes('');
       toast({ title: "Timer started" });
     } catch (error) {
       console.error('Error starting timer:', error);
-      toast({ title: "Error starting timer", variant: "destructive" });
+      toast({ 
+        title: "Error starting timer", 
+        description: error.message || "Please try again",
+        variant: "destructive" 
+      });
     }
     setLoading(false);
   };
@@ -299,16 +341,52 @@ export function CombinedTimerCard() {
           </div>
         )}
 
+        {/* Project Selection and Notes (only when timer is not running) */}
+        {!isStopwatchRunning && (
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="project-select" className="text-sm font-medium">
+                Project
+              </Label>
+              <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select a project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="notes-input" className="text-sm font-medium">
+                Notes (optional)
+              </Label>
+              <Input
+                id="notes-input"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="What are you working on?"
+                className="mt-1"
+              />
+            </div>
+          </div>
+        )}
+
         {/* Control Buttons */}
         <div className="flex space-x-2">
           {!isStopwatchRunning ? (
             <Button
               onClick={handleStopwatchStart}
-              disabled={loading}
+              disabled={loading || projects.length === 0}
               className="flex-1"
             >
               <Play className="w-4 h-4 mr-2" />
-              Start
+              Start Timer
             </Button>
           ) : (
             <Button
@@ -318,10 +396,19 @@ export function CombinedTimerCard() {
               className="flex-1"
             >
               <Square className="w-4 h-4 mr-2" />
-              Stop
+              Stop Timer
             </Button>
           )}
         </div>
+
+        {/* Show help text if no projects */}
+        {projects.length === 0 && (
+          <div className="text-sm text-muted-foreground text-center">
+            <a href="/projects" className="text-primary hover:underline">
+              Create a project
+            </a> to start time tracking
+          </div>
+        )}
       </CardContent>
     </Card>
   );
