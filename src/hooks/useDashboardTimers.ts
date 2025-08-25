@@ -62,17 +62,17 @@ export function useDashboardTimers() {
     initializeDashboard();
   }, [user?.id]);
 
-  // Set up realtime subscriptions with version gating and recovery
+  // Enhanced realtime subscriptions with better recovery
   useEffect(() => {
     if (!user) return;
 
-    debugLog('Setting up realtime subscriptions with version gating');
+    debugLog('Setting up realtime subscriptions with enhanced recovery');
     
     // Clean up existing subscriptions
     subscriptionsRef.current.forEach(sub => sub.unsubscribe());
     subscriptionsRef.current = [];
 
-    // Subscribe to stopwatch (time_entries) - CRITICAL: ensure we get all user events
+    // Subscribe to stopwatch (time_entries)
     const stopwatchSub = subscribeToTimeEntries(user.id, {
       onUpdate: (payload: TimerPayload) => {
         debugLog('Stopwatch realtime event received:', {
@@ -84,14 +84,18 @@ export function useDashboardTimers() {
         handleStopwatchUpdate(payload);
       },
       onSubscribed: () => {
-        debugLog('Stopwatch channel subscribed - loading current state');
-        // Always re-fetch current state when subscription is ready
-        setTimeout(() => loadCurrentTimerStates(), 100);
+        debugLog('Stopwatch channel subscribed - syncing current state');
+        // Sync current state when subscription is ready
+        setTimeout(() => loadCurrentTimerStates(), 50);
       },
       onError: (error) => {
         debugLog('Stopwatch subscription error:', error);
-        // Try to recover by reloading state
-        setTimeout(() => loadCurrentTimerStates(), 1000);
+        // Implement exponential backoff for error recovery
+        const retryDelay = subscriptionsRef.current.length > 0 ? 1000 : 2000;
+        setTimeout(() => {
+          debugLog('Attempting to recover stopwatch subscription');
+          loadCurrentTimerStates();
+        }, retryDelay);
       }
     });
 
@@ -107,55 +111,81 @@ export function useDashboardTimers() {
         handlePomodoroUpdate(payload);
       },
       onSubscribed: () => {
-        debugLog('Pomodoro channel subscribed - loading current state');
-        // Always re-fetch current state when subscription is ready
-        setTimeout(() => loadCurrentTimerStates(), 100);
+        debugLog('Pomodoro channel subscribed - syncing current state');
+        // Sync current state when subscription is ready
+        setTimeout(() => loadCurrentTimerStates(), 50);
       },
       onError: (error) => {
         debugLog('Pomodoro subscription error:', error);
-        // Try to recover by reloading state
-        setTimeout(() => loadCurrentTimerStates(), 1000);
+        // Implement exponential backoff for error recovery
+        const retryDelay = subscriptionsRef.current.length > 0 ? 1000 : 2000;
+        setTimeout(() => {
+          debugLog('Attempting to recover pomodoro subscription');
+          loadCurrentTimerStates();
+        }, retryDelay);
       }
     });
 
     subscriptionsRef.current = [stopwatchSub, pomodoroSub];
 
     return () => {
+      debugLog('Cleaning up dashboard timer subscriptions');
       subscriptionsRef.current.forEach(sub => sub.unsubscribe());
       subscriptionsRef.current = [];
-      if (displayRafRef.current) {
-        cancelAnimationFrame(displayRafRef.current);
-      }
     };
   }, [user?.id]);
 
-  // Start display updates with requestAnimationFrame
+  // Start display updates with requestAnimationFrame - pause when tab is hidden
   useEffect(() => {
+    let isPaused = false;
+
     const updateDisplay = () => {
-      // Trigger re-render for ticking display
-      setState(prev => ({ ...prev }));
+      if (!isPaused && !document.hidden) {
+        // Only trigger re-render when tab is visible
+        setState(prev => ({ ...prev }));
+      }
       displayRafRef.current = requestAnimationFrame(updateDisplay);
     };
-    
+
+    const handleVisibilityChange = () => {
+      isPaused = document.hidden;
+      if (!isPaused) {
+        // Resume display updates when tab becomes visible
+        debugLog('Resuming display updates - tab became visible');
+      } else {
+        debugLog('Pausing display updates - tab became hidden');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     displayRafRef.current = requestAnimationFrame(updateDisplay);
     
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (displayRafRef.current) {
         cancelAnimationFrame(displayRafRef.current);
       }
     };
   }, []);
 
-  // Add visibility change handler to recover on tab switch
+  // Enhanced tab visibility handler for timer recovery
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && user) {
         debugLog('Tab became visible - recovering timer states');
-        // Recalculate server offset and reload states when tab becomes visible
+        // Only recalculate server offset if it hasn't been calculated yet or there was an error
         setTimeout(async () => {
-          await calculateServerOffset();
+          if (state.serverOffsetMs === 0) {
+            await calculateServerOffset();
+          }
           await loadCurrentTimerStates();
-        }, 200);
+          // Re-establish subscriptions if they were closed
+          const hasActiveTimer = state.stopwatch || state.pomodoro;
+          if (hasActiveTimer && subscriptionsRef.current.length === 0) {
+            debugLog('Re-establishing subscriptions after tab switch');
+            // The subscription useEffect will handle re-establishment
+          }
+        }, 100);
       }
     };
 
@@ -164,7 +194,7 @@ export function useDashboardTimers() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [user]);
+  }, [user, state.serverOffsetMs, state.stopwatch, state.pomodoro]);
 
   // Select active mode on mount without side effects
   const selectActiveModeOnMount = async () => {

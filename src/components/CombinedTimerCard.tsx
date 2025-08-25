@@ -490,19 +490,6 @@ export function CombinedTimerCard() {
             </Button>
           )}
           
-          {/* Debug refresh button - temporary */}
-          <Button
-            onClick={() => {
-              debugLog('Manual refresh requested');
-              // Force refresh via hook
-              window.location.reload();
-            }}
-            variant="outline"
-            size="sm"
-            className="px-2"
-          >
-            🔄
-          </Button>
         </div>
 
         {/* Show help text if no projects */}

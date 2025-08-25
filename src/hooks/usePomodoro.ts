@@ -57,14 +57,63 @@ export function usePomodoro() {
     }
   }, [user]);
 
-  // Remove database session loading since RPC might not work
+  // Load current session from database without RPC calls
   const loadCurrentSession = async () => {
-    console.log('Skipping current session loading - using local state only');
-    // Just initialize to idle state
-    setPhase('focus');
-    setState('idle');
-    setTimeRemaining(0);
-    setTargetTime(null);
+    if (!user) return;
+    
+    console.log('Loading current pomodoro session from database');
+    
+    try {
+      const { data, error } = await supabase
+        .from('pomodoro_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .in('status', ['running', 'paused'])
+        .order('revised_at', { ascending: false })
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading current session:', error);
+        // Fallback to idle state
+        setPhase('focus');
+        setState('idle');
+        setTimeRemaining(0);
+        setTargetTime(null);
+        return;
+      }
+
+      if (data) {
+        console.log('Found active pomodoro session:', data);
+        
+        setPhase((data.phase as PomodoroPhase) || 'focus');
+        setState((data.status as PomodoroState) || 'idle');
+        
+        if (data.status === 'running' && data.expected_end_at) {
+          const endTime = new Date(data.expected_end_at);
+          const now = new Date();
+          const remaining = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
+          setTimeRemaining(remaining);
+          setTargetTime(endTime);
+        } else {
+          const elapsedSeconds = data.elapsed_ms ? Math.floor(data.elapsed_ms / 1000) : 0;
+          setTimeRemaining(elapsedSeconds);
+          setTargetTime(null);
+        }
+      } else {
+        // No active session - set to idle
+        setPhase('focus');
+        setState('idle');
+        setTimeRemaining(0);
+        setTargetTime(null);
+      }
+    } catch (error) {
+      console.error('Error loading current session:', error);
+      // Fallback to idle state
+      setPhase('focus');
+      setState('idle');
+      setTimeRemaining(0);
+      setTargetTime(null);
+    }
   };
 
   // Real-time synchronization for Pomodoro state via database
