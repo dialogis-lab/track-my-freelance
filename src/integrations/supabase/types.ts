@@ -630,6 +630,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      cleanup_stale_timers: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       generate_invoice_number: {
         Args: Record<PropertyKey, never>
         Returns: string
