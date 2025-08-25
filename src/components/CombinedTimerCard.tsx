@@ -51,16 +51,40 @@ export function CombinedTimerCard() {
     }
   }, [coupling]);
 
-  // Monitor pomodoro phase changes for alarms
+  // Monitor pomodoro phase changes for alarms and timer control
   const prevPhaseRef = useRef<string>();
+  const prevStatusRef = useRef<string>();
   useEffect(() => {
-    if (pomodoro && prevPhaseRef.current && prevPhaseRef.current !== pomodoro.phase) {
-      // Phase ended, play alarm
-      playAlarmSound();
-      showPhaseNotification(pomodoro.phase);
+    if (pomodoro && coupling) {
+      // Check for phase changes
+      if (prevPhaseRef.current && prevPhaseRef.current !== pomodoro.phase) {
+        // Phase ended, play alarm and show notification
+        playAlarmSound();
+        showPhaseNotification(pomodoro.phase, prevPhaseRef.current);
+        
+        // If we just finished a focus phase, stop the main timer
+        if (prevPhaseRef.current === 'focus') {
+          handleStopwatchStop();
+        }
+      }
+      
+      // Check for status changes (running to stopped/completed)
+      if (prevStatusRef.current === 'running' && 
+          (pomodoro.status === 'stopped' || pomodoro.status === 'completed')) {
+        // Pomodoro session ended, play alarm
+        playAlarmSound();
+        showPhaseNotification('session_complete', prevStatusRef.current);
+        
+        // Stop main timer if it's running
+        if (isStopwatchRunning) {
+          handleStopwatchStop();
+        }
+      }
     }
+    
     prevPhaseRef.current = pomodoro?.phase;
-  }, [pomodoro?.phase]);
+    prevStatusRef.current = pomodoro?.status;
+  }, [pomodoro?.phase, pomodoro?.status, coupling, isStopwatchRunning]);
 
   const loadCouplingDefault = async () => {
     try {
@@ -147,16 +171,35 @@ export function CombinedTimerCard() {
     }
   };
 
-  const showPhaseNotification = (phase: string) => {
+  const showPhaseNotification = (phase: string, previousPhase?: string) => {
     if ('Notification' in window && Notification.permission === 'granted') {
-      const phaseLabels = {
-        focus: 'Focus Session Complete',
-        short_break: 'Short Break Complete',
-        long_break: 'Long Break Complete'
-      };
+      let title = '';
+      let body = '';
       
-      new Notification(phaseLabels[phase as keyof typeof phaseLabels] || 'Pomodoro Phase Complete', {
-        body: `Time to ${phase === 'focus' ? 'take a break' : 'get back to work'}!`,
+      if (phase === 'session_complete') {
+        title = 'Pomodoro Session Complete';
+        body = 'Great work! Your Pomodoro session is finished.';
+      } else if (previousPhase === 'focus') {
+        // Just finished a focus session
+        title = 'Focus Session Complete';
+        body = phase === 'short_break' ? 'Time for a short break!' : 'Time for a long break!';
+      } else if (previousPhase === 'short_break' || previousPhase === 'long_break') {
+        // Just finished a break
+        title = 'Break Complete';
+        body = 'Break time is over - ready to focus?';
+      } else {
+        // Fallback
+        const phaseLabels = {
+          focus: 'Focus Session',
+          short_break: 'Short Break', 
+          long_break: 'Long Break'
+        };
+        title = `${phaseLabels[phase as keyof typeof phaseLabels] || 'Pomodoro'} Started`;
+        body = `${phase.replace('_', ' ')} phase has begun.`;
+      }
+      
+      new Notification(title, {
+        body,
         icon: '/icon-192.png'
       });
     }
@@ -204,12 +247,15 @@ export function CombinedTimerCard() {
       if (error) throw error;
 
       if (coupling) {
+        // Start Pomodoro with fresh session to use current settings
         await supabase.rpc('pomo_start');
+        toast({ title: "Timer started", description: "Pomodoro session is now running with your timer." });
+      } else {
+        toast({ title: "Timer started" });
       }
       
       // Clear notes after starting
       setNotes('');
-      toast({ title: "Timer started" });
     } catch (error) {
       console.error('Error starting timer:', error);
       toast({ 
@@ -230,11 +276,12 @@ export function CombinedTimerCard() {
         .update({ stopped_at: new Date().toISOString() })
         .eq('id', stopwatch.id);
 
-      if (coupling) {
+      if (coupling && isPomodoroRunning) {
         await supabase.rpc('pomo_stop');
+        toast({ title: "Timer stopped", description: "Both timer and Pomodoro session stopped." });
+      } else {
+        toast({ title: "Timer stopped" });
       }
-      
-      toast({ title: "Timer stopped" });
     } catch (error) {
       console.error('Error stopping timer:', error);
       toast({ title: "Error stopping timer", variant: "destructive" });
@@ -327,9 +374,16 @@ export function CombinedTimerCard() {
             <div className="flex items-center space-x-3">
               <Timer className="w-4 h-4 text-primary" />
               <div>
-                <Badge variant="outline" className="text-xs">
-                  {pomodoroPhase || 'focus'}
-                </Badge>
+                <div className="flex items-center space-x-2">
+                  <Badge variant={isPomodoroRunning ? "default" : "outline"} className="text-xs">
+                    {pomodoroPhase === 'focus' ? 'Focus' : 
+                     pomodoroPhase === 'short_break' ? 'Short Break' : 
+                     pomodoroPhase === 'long_break' ? 'Long Break' : 'Focus'}
+                  </Badge>
+                  {isPomodoroRunning && (
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  )}
+                </div>
                 <div className="text-sm font-mono">
                   {formatPomodoroTime(pomodoroRemaining)}
                 </div>
