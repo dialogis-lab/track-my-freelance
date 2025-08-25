@@ -33,16 +33,21 @@ export function useUnifiedTimer() {
     }
   }, [user]);
 
+  // Use dashboard timer's selected mode instead of computing it here
   useEffect(() => {
-    if (isLoading) return;
-    if (dashboardTimers.isStopwatchRunning && !dashboardTimers.isPomodoroRunning) {
-      setMode('stopwatch');
-    } else if (dashboardTimers.isPomodoroRunning && !dashboardTimers.isStopwatchRunning) {
-      setMode('pomodoro');
-    } else if (!dashboardTimers.isStopwatchRunning && !dashboardTimers.isPomodoroRunning) {
-      setMode(settings.preferred_timer_mode);
+    if (!isLoading && 'selectedMode' in dashboardTimers) {
+      setMode(dashboardTimers.selectedMode);
+    } else if (!isLoading) {
+      // Fallback if selectedMode not available
+      if (dashboardTimers.isStopwatchRunning && !dashboardTimers.isPomodoroRunning) {
+        setMode('stopwatch');
+      } else if (dashboardTimers.isPomodoroRunning && !dashboardTimers.isStopwatchRunning) {
+        setMode('pomodoro');
+      } else if (!dashboardTimers.isStopwatchRunning && !dashboardTimers.isPomodoroRunning) {
+        setMode(settings.preferred_timer_mode);
+      }
     }
-  }, [dashboardTimers.isStopwatchRunning, dashboardTimers.isPomodoroRunning, settings.preferred_timer_mode, isLoading]);
+  }, [dashboardTimers.selectedMode, dashboardTimers.isStopwatchRunning, dashboardTimers.isPomodoroRunning, settings.preferred_timer_mode, isLoading]);
 
   const loadSettings = async () => {
     try {
@@ -95,6 +100,7 @@ export function useUnifiedTimer() {
       : dashboardTimers.isPomodoroRunning;
 
     if (currentModeRunning) {
+      // Only pause on EXPLICIT user toggle, not on mount
       if (mode === 'stopwatch') {
         const stopwatchId = dashboardTimers.stopwatch?.id;
         if (stopwatchId) {
@@ -106,7 +112,11 @@ export function useUnifiedTimer() {
       toast({ title: "Mode switched", description: "Previous timer paused." });
     }
     
+    // Update both local and dashboard timer modes
     setMode(newMode);
+    if ('setSelectedMode' in dashboardTimers) {
+      dashboardTimers.setSelectedMode(newMode);
+    }
     await updateSettings({ preferred_timer_mode: newMode });
   };
 
