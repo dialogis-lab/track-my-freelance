@@ -96,20 +96,51 @@ export function TimerWidget() {
     return () => subscription.unsubscribe();
   }, [user, activeEntry]);
 
-  // Timer effect
+  // Server-offset timer effect using requestAnimationFrame
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let animationFrame: number;
+    let serverOffsetMs = 0;
     
+    // Get server offset
+    const getServerOffset = async () => {
+      try {
+        const { data, error } = await supabase.rpc('server_time');
+        if (!error && data) {
+          serverOffsetMs = new Date(data).getTime() - Date.now();
+        }
+      } catch (error) {
+        // Fallback to 0 offset
+        serverOffsetMs = 0;
+      }
+    };
+
+    const updateTimer = () => {
+      if (activeEntry && activeEntry.started_at) {
+        const startedMs = new Date(activeEntry.started_at).getTime();
+        if (!Number.isNaN(startedMs)) {
+          const serverTime = Date.now() + serverOffsetMs;
+          const elapsedMs = serverTime - startedMs;
+          setElapsedTime(Math.floor(Math.max(0, elapsedMs) / 1000));
+        }
+      }
+      
+      if (activeEntry) {
+        animationFrame = requestAnimationFrame(updateTimer);
+      }
+    };
+
     if (activeEntry) {
-      interval = setInterval(() => {
-        const startTime = new Date(activeEntry.started_at).getTime();
-        const now = new Date().getTime();
-        setElapsedTime(Math.floor((now - startTime) / 1000));
-      }, 1000);
+      getServerOffset().then(() => {
+        updateTimer();
+      });
+    } else {
+      setElapsedTime(0);
     }
 
     return () => {
-      if (interval) clearInterval(interval);
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
     };
   }, [activeEntry]);
 
@@ -302,7 +333,10 @@ export function TimerWidget() {
             {/* Standard Timer Display */}
             <div className="flex flex-col items-center justify-center py-12">
               <div className="timer-display">
-                <div className={`timer-digits ${timerSkin === 'gradient' ? 'gradient' : ''} ${showLongRunningWarning ? 'warning' : ''}`}>
+                <div 
+                  className={`timer-digits ${timerSkin === 'gradient' ? 'gradient' : ''} ${showLongRunningWarning ? 'warning' : ''}`}
+                  data-testid="timer-display"
+                >
                   {formatTimeDisplay(elapsedTime)}
                 </div>
               </div>
@@ -323,14 +357,14 @@ export function TimerWidget() {
             {/* Project Selection */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Project</label>
-              <Select
-                value={selectedProjectId}
-                onValueChange={setSelectedProjectId}
-                disabled={!!activeEntry || loading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a project" />
-                </SelectTrigger>
+                <Select
+                  value={selectedProjectId}
+                  onValueChange={setSelectedProjectId}
+                  disabled={!!activeEntry || loading}
+                >
+                  <SelectTrigger data-testid="project-select">
+                    <SelectValue placeholder="Select a project" />
+                  </SelectTrigger>
                 <SelectContent>
                   {projects.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
@@ -361,6 +395,7 @@ export function TimerWidget() {
                   disabled={loading || !selectedProjectId}
                   size="lg"
                   className="w-full"
+                  data-testid="start-timer"
                 >
                   <Play className="w-4 h-4 mr-2" />
                   Start Timer
@@ -372,6 +407,7 @@ export function TimerWidget() {
                   size="lg"
                   variant="destructive"
                   className="w-full"
+                  data-testid="stop-timer"
                 >
                   <Square className="w-4 h-4 mr-2" />
                   Stop Timer
