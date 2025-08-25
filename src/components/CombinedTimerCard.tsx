@@ -245,45 +245,51 @@ export function CombinedTimerCard() {
           description: `A timer is already running for project. Please stop it first.`,
           variant: "destructive"
         });
-        // The hook will automatically sync the state
         setLoading(false);
         return;
       }
 
       debugLog('Inserting new timer entry...');
-      const { error } = await supabase
+      
+      // Create both stopwatch and pomodoro together for better synchronization
+      const now = new Date().toISOString();
+      
+      // Always create the time entry first
+      const { data: timeEntryData, error: timeEntryError } = await supabase
         .from('time_entries')
         .insert([{
           user_id: user!.id,
           project_id: selectedProjectId,
-          started_at: new Date().toISOString(),
+          started_at: now,
           notes: notes || null
-        }]);
+        }])
+        .select()
+        .single();
 
-      if (error) {
-        debugLog('Error inserting timer:', error);
-        throw error;
+      if (timeEntryError) {
+        debugLog('Error inserting timer:', timeEntryError);
+        throw timeEntryError;
       }
 
-      debugLog('Timer started successfully');
+      debugLog('Timer started successfully:', timeEntryData);
 
       if (coupling) {
-        // Start Pomodoro session directly instead of using RPC
+        // Create pomodoro session linked to the timer
         try {
           // First stop any existing pomodoro sessions
           await supabase
             .from('pomodoro_sessions')
             .update({ 
               status: 'stopped',
-              revised_at: new Date().toISOString()
+              revised_at: now
             })
             .eq('user_id', user!.id)
             .in('status', ['running', 'paused']);
 
-          // Create new pomodoro session
+          // Create new pomodoro session synchronized with timer start time
           const duration = 25 * 60 * 1000; // 25 minutes default
-          const now = new Date();
-          const endTime = new Date(now.getTime() + duration);
+          const startTime = new Date(now);
+          const endTime = new Date(startTime.getTime() + duration);
 
           const { error: pomodoroError } = await supabase
             .from('pomodoro_sessions')
@@ -291,10 +297,10 @@ export function CombinedTimerCard() {
               user_id: user!.id,
               status: 'running',
               phase: 'focus',
-              started_at: now.toISOString(),
+              started_at: now,
               expected_end_at: endTime.toISOString(),
               elapsed_ms: 0,
-              revised_at: now.toISOString()
+              revised_at: now
             });
 
           if (pomodoroError) {
@@ -306,7 +312,7 @@ export function CombinedTimerCard() {
             });
           } else {
             debugLog('Pomodoro session created successfully');
-            toast({ title: "Timer started", description: "Pomodoro session is now running with your timer." });
+            toast({ title: "Timer started", description: "Both stopwatch and Pomodoro are now running." });
           }
         } catch (pomodoroError) {
           debugLog('Error with pomodoro session:', pomodoroError);
@@ -319,7 +325,6 @@ export function CombinedTimerCard() {
       // Clear notes after starting
       setNotes('');
       
-      // Let the hook handle state updates via realtime
     } catch (error) {
       debugLog('Error starting timer:', error);
       toast({ 
