@@ -34,32 +34,35 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Top Navigation */}
-      <header className="border-b border-border bg-card min-h-[3.5rem]">
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="flex h-16 items-center justify-between px-6">
           <div className="ml-2">
             <BrandLogo size="md" showWordmark />
           </div>
 
-          <nav className="hidden md:flex items-center space-x-6">
-            {navigation.map((item) => {
-              const isActive = location.pathname === item.href;
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{item.name}</span>
-                </Link>
-              );
-            })}
-          </nav>
+          <div className="no-scrollbar -mx-2 overflow-x-auto">
+            <nav className="hidden md:flex gap-1 px-2 snap-x">
+              {navigation.map((item) => {
+                const isActive = location.pathname === item.href;
+                const Icon = item.icon;
+                const baseClasses = "inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors snap-start";
+                const idleClasses = "text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
+                const activeClasses = "text-foreground relative after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-gradient-to-r after:from-blue-500 after:via-teal-500 after:to-green-500";
+                
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`${baseClasses} ${isActive ? activeClasses : idleClasses}`}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    <Icon className="shrink-0 h-4 w-4" />
+                    <span className="truncate">{item.name}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
 
           <div className="flex items-center space-x-4">
             {isAdmin && (
@@ -109,40 +112,43 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Mobile Navigation */}
       <nav className="md:hidden border-b border-border bg-card">
-        <div className="flex overflow-x-auto px-4 py-2 space-x-4">
-          {navigation.map((item) => {
-            const isActive = location.pathname === item.href;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                }`}
+        <div className="no-scrollbar -mx-2 overflow-x-auto">
+          <div className="flex gap-1 px-2 py-2 snap-x">
+            {navigation.map((item) => {
+              const isActive = location.pathname === item.href;
+              const Icon = item.icon;
+              const baseClasses = "inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors snap-start min-h-[44px]";
+              const idleClasses = "text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
+              const activeClasses = "text-foreground relative after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-gradient-to-r after:from-blue-500 after:via-teal-500 after:to-green-500";
+              
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`${baseClasses} ${isActive ? activeClasses : idleClasses}`}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  <Icon className="shrink-0 h-4 w-4" />
+                  <span className="truncate">{item.name}</span>
+                </Link>
+              );
+            })}
+            
+            {/* Mobile admin shortcut */}
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className="inline-flex items-center gap-2 px-3 py-2 whitespace-nowrap snap-start min-h-[44px]"
               >
-                <Icon className="w-4 h-4" />
-                <span>{item.name}</span>
-              </Link>
-            );
-          })}
-          
-          {/* Mobile settings shortcut */}
-          {isAdmin && (
-            <Button
-              variant="outline"
-              size="sm"
-              asChild
-              className="flex items-center space-x-2 px-3 py-2 whitespace-nowrap"
-            >
-              <Link to="/admin">
-                <ShieldCheck className="w-4 h-4" />
-                <span>Admin</span>
-              </Link>
-            </Button>
-          )}
+                <Link to="/admin">
+                  <ShieldCheck className="shrink-0 h-4 w-4" />
+                  <span className="truncate">Admin</span>
+                </Link>
+              </Button>
+            )}
+          </div>
         </div>
       </nav>
 

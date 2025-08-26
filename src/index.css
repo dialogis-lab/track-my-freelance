@@ -250,4 +250,14 @@ All colors MUST be HSL.
     background-clip: text;
     font-weight: 700;
   }
+
+  /* Hide scrollbars utility */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
