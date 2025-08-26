@@ -7,10 +7,13 @@ const corsHeaders = {
 };
 
 // Helper function to determine plan from profile
-function planFromProfile(profile: any): 'free' | 'solo' | 'team' {
+function planFromProfile(profile: any): 'free' | 'solo' | 'team' | 'team_yearly' {
   const status = (profile?.stripe_subscription_status || '').toLowerCase();
-  if (status === 'active' || status === 'trialing') {
+  if (status === 'active' || status === 'trialing' || status === 'canceled' || status === 'past_due') {
     const priceId = profile?.stripe_price_id || '';
+    if (priceId.includes('_TEAM_YEAR') || priceId.includes('team_yearly')) {
+      return 'team_yearly';
+    }
     if (priceId.includes('_TEAM_') || priceId.includes('team')) {
       return 'team';
     }
@@ -40,6 +43,7 @@ serve(async (req) => {
         plan: 'free',
         status: 'none',
         renewsAt: null,
+        cancelAt: null,
         seats: null,
         priceId: null
       }), {
@@ -57,6 +61,7 @@ serve(async (req) => {
         plan: 'free',
         status: 'none',
         renewsAt: null,
+        cancelAt: null,
         seats: null,
         priceId: null
       }), {
@@ -70,7 +75,7 @@ serve(async (req) => {
     // Get user profile with subscription data
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
-      .select('stripe_subscription_status, stripe_price_id, stripe_current_period_end')
+      .select('stripe_subscription_status, stripe_price_id, stripe_current_period_end, stripe_cancel_at_period_end, stripe_canceled_at')
       .eq('id', user.id)
       .single();
 
@@ -81,6 +86,7 @@ serve(async (req) => {
         plan: 'free',
         status: 'none',
         renewsAt: null,
+        cancelAt: null,
         seats: null,
         priceId: null
       }), {
@@ -92,13 +98,15 @@ serve(async (req) => {
     const plan = planFromProfile(profile);
     const status = profile?.stripe_subscription_status?.toLowerCase() || 'none';
     const renewsAt = profile?.stripe_current_period_end || null;
-    const seats = plan === 'team' ? 1 : null; // Default to 1, can be enhanced later
+    const cancelAt = profile?.stripe_cancel_at_period_end && profile?.stripe_canceled_at ? profile.stripe_canceled_at : null;
+    const seats = (plan === 'team' || plan === 'team_yearly') ? 1 : null;
     const priceId = profile?.stripe_price_id || null;
 
     return new Response(JSON.stringify({
       plan,
       status,
       renewsAt,
+      cancelAt,
       seats,
       priceId
     }), {
@@ -113,6 +121,7 @@ serve(async (req) => {
       plan: 'free',
       status: 'none',
       renewsAt: null,
+      cancelAt: null,
       seats: null,
       priceId: null
     }), {
