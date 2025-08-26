@@ -11,11 +11,11 @@ export const BRAND = {
     hero: { mobile: 48, desktop: 56 },
   },
   
-  // Hero logo specific sizes (px) - 2x header size
+  // Hero logo specific sizes (px) - 3x larger than current
   heroLogo: {
-    mobile: 64,   // px (2x header mobile: 32px)
-    md: 72,       // px (2x header desktop: 36px)  
-    lg: 96,       // px (larger for desktop)
+    mobile: 192,   // px (3x current 64px)
+    md: 216,       // px (3x current 72px)  
+    lg: 288,       // px (3x current 96px)
   },
   
   alt: "TimeHatch - Effortless Time Tracking & Smart Invoicing",
