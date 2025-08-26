@@ -177,7 +177,20 @@ export function useDashboardTimers() {
   const loadCurrentTimerStates = async () => {
     try {
       debugLog('Loading current timer states...');
+      debugLog('User ID:', user!.id);
       
+      // Debug: First check if ANY time_entries exist for this user
+      const { data: allEntries, error: allError } = await supabase
+        .from('time_entries')
+        .select('id, started_at, stopped_at, user_id')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      debugLog('All time entries for user (last 5):', allEntries);
+      debugLog('All entries error:', allError);
+      
+      // Now check specifically for running timers
       const { data: swResult, error: swError } = await supabase
         .from('time_entries')
         .select('id, started_at, stopped_at, tags, created_at, notes, project_id')
