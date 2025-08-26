@@ -1,13 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { Building2, User, Bell, DollarSign, Clock, Shield, Info, Cookie, Palette, Timer, Settings, CreditCard } from 'lucide-react';
+import { Building2, User, Bell, DollarSign, Clock, Shield, Info, Cookie, CreditCard } from 'lucide-react';
 
 const settingsItems = [
   { title: "Profile", path: "/settings", icon: Building2, exact: true },
   { title: "Account", path: "/settings/account", icon: User },
   { title: "Subscription", path: "/settings/subscription", icon: CreditCard },
-  { title: "Timer Mode", path: "/settings/timer-mode", icon: Settings },
-  { title: "Timer Style", path: "/settings/timer-style", icon: Palette },
-  { title: "Pomodoro", path: "/settings/pomodoro", icon: Timer },
   { title: "Reminders", path: "/settings/reminders", icon: Bell },
   { title: "Currency", path: "/settings/currency", icon: DollarSign },
   { title: "Time Zone", path: "/settings/timezone", icon: Clock },
@@ -33,7 +30,7 @@ export function SettingsSidebar() {
                 className={({ isActive }) => 
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
                     isActive 
-                      ? "bg-blue-600 text-white shadow-sm" 
+                      ? "bg-gradient-to-r from-blue-500 via-teal-500 to-green-500 text-white shadow-sm" 
                       : "text-gray-900 hover:bg-white hover:shadow-sm"
                   }`
                 }
