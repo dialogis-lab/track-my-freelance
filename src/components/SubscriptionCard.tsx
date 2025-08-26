@@ -1,14 +1,102 @@
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Loader2, CreditCard, Settings, Check, X } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { PLANS, type BillingSummary } from '@/lib/plans';
+import { PLANS, type BillingSummary, type Plan } from '@/lib/plans';
 
+
+interface PlanCardProps {
+  title: string;
+  price: string;
+  cadence?: string;
+  features: string[];
+  isCurrent: boolean;
+  isMostPopular?: boolean;
+  ctaLabel: string;
+  onCta: () => void;
+  ctaDisabled: boolean;
+  ctaLoading: boolean;
+  children?: React.ReactNode;
+}
+
+function PlanCard({
+  title,
+  price,
+  cadence,
+  features,
+  isCurrent,
+  isMostPopular,
+  ctaLabel,
+  onCta,
+  ctaDisabled,
+  ctaLoading,
+  children
+}: PlanCardProps) {
+  return (
+    <div className="relative group rounded-2xl border bg-card shadow-sm transition-shadow hover:shadow-md">
+      {isMostPopular && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-blue-600 text-white text-xs px-3 py-1 shadow-sm">
+          Most popular
+        </div>
+      )}
+      <div className="p-6 space-y-5">
+        <div className="flex items-start justify-between">
+          <div className="text-lg font-semibold">{title}</div>
+          {isCurrent && (
+            <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-emerald-700 border-emerald-200 bg-emerald-50">
+              <Check className="h-3 w-3" />
+              Current
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-baseline gap-1">
+          <span className="text-3xl font-bold tabular-nums">{price}</span>
+          {cadence && <span className="text-muted-foreground text-sm">{cadence}</span>}
+        </div>
+
+        <ul className="text-sm text-muted-foreground space-y-2">
+          {features.map((feature) => (
+            <li key={feature} className="flex items-start gap-2">
+              <Check className="mt-0.5 h-4 w-4 text-emerald-600 shrink-0" />
+              <span>{feature}</span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="pt-1">
+          <button
+            onClick={onCta}
+            disabled={ctaDisabled || ctaLoading}
+            className={
+              isCurrent
+                ? "w-full inline-flex h-10 items-center justify-center rounded-lg border px-4 text-sm text-muted-foreground bg-muted cursor-not-allowed"
+                : "w-full inline-flex h-10 items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 via-teal-500 to-green-500 px-4 text-white font-medium shadow-sm hover:opacity-95 active:opacity-90 transition"
+            }
+          >
+            {ctaLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : isCurrent ? (
+              <>
+                <Check className="mr-2 h-4 w-4" />
+                Current Plan
+              </>
+            ) : (
+              <>
+                <CreditCard className="mr-2 h-4 w-4" />
+                {ctaLabel}
+              </>
+            )}
+          </button>
+        </div>
+
+        {isCurrent && children}
+      </div>
+    </div>
+  );
+}
 
 export function SubscriptionCard() {
   const { user } = useAuth();
@@ -184,11 +272,11 @@ export function SubscriptionCard() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center p-8">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-center p-8">
           <Loader2 className="h-8 w-8 animate-spin" />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
@@ -197,155 +285,129 @@ export function SubscriptionCard() {
   const isPastDue = billingSummary?.status === 'past_due';
   const isCanceling = billingSummary?.cancelAt && new Date(billingSummary.cancelAt) > new Date();
 
-  const renderPlanCard = (planKey: keyof typeof PLANS) => {
+  const renderPlanCard = (planKey: Plan) => {
     const plan = PLANS[planKey];
     const isCurrentPlan = currentPlan === planKey;
     const shouldShowCurrent = isCurrentPlan && (isActive || isPastDue);
     
-    return (
-      <Card key={planKey} className={`relative ${plan.popular ? 'border-primary' : ''} ${shouldShowCurrent ? 'border-green-200 bg-green-50' : ''}`}>
-        {plan.popular && (
-          <Badge className="absolute -top-2 left-1/2 -translate-x-1/2">
-            Most Popular
-          </Badge>
-        )}
-        {shouldShowCurrent && (
-          <Badge variant="outline" className="absolute -top-2 right-4 bg-green-100 text-green-800">
-            Current
-          </Badge>
-        )}
-        
-        <CardHeader>
-          <CardTitle className={shouldShowCurrent ? 'text-green-800' : ''}>{plan.name}</CardTitle>
-          <div className={`text-3xl font-bold ${shouldShowCurrent ? 'text-green-800' : ''}`}>
-            {plan.priceLabel}
-          </div>
-        </CardHeader>
-        
-        <CardContent className="space-y-4">
-          <ul className="space-y-2">
-            {plan.features.map((feature, index) => (
-              <li key={index} className="text-sm flex items-center gap-2">
-                <Check className="h-3 w-3 text-green-600" />
-                {feature}
-              </li>
-            ))}
-          </ul>
+    // Extract price and cadence
+    const [price, cadence] = planKey === 'free' 
+      ? ['$0', undefined]
+      : planKey === 'team_yearly'
+      ? ['$190', '/year']
+      : plan.priceLabel.includes('/month')
+      ? plan.priceLabel.split('/')
+      : [plan.priceLabel, undefined];
 
-          {/* Subscription status info */}
-          {shouldShowCurrent && (
-            <div className="text-sm text-muted-foreground">
+    const ctaLabel = isActive ? 'Change Plan' : planKey === 'free' ? 'Current Plan' : 'Get Started';
+
+    const secondaryActions = shouldShowCurrent && planKey !== 'free' && (
+      <div className="pt-3 space-y-3">
+        {/* Subscription status */}
+        <div className="text-sm text-muted-foreground">
+          {isCanceling ? (
+            <p>Ends on {billingSummary?.cancelAt ? new Date(billingSummary.cancelAt).toLocaleDateString() : ''}</p>
+          ) : billingSummary?.renewsAt ? (
+            <p>Renews on {new Date(billingSummary.renewsAt).toLocaleDateString()}</p>
+          ) : null}
+        </div>
+
+        {/* Secondary actions */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={handleCustomerPortal}
+            disabled={portalLoading}
+            className="inline-flex h-9 items-center justify-center px-3 rounded-md border bg-background hover:bg-muted text-sm disabled:opacity-50"
+          >
+            {portalLoading ? (
+              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+            ) : (
+              <Settings className="mr-2 h-3 w-3" />
+            )}
+            {isPastDue ? 'Fix Payment' : 'Manage Billing'}
+          </button>
+          
+          {!isPastDue && (
+            <>
               {isCanceling ? (
-                <p>Ends on {billingSummary?.cancelAt ? new Date(billingSummary.cancelAt).toLocaleDateString() : ''}</p>
-              ) : billingSummary?.renewsAt ? (
-                <p>Renews on {new Date(billingSummary.renewsAt).toLocaleDateString()}</p>
-              ) : null}
-            </div>
-          )}
-
-          {/* Primary button */}
-          {shouldShowCurrent ? (
-            <Button disabled className="w-full" variant="outline">
-              <Check className="mr-2 h-4 w-4" />
-              Current Plan
-            </Button>
-          ) : (
-            <Button
-              onClick={() => handleCheckout(planKey)}
-              disabled={!!checkoutLoading}
-              className="w-full"
-              variant={plan.popular ? "default" : "outline"}
-            >
-              {checkoutLoading === planKey ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <CreditCard className="mr-2 h-4 w-4" />
-              )}
-              {isActive ? 'Change Plan' : planKey === 'free' ? 'Current Plan' : 'Get Started'}
-            </Button>
-          )}
-
-          {/* Secondary buttons for current paid plan */}
-          {shouldShowCurrent && planKey !== 'free' && (
-            <div className="space-y-2">
-              <Button 
-                onClick={handleCustomerPortal}
-                disabled={portalLoading}
-                variant="outline"
-                className="w-full"
-              >
-                {portalLoading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Settings className="mr-2 h-4 w-4" />
-                )}
-                {isPastDue ? 'Fix Payment' : 'Manage Billing'}
-              </Button>
-              
-              {!isPastDue && (
-                <div className="flex gap-2">
-                  {isCanceling ? (
-                    <Button 
-                      onClick={handleResumeSubscription}
-                      disabled={resumeLoading}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      {resumeLoading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Check className="mr-2 h-4 w-4" />
-                      )}
-                      Resume
-                    </Button>
+                <button
+                  onClick={handleResumeSubscription}
+                  disabled={resumeLoading}
+                  className="inline-flex h-9 items-center justify-center px-3 rounded-md border bg-background hover:bg-muted text-sm disabled:opacity-50"
+                >
+                  {resumeLoading ? (
+                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
                   ) : (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" className="flex-1">
-                          <X className="mr-2 h-4 w-4" />
-                          Cancel
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Your subscription will remain active until the end of your billing period on{' '}
-                            {billingSummary?.renewsAt ? new Date(billingSummary.renewsAt).toLocaleDateString() : 'the end of the period'}.
-                            You can resume anytime before then.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={handleCancelSubscription}
-                            disabled={cancelLoading}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            {cancelLoading ? (
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : null}
-                            Cancel Subscription
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <Check className="mr-2 h-3 w-3" />
                   )}
-                </div>
+                  Resume
+                </button>
+              ) : (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button className="inline-flex h-9 items-center justify-center px-3 rounded-md border bg-background hover:bg-muted text-sm">
+                      <X className="mr-2 h-3 w-3" />
+                      Cancel
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Your subscription will remain active until the end of your billing period on{' '}
+                        {billingSummary?.renewsAt ? new Date(billingSummary.renewsAt).toLocaleDateString() : 'the end of the period'}.
+                        You can resume anytime before then.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleCancelSubscription}
+                        disabled={cancelLoading}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {cancelLoading ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : null}
+                        Cancel Subscription
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
-            </div>
+            </>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+    );
+    
+    return (
+      <PlanCard
+        key={planKey}
+        title={plan.name}
+        price={price}
+        cadence={cadence}
+        features={plan.features}
+        isCurrent={shouldShowCurrent}
+        isMostPopular={plan.popular}
+        ctaLabel={ctaLabel}
+        onCta={() => handleCheckout(planKey)}
+        ctaDisabled={shouldShowCurrent}
+        ctaLoading={checkoutLoading === planKey}
+      >
+        {secondaryActions}
+      </PlanCard>
     );
   };
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-      {renderPlanCard('free')}
-      {renderPlanCard('solo')}
-      {renderPlanCard('team')}
-      {renderPlanCard('team_yearly')}
+    <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        {renderPlanCard('free')}
+        {renderPlanCard('solo')}
+        {renderPlanCard('team')}
+        {renderPlanCard('team_yearly')}
+      </div>
     </div>
   );
 }
