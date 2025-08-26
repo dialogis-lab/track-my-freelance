@@ -79,8 +79,8 @@ function PlanCard({
             disabled={ctaDisabled || ctaLoading}
             className={
               isCurrent
-                ? "inline-flex h-10 w-full items-center justify-center rounded-lg border bg-muted text-sm text-muted-foreground"
-                : "inline-flex h-10 w-full items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 via-teal-500 to-green-500 px-4 text-white font-medium shadow-sm hover:opacity-95 active:opacity-90 transition"
+                ? "inline-flex h-11 w-full items-center justify-center rounded-lg border bg-muted text-sm text-muted-foreground"
+                : "inline-flex h-11 w-full items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 via-teal-500 to-green-500 px-5 text-white font-medium shadow-sm hover:opacity-95 active:opacity-90 transition"
             }
           >
             {ctaLoading ? (
@@ -284,7 +284,7 @@ export function SubscriptionCard() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-center p-8">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
@@ -411,8 +411,8 @@ export function SubscriptionCard() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8 items-stretch">
         {renderPlanCard('free')}
         {renderPlanCard('solo')}
         {renderPlanCard('team')}
