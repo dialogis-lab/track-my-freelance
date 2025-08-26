@@ -253,6 +253,7 @@ export function useDashboardTimers() {
     if (payload.eventType === 'INSERT' && payload.new && !payload.new.stopped_at) {
       debugLog('Processing INSERT event for running timer');
       if (payload.new.id && payload.new.started_at) {
+        debugLog('Creating timer state from INSERT:', payload.new);
         applyUpdate({
           id: payload.new.id,
           started_at: payload.new.started_at,
@@ -272,8 +273,8 @@ export function useDashboardTimers() {
           id: payload.new.id,
           started_at: payload.new.started_at,
           status: 'running',
-          elapsed_ms: 0,
-          revised_at: payload.new.updated_at || payload.new.started_at
+          elapsed_ms: payload.new.elapsed_ms || 0,
+          revised_at: payload.new.created_at || payload.new.started_at
         });
       }
     } else if (payload.eventType === 'DELETE') {

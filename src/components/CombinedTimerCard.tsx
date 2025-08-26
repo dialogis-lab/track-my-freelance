@@ -119,6 +119,11 @@ export function CombinedTimerCard() {
       debugLog('Timer started successfully:', timeEntryData);
       toast({ title: "Timer started" });
       
+      // Force immediate refresh to ensure the timer shows up
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+      
       // Clear notes after starting
       setNotes('');
       
