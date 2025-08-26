@@ -362,89 +362,100 @@ export default function Reports() {
 
   return (
     <AppLayout>
-      <div className="p-6 space-y-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Reports</h1>
-          <p className="text-muted-foreground">Analyze your time entries and export data.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Reports</h1>
+          <p className="text-sm text-muted-foreground">Analyze your time entries and export data.</p>
         </div>
 
         {/* Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Filters</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="endDate">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Client</Label>
-                <Select value={clientFilter} onValueChange={setClientFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All clients" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All clients</SelectItem>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Project</Label>
-                <Select value={projectFilter} onValueChange={setProjectFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All projects" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All projects</SelectItem>
-                    {projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.client_name ? `${project.client_name} - ` : ''}{project.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Tag Filter</Label>
-                <Select value={tagFilter} onValueChange={setTagFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All entries" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All entries</SelectItem>
-                    <SelectItem value="pomodoro">Pomodoro only</SelectItem>
-                    <SelectItem value="non-pomodoro">Non-Pomodoro only</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+        <div className="rounded-xl border bg-card shadow-sm p-4 sm:p-5">
+          <h3 className="text-lg font-semibold mb-3">Filters</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="startDate" className="text-sm font-medium">Start Date</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="h-9 text-sm"
+              />
             </div>
-          </CardContent>
-        </Card>
+            
+            <div className="space-y-2">
+              <Label htmlFor="endDate" className="text-sm font-medium">End Date</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="h-9 text-sm"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Client</Label>
+              <Select value={clientFilter} onValueChange={setClientFilter}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="All clients" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All clients</SelectItem>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Project</Label>
+              <Select value={projectFilter} onValueChange={setProjectFilter}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="All projects" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All projects</SelectItem>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.client_name ? `${project.client_name} - ` : ''}{project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-end gap-2">
+              <Button onClick={exportToCSV} disabled={loading || entries.length === 0} className="h-9 px-3" size="sm">
+                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+              <Button onClick={exportToPDF} disabled={loading || entries.length === 0} variant="outline" className="h-9 px-3" size="sm">
+                <FileText className="w-4 h-4 mr-2" />
+                Export PDF
+              </Button>
+            </div>
+          </div>
+          
+          <div className="mt-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Tag Filter</Label>
+              <Select value={tagFilter} onValueChange={setTagFilter}>
+                <SelectTrigger className="h-9 text-sm max-w-xs">
+                  <SelectValue placeholder="All entries" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All entries</SelectItem>
+                  <SelectItem value="pomodoro">Pomodoro only</SelectItem>
+                  <SelectItem value="non-pomodoro">Non-Pomodoro only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
@@ -487,17 +498,7 @@ export default function Reports() {
           </div>
         </div>
 
-        {/* Export Buttons */}
-        <div className="flex space-x-4">
-          <Button onClick={exportToCSV} disabled={loading || entries.length === 0}>
-            <FileSpreadsheet className="w-4 h-4 mr-2" />
-            Export CSV
-          </Button>
-          <Button onClick={exportToPDF} disabled={loading || entries.length === 0}>
-            <FileText className="w-4 h-4 mr-2" />
-            Export PDF
-          </Button>
-        </div>
+        {/* Export Buttons - Remove duplicate */}
 
         {/* Trend Chart */}
         <div className="rounded-xl border bg-card shadow-sm min-h-[280px]">
@@ -564,116 +565,104 @@ export default function Reports() {
 
         {/* Breakdown Tables */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>By Project</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {Object.entries(summary.byProject).map(([project, data]) => (
-                  <div key={project} className="flex justify-between items-center py-2 border-b border-border last:border-0">
-                    <span className="font-medium">{project}</span>
-                    <div className="text-right">
-                      <div className="text-sm font-bold">{formatDuration(Math.round(data.hours * 60)).normal}</div>
-                      <div className="text-xs text-muted-foreground">= {formatDuration(Math.round(data.hours * 60)).industrial}h • ${data.value.toFixed(2)}</div>
-                    </div>
+          <div className="rounded-xl border bg-card shadow-sm p-4 sm:p-5">
+            <h3 className="text-lg font-semibold mb-3">By Project</h3>
+            <div className="space-y-2">
+              {Object.entries(summary.byProject).map(([project, data]) => (
+                <div key={project} className="flex justify-between items-center py-2 border-b border-border last:border-0 min-h-[56px]">
+                  <span className="font-medium">{project}</span>
+                  <div className="text-right">
+                    <div className="text-sm font-bold">{formatDuration(Math.round(data.hours * 60)).normal}</div>
+                    <div className="text-xs text-muted-foreground tabular-nums">= {formatDuration(Math.round(data.hours * 60)).industrial}h • ${data.value.toFixed(2)}</div>
                   </div>
-                ))}
-                {Object.keys(summary.byProject).length === 0 && (
-                  <p className="text-muted-foreground text-center py-4">No data for selected period</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              ))}
+              {Object.keys(summary.byProject).length === 0 && (
+                <p className="text-muted-foreground text-center py-4">No data for selected period</p>
+              )}
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>By Client</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {Object.entries(summary.byClient).map(([client, data]) => (
-                  <div key={client} className="flex justify-between items-center py-2 border-b border-border last:border-0">
-                    <span className="font-medium">{client}</span>
-                    <div className="text-right">
-                      <div className="text-sm font-bold">{formatDuration(Math.round(data.hours * 60)).normal}</div>
-                      <div className="text-xs text-muted-foreground">= {formatDuration(Math.round(data.hours * 60)).industrial}h • ${data.value.toFixed(2)}</div>
-                    </div>
+          <div className="rounded-xl border bg-card shadow-sm p-4 sm:p-5">
+            <h3 className="text-lg font-semibold mb-3">By Client</h3>
+            <div className="space-y-2">
+              {Object.entries(summary.byClient).map(([client, data]) => (
+                <div key={client} className="flex justify-between items-center py-2 border-b border-border last:border-0 min-h-[56px]">
+                  <span className="font-medium">{client}</span>
+                  <div className="text-right">
+                    <div className="text-sm font-bold">{formatDuration(Math.round(data.hours * 60)).normal}</div>
+                    <div className="text-xs text-muted-foreground tabular-nums">= {formatDuration(Math.round(data.hours * 60)).industrial}h • ${data.value.toFixed(2)}</div>
                   </div>
-                ))}
-                {Object.keys(summary.byClient).length === 0 && (
-                  <p className="text-muted-foreground text-center py-4">No data for selected period</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              ))}
+              {Object.keys(summary.byClient).length === 0 && (
+                <p className="text-muted-foreground text-center py-4">No data for selected period</p>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Time Entries Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Time Entries</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Date</th>
-                    <th className="text-left p-2">Project</th>
-                    <th className="text-left p-2">Client</th>
-                    <th className="text-left p-2">Duration</th>
-                    <th className="text-left p-2">Rate</th>
-                    <th className="text-left p-2">Value</th>
-                    <th className="text-left p-2">Tags</th>
-                    <th className="text-left p-2">Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {entries.map((entry) => {
-                    const start = new Date(entry.started_at);
-                    const end = entry.stopped_at ? new Date(entry.stopped_at) : null;
-                    const minutes = end ? calculateDurationMinutes(start, end) : 0;
-                    const hours = minutes / 60;
-                    const value = (entry.projects.rate_hour || 0) * hours;
+        <div className="rounded-xl border bg-card shadow-sm p-4 sm:p-5">
+          <h3 className="text-lg font-semibold mb-3">Time Entries</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-2">Date</th>
+                  <th className="text-left p-2">Project</th>
+                  <th className="text-left p-2">Client</th>
+                  <th className="text-left p-2">Duration</th>
+                  <th className="text-left p-2">Rate</th>
+                  <th className="text-left p-2">Value</th>
+                  <th className="text-left p-2">Tags</th>
+                  <th className="text-left p-2">Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((entry) => {
+                  const start = new Date(entry.started_at);
+                  const end = entry.stopped_at ? new Date(entry.stopped_at) : null;
+                  const minutes = end ? calculateDurationMinutes(start, end) : 0;
+                  const hours = minutes / 60;
+                  const value = (entry.projects.rate_hour || 0) * hours;
 
-                    return (
-                      <tr key={entry.id} className="border-b">
-                        <td className="p-2">{start.toLocaleDateString()}</td>
-                        <td className="p-2">{entry.projects.name}</td>
-                        <td className="p-2">{entry.projects.clients?.name || 'No Client'}</td>
-                        <td className="p-2">
-                          <div className="font-mono">
-                            <div className="font-bold">{formatDuration(minutes).normal}</div>
-                            <div className="text-xs text-muted-foreground">
-                              = {formatDuration(minutes).industrial}h
-                            </div>
+                  return (
+                    <tr key={entry.id} className="border-b min-h-[56px]">
+                      <td className="p-2">{start.toLocaleDateString()}</td>
+                      <td className="p-2">{entry.projects.name}</td>
+                      <td className="p-2">{entry.projects.clients?.name || 'No Client'}</td>
+                      <td className="p-2">
+                        <div className="font-mono">
+                          <div className="font-bold">{formatDuration(minutes).normal}</div>
+                          <div className="text-xs text-muted-foreground tabular-nums">
+                            = {formatDuration(minutes).industrial}h
                           </div>
-                        </td>
-                        <td className="p-2">${(entry.projects.rate_hour || 0).toFixed(2)}/h</td>
-                        <td className="p-2">${value.toFixed(2)}</td>
-                        <td className="p-2">
-                          {entry.tags?.length ? (
-                            <div className="flex flex-wrap gap-1">
-                              {entry.tags.map((tag, index) => (
-                                <span key={index} className="bg-primary/10 text-primary px-2 py-1 rounded text-xs">
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            '-'
-                          )}
-                        </td>
-                        <td className="p-2">{entry.notes || '-'}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                        </div>
+                      </td>
+                      <td className="p-2 tabular-nums">${(entry.projects.rate_hour || 0).toFixed(2)}/h</td>
+                      <td className="p-2 tabular-nums">${value.toFixed(2)}</td>
+                      <td className="p-2">
+                        {entry.tags?.length ? (
+                          <div className="flex flex-wrap gap-1">
+                            {entry.tags.map((tag, index) => (
+                              <span key={index} className="bg-primary/10 text-primary px-2 py-1 rounded text-xs">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          '-'
+                        )}
+                      </td>
+                      <td className="p-2">{entry.notes || '-'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </AppLayout>
   );
