@@ -134,6 +134,23 @@ All colors MUST be HSL.
 }
 
 @layer base {
+  /* Keep vertical scrollbar gutter stable across pages */
+  html { 
+    scrollbar-gutter: stable both-edges; 
+  }
+  
+  /* Fallback for browsers without scrollbar-gutter */
+  @supports not (scrollbar-gutter: stable) {
+    html { 
+      overflow-y: scroll; /* always show vertical scrollbar space */
+    } 
+  }
+  
+  /* Ensure full-height layout so scrollbar presence is consistent */
+  html, body, #root, .app-root { 
+    min-height: 100%; 
+  }
+
   * {
     @apply border-border;
   }
