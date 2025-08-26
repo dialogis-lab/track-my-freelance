@@ -9,6 +9,14 @@ interface PlanData {
   isLoading: boolean;
 }
 
+interface BillingSummary {
+  plan: Plan;
+  status: string;
+  renewsAt: string | null;
+  seats: number | null;
+  priceId: string | null;
+}
+
 export function usePlan(): PlanData {
   const { user } = useAuth();
   const [planData, setPlanData] = useState<PlanData>({
@@ -29,6 +37,20 @@ export function usePlan(): PlanData {
 
     const fetchPlan = async () => {
       try {
+        // First try the billing summary endpoint
+        const { data: summaryData, error: summaryError } = await supabase.functions.invoke('billing-summary');
+        
+        if (!summaryError && summaryData) {
+          const summary = summaryData as BillingSummary;
+          setPlanData({
+            plan: summary.plan,
+            isFree: summary.plan === 'free',
+            isLoading: false,
+          });
+          return;
+        }
+
+        // Fallback to direct profile query if endpoint fails
         const { data, error } = await supabase
           .from('profiles')
           .select('stripe_subscription_status, stripe_price_id')

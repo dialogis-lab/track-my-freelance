@@ -2,16 +2,13 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTimerContext } from '@/contexts/TimerContext';
 import { useDashboardTimers } from '@/hooks/useDashboardTimers';
-import { useSubscription } from '@/hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/AppLayout';
 import { CombinedTimerCard } from '@/components/CombinedTimerCard';
-import { UpgradeButton } from '@/components/UpgradeButton';
+import { PlanCard } from '@/components/PlanCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Clock, FolderOpen, Users, TrendingUp, ExternalLink, Receipt, Crown, Settings as SettingsIcon } from 'lucide-react';
+import { Clock, FolderOpen, Users, TrendingUp, ExternalLink, Receipt } from 'lucide-react';
 import { formatTime, hoursToMinutes, calculateDurationMinutes, formatDuration } from '@/lib/timeUtils';
 import { formatMoney, type Currency } from '@/lib/currencyUtils';
 
@@ -42,7 +39,6 @@ export default function Dashboard() {
   const [recentEntries, setRecentEntries] = useState<RecentEntry[]>([]);
   const { user } = useAuth();
   const { timerUpdated } = useTimerContext();
-  const { subscription, isActive } = useSubscription();
   const navigate = useNavigate();
   
   // Dashboard Timer Hook
@@ -194,22 +190,6 @@ export default function Dashboard() {
               <h1 className="text-3xl font-bold text-brand-gradient">Dashboard</h1>
               <p className="text-muted-foreground">Welcome back! Here's your time tracking overview.</p>
             </div>
-            {isActive && (
-              <div className="flex items-center space-x-2">
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                  <Crown className="h-3 w-3 mr-1" />
-                  {subscription?.subscription_plan || 'Premium'}
-                </Badge>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => navigate('/settings')}
-                >
-                  <SettingsIcon className="h-4 w-4 mr-1" />
-                  Manage
-                </Button>
-              </div>
-            )}
           </div>
         </div>
 
@@ -334,9 +314,9 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Upgrade Button */}
+            {/* Plan Card */}
             <div>
-              <UpgradeButton />
+              <PlanCard />
             </div>
           </div>
 
