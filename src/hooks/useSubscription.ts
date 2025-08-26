@@ -46,11 +46,12 @@ export function useSubscription() {
     fetchSubscription();
   }, [user]);
 
-  const createCheckout = async () => {
+  const createCheckout = async (plan: 'solo' | 'starter' | 'team' = 'solo') => {
     if (!user) return null;
 
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { plan },
         headers: {
           Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
         },

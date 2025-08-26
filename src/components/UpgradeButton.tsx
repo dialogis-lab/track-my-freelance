@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,14 +9,28 @@ import { toast } from 'sonner';
 export function UpgradeButton() {
   const { subscription, loading, isActive, isPastDue, hasStripeCustomer, createCheckout, openCustomerPortal } = useSubscription();
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleUpgrade = async () => {
+    if (isLoading) return;
+    
+    setIsLoading(true);
     try {
-      const checkoutUrl = await createCheckout();
+      const checkoutUrl = await createCheckout('solo');
       if (checkoutUrl) {
-        window.open(checkoutUrl, '_blank');
+        window.location.href = checkoutUrl;
       }
     } catch (error) {
-      toast.error('Failed to start checkout process');
+      console.error('Checkout error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start checkout process';
+      
+      if (errorMessage.includes('Price not configured')) {
+        toast.error('Solo plan is not configured. Please contact support.');
+      } else {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -88,9 +102,10 @@ export function UpgradeButton() {
             onClick={handleUpgrade} 
             className="w-full" 
             size="lg"
+            disabled={isLoading}
           >
             <Crown className="h-4 w-4 mr-2" />
-            Upgrade to Solo
+            {isLoading ? 'Processing...' : 'Upgrade to Solo'}
           </Button>
         ) : (
           <div className="space-y-2">
