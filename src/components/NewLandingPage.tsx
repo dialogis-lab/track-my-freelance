@@ -280,9 +280,9 @@ const NewLandingPage = () => {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 grid gap-8 sm:grid-cols-3 items-start">
           <div>
             <Link to="/" className="inline-flex items-center gap-2" aria-label="Home">
-              <BrandLogo size="sm" showWordmark className="!h-5 sm:!h-6 w-auto" />
+              <BrandLogo size="sm" showWordmark className="!h-20 sm:!h-24 w-auto" />
             </Link>
-            <p className="mt-3 text-sm text-muted-foreground max-w-sm">
+            <p className="mt-6 text-sm text-muted-foreground max-w-sm">
               Effortless time tracking and smart invoicing for freelancers and small teams.
             </p>
           </div>
