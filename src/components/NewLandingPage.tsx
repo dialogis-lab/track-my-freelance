@@ -276,59 +276,59 @@ const NewLandingPage = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-muted/30 py-16 border-t border-border/50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="grid md:grid-cols-3 gap-8 items-start">
-              <div>
-                <BrandLogo size="sm" showWordmark className="mb-4" />
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  Effortless time tracking and smart invoicing for freelancers and small teams.
-                </p>
-              </div>
-              
-              <div>
-                <h3 className="font-semibold text-foreground mb-4">Legal</h3>
-                <ul className="space-y-2 text-sm">
-                  <li>
-                    <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">
-                      Privacy Policy
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="/imprint" className="text-muted-foreground hover:text-foreground transition-colors">
-                      Imprint
-                    </Link>
-                  </li>
-                  <li>
-                    <button 
-                      onClick={openModal} 
-                      className="text-muted-foreground hover:text-foreground transition-colors text-left"
-                    >
-                      Cookie Settings
-                    </button>
-                  </li>
-                </ul>
-              </div>
-              
-              <div>
-                <h3 className="font-semibold text-foreground mb-4">Contact</h3>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>hello@timehatch.app</p>
-                  <div className="flex space-x-4 mt-4">
-                    <div className="w-6 h-6 bg-muted-foreground/20 rounded"></div>
-                    <div className="w-6 h-6 bg-muted-foreground/20 rounded"></div>
-                    <div className="w-6 h-6 bg-muted-foreground/20 rounded"></div>
-                  </div>
-                </div>
-              </div>
+      <footer className="border-t">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 grid gap-8 sm:grid-cols-3 items-start">
+          <div>
+            <Link to="/" className="inline-flex items-center gap-2" aria-label="Home">
+              <BrandLogo size="sm" showWordmark className="!h-5 sm:!h-6 w-auto" />
+            </Link>
+            <p className="mt-3 text-sm text-muted-foreground max-w-sm">
+              Effortless time tracking and smart invoicing for freelancers and small teams.
+            </p>
+          </div>
+          
+          <div>
+            <h3 className="text-sm font-medium text-foreground">Legal</h3>
+            <ul className="mt-3 space-y-2 text-sm">
+              <li>
+                <Link to="/privacy" className="text-muted-foreground hover:text-foreground hover:underline transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/imprint" className="text-muted-foreground hover:text-foreground hover:underline transition-colors">
+                  Imprint
+                </Link>
+              </li>
+              <li>
+                <button 
+                  onClick={openModal} 
+                  className="text-muted-foreground hover:text-foreground hover:underline transition-colors text-left"
+                >
+                  Cookie Settings
+                </button>
+              </li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 className="text-sm font-medium text-foreground">Contact</h3>
+            <div className="mt-3 space-y-3 text-sm">
+              <a 
+                href="mailto:hello@timehatch.app" 
+                className="text-muted-foreground hover:text-foreground hover:underline transition-colors block"
+              >
+                hello@timehatch.app
+              </a>
             </div>
-            
-            <div className="border-t border-border/50 mt-12 pt-8 text-center">
-              <p className="text-sm text-muted-foreground">
-                © 2025 TimeHatch · Made in Switzerland 🇨🇭
-              </p>
-            </div>
+          </div>
+        </div>
+        
+        <div className="border-t">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5 text-center">
+            <p className="text-xs text-muted-foreground">
+              © {new Date().getFullYear()} TimeHatch · Made in Switzerland
+            </p>
           </div>
         </div>
       </footer>
