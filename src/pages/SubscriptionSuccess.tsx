@@ -13,9 +13,12 @@ export default function SubscriptionSuccess() {
 
   useEffect(() => {
     // Refetch subscription data after successful payment
-    const timer = setTimeout(() => {
-      refetch();
-    }, 2000);
+    const timer = setTimeout(async () => {
+      await refetch();
+      // Force a page refresh to ensure timer display works correctly
+      // This ensures all components are properly updated with the new subscription status
+      window.location.href = '/dashboard';
+    }, 3000);
 
     return () => clearTimeout(timer);
   }, [refetch]);

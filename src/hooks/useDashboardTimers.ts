@@ -117,25 +117,23 @@ export function useDashboardTimers() {
     };
   }, [user?.id]);
 
-  // Optimized display updates - only when timers are running
+  // Optimized display updates - always run when component is mounted
   useEffect(() => {
-    if (!state.stopwatch || state.stopwatch.status !== 'running') {
-      return; // No need for RAF when no timers running
-    }
-
     const updateDisplay = () => {
+      // Force re-render to update displayed time
       setState(prev => ({ ...prev }));
       displayRafRef.current = requestAnimationFrame(updateDisplay);
     };
-    
+
+    // Always start the animation frame loop when component mounts
     displayRafRef.current = requestAnimationFrame(updateDisplay);
-    
+
     return () => {
       if (displayRafRef.current) {
         cancelAnimationFrame(displayRafRef.current);
       }
     };
-  }, [state.stopwatch?.status]); // Only run when timer status changes
+  }, []); // Remove dependency on timer status to always run
 
   // Tab visibility handler for timer recovery with mobile support
   useEffect(() => {
