@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { BRAND } from '@/config/brand';
 
 interface BrandLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -10,9 +11,9 @@ interface BrandLogoProps {
 
 const sizeClasses = {
   sm: 'h-6 w-auto md:h-7',
-  md: 'h-8 w-auto md:h-10',
-  lg: 'h-12 w-auto md:h-16',
-  xl: 'h-20 w-auto md:h-24 lg:h-28' // Ensure mobile doesn't go below h-20
+  md: 'h-8 w-auto md:h-9',
+  lg: 'h-12 w-auto md:h-14',
+  xl: 'h-12 w-auto md:h-14 lg:h-16'
 };
 
 const wordmarkSizes = {
@@ -25,29 +26,28 @@ const wordmarkSizes = {
 export function BrandLogo({ size = 'md', className, noLink = false, showWordmark = false }: BrandLogoProps) {
   const logoImage = (
     <img
-      src="/lovable-uploads/60738053-891e-492a-8cbc-2ed116a458a9.png"
-      alt="TimeHatch logo"
+      src={BRAND.logoSrc}
+      alt={BRAND.alt}
       width={512}
       height={512}
       className={cn(
         sizeClasses[size],
-        'shrink-0 transition-opacity hover:opacity-90',
-        // Add subtle background for dark mode contrast
-        'dark:bg-background/5 dark:rounded-lg dark:p-1',
+        'shrink-0 transition-opacity hover:opacity-90 object-contain',
         className
       )}
       loading={size === 'xl' || size === 'md' ? 'eager' : 'lazy'}
     />
   );
 
-  const logoWithWordmark = showWordmark ? (
+  // Only show adjacent wordmark text if the logo does NOT contain a wordmark AND showWordmark is requested
+  const logoWithWordmark = (showWordmark && !BRAND.logoHasWordmark) ? (
     <div className="flex items-center space-x-3">
       {logoImage}
       <span className={cn(
         wordmarkSizes[size],
         'text-foreground dark:text-foreground'
       )}>
-        TimeHatch
+        {BRAND.name}
       </span>
     </div>
   ) : logoImage;
