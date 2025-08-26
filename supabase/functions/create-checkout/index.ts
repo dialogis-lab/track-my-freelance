@@ -25,6 +25,14 @@ serve(async (req) => {
   try {
     logStep("Function started - checking environment variables");
     
+    // Debug: List all environment variables (first few chars only for security)
+    const allEnvs = Object.keys(Deno.env.toObject()).map(key => ({
+      key,
+      hasValue: !!Deno.env.get(key),
+      prefix: Deno.env.get(key)?.substring(0, 4) + "..."
+    }));
+    logStep("All environment variables", allEnvs);
+    
     // Check all required environment variables
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     const stripePriceSolo = Deno.env.get("STRIPE_PRICE_SOLO");
@@ -33,7 +41,8 @@ serve(async (req) => {
       stripeKeyExists: !!stripeKey,
       stripePriceSoloExists: !!stripePriceSolo,
       stripeKeyPrefix: stripeKey?.substring(0, 8) + "...",
-      stripePriceValue: stripePriceSolo 
+      stripePriceValue: stripePriceSolo,
+      timestamp: new Date().toISOString()
     });
 
     if (!stripeKey) {
