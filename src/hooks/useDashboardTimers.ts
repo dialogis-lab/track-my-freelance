@@ -67,16 +67,16 @@ export function useDashboardTimers() {
     subscriptionsRef.current.forEach(sub => sub.unsubscribe());
     subscriptionsRef.current = [];
 
-    // Mobile fallback: periodic sync every 5 seconds when no updates received
-    let lastUpdateTime = Date.now();
-    const mobileBackupSync = setInterval(() => {
-      const timeSinceLastUpdate = Date.now() - lastUpdateTime;
-      if (timeSinceLastUpdate > 10000) { // 10 seconds without updates
-        debugLog('Mobile backup sync triggered - no updates for', timeSinceLastUpdate, 'ms');
-        loadCurrentTimerStates();
-        lastUpdateTime = Date.now();
-      }
-    }, 5000);
+  // Mobile fallback: less aggressive periodic sync
+  let lastUpdateTime = Date.now();
+  const mobileBackupSync = setInterval(() => {
+    const timeSinceLastUpdate = Date.now() - lastUpdateTime;
+    if (timeSinceLastUpdate > 30000) { // 30 seconds without updates (was 10)
+      debugLog('Mobile backup sync triggered - no updates for', timeSinceLastUpdate, 'ms');
+      loadCurrentTimerStates();
+      lastUpdateTime = Date.now();
+    }
+  }, 15000); // Check every 15 seconds (was 5)
 
     // Subscribe to stopwatch (time_entries)
     const stopwatchSub = subscribeToTimeEntries(user.id, {
@@ -92,13 +92,8 @@ export function useDashboardTimers() {
         handleStopwatchUpdate(payload);
       },
       onSubscribed: () => {
-        debugLog('Stopwatch channel subscribed - syncing current state for cross-device');
-        // Sync current state when subscription is ready - critical for mobile sync
-        setTimeout(() => {
-          debugLog('Performing cross-device sync after subscription');
-          loadCurrentTimerStates();
-          lastUpdateTime = Date.now();
-        }, 50);
+        debugLog('Stopwatch channel subscribed');
+        lastUpdateTime = Date.now(); // Just mark as updated, no extra sync
       },
       onError: (error) => {
         debugLog('Stopwatch subscription error - attempting recovery:', error);
@@ -122,10 +117,13 @@ export function useDashboardTimers() {
     };
   }, [user?.id]);
 
-  // Display updates with proper tab visibility handling
+  // Optimized display updates - only when timers are running
   useEffect(() => {
+    if (!state.stopwatch || state.stopwatch.status !== 'running') {
+      return; // No need for RAF when no timers running
+    }
+
     const updateDisplay = () => {
-      // Always trigger re-render, let React handle optimization
       setState(prev => ({ ...prev }));
       displayRafRef.current = requestAnimationFrame(updateDisplay);
     };
@@ -137,47 +135,22 @@ export function useDashboardTimers() {
         cancelAnimationFrame(displayRafRef.current);
       }
     };
-  }, []);
+  }, [state.stopwatch?.status]); // Only run when timer status changes
 
   // Tab visibility handler for timer recovery with mobile support
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && user) {
-        debugLog('Tab/App became visible - forcing timer state refresh (mobile-friendly)');
-        // Force immediate state refresh when tab becomes visible
-        setTimeout(async () => {
-          await loadCurrentTimerStates();
-        }, 50);
+        debugLog('Tab became visible - refreshing timer state');
+        loadCurrentTimerStates();
       }
     };
 
-    const handleFocus = () => {
-      if (user) {
-        debugLog('Window/App gained focus - mobile timer sync');
-        setTimeout(async () => {
-          await loadCurrentTimerStates();
-        }, 100);
-      }
-    };
-
-    const handlePageShow = () => {
-      if (user) {
-        debugLog('Page shown (mobile back/forward) - timer sync');
-        setTimeout(async () => {
-          await loadCurrentTimerStates();
-        }, 100);
-      }
-    };
-
-    // Multiple event listeners for different mobile scenarios
+    // Only listen for visibility changes to avoid excessive polling
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('pageshow', handlePageShow);
     
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('pageshow', handlePageShow);
     };
   }, [user]);
 
