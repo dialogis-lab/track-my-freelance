@@ -411,8 +411,8 @@ export function SubscriptionCard() {
   };
 
   return (
-    <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
+    <div className="w-full px-4 sm:px-6 lg:px-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 items-stretch">
         {renderPlanCard('free')}
         {renderPlanCard('solo')}
         {renderPlanCard('team')}
