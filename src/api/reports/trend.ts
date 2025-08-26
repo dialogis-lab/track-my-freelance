@@ -48,25 +48,7 @@ function setCache(key: string, data: TrendResponse): void {
   cache.set(key, { data, timestamp: Date.now() });
 }
 
-async function calculatePrevTotals(params: TrendParams): Promise<{ hours: number; value: number } | undefined> {
-  const fromDate = new Date(params.from);
-  const toDate = new Date(params.to);
-  const duration = toDate.getTime() - fromDate.getTime();
-  
-  const prevFrom = new Date(fromDate.getTime() - duration);
-  const prevTo = new Date(fromDate);
-  
-  const prevParams = {
-    ...params,
-    from: prevFrom.toISOString(),
-    to: prevTo.toISOString(),
-  };
-  
-  const prevData = await fetchTrendData(prevParams);
-  return prevData.totals;
-}
-
-async function fetchTrendData(params: TrendParams): Promise<TrendResponse> {
+export async function fetchTrendData(params: TrendParams): Promise<TrendResponse> {
   const cacheKey = getCacheKey(params);
   const cached = getFromCache(cacheKey);
   if (cached) {
@@ -76,6 +58,8 @@ async function fetchTrendData(params: TrendParams): Promise<TrendResponse> {
   const { from, to, clientId, projectId, bucket = 'week' } = params;
   
   try {
+    console.log('Fetching trend data with params:', params);
+    
     // Build the query using Supabase client
     let query = supabase
       .from('time_entries')
@@ -106,6 +90,7 @@ async function fetchTrendData(params: TrendParams): Promise<TrendResponse> {
         query = query.in('project_id', projectIds);
       } else {
         // No projects for this client, return empty data
+        console.log('No projects found for client:', clientId);
         return {
           series: [],
           totals: { hours: 0, value: 0 },
@@ -119,6 +104,8 @@ async function fetchTrendData(params: TrendParams): Promise<TrendResponse> {
       console.error('Trend query error:', error);
       throw new Error('Failed to fetch trend data');
     }
+
+    console.log('Time entries found:', timeEntries?.length || 0);
 
     // Process the data client-side
     const bucketMap = new Map<string, { hours: number; value: number }>();
@@ -172,6 +159,7 @@ async function fetchTrendData(params: TrendParams): Promise<TrendResponse> {
       }
     }
 
+    console.log('Trend data result:', result);
     setCache(cacheKey, result);
     return result;
 
@@ -183,6 +171,24 @@ async function fetchTrendData(params: TrendParams): Promise<TrendResponse> {
       totals: { hours: 0, value: 0 },
     };
   }
+}
+
+async function calculatePrevTotals(params: TrendParams): Promise<{ hours: number; value: number } | undefined> {
+  const fromDate = new Date(params.from);
+  const toDate = new Date(params.to);
+  const duration = toDate.getTime() - fromDate.getTime();
+  
+  const prevFrom = new Date(fromDate.getTime() - duration);
+  const prevTo = new Date(fromDate);
+  
+  const prevParams = {
+    ...params,
+    from: prevFrom.toISOString(),
+    to: prevTo.toISOString(),
+  };
+  
+  const prevData = await fetchTrendData(prevParams);
+  return prevData.totals;
 }
 
 function fillMissingBuckets(
@@ -249,5 +255,3 @@ function getBucketStart(date: Date, bucket: 'day' | 'week' | 'month'): Date {
   
   return result;
 }
-
-export default fetchTrendData;

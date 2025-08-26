@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Download } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatDuration } from '@/lib/timeUtils';
-import fetchTrendData, { TrendResponse } from '@/api/reports/trend';
+import { fetchTrendData, TrendResponse } from '@/api/reports/trend';
 import { useToast } from '@/hooks/use-toast';
 
 interface TrendChartProps {

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import { formatDuration } from '@/lib/timeUtils';
-import fetchTrendData, { TrendResponse } from '@/api/reports/trend';
+import { fetchTrendData, TrendResponse } from '@/api/reports/trend';
 import { useNavigate } from 'react-router-dom';
 
 interface TrendSparklineProps {
