@@ -10,10 +10,10 @@ interface BrandLogoProps {
 }
 
 const sizeClasses = {
-  sm: 'h-8 w-auto md:h-10',
-  md: 'h-12 w-auto md:h-16',
-  lg: 'h-20 w-auto md:h-24',
-  xl: 'h-24 w-auto md:h-32 lg:h-40'
+  sm: 'h-16 w-auto md:h-20',
+  md: 'h-24 w-auto md:h-32',
+  lg: 'h-40 w-auto md:h-48',
+  xl: 'h-48 w-auto md:h-64 lg:h-80'
 };
 
 const wordmarkSizes = {
