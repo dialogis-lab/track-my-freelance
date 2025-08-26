@@ -75,11 +75,14 @@ function PlanCard({
         {/* CTA sits at the bottom across all cards */}
         <div className="mt-6">
           <button
-            onClick={onCta}
+            type="button"
+            onClick={ctaDisabled ? undefined : onCta}
             disabled={ctaDisabled || ctaLoading}
+            aria-disabled={ctaDisabled || ctaLoading}
+            tabIndex={ctaDisabled ? -1 : 0}
             className={
               isCurrent
-                ? "inline-flex h-11 w-full items-center justify-center rounded-lg border bg-muted text-sm text-muted-foreground"
+                ? "inline-flex h-11 w-full items-center justify-center rounded-lg border bg-muted text-sm text-muted-foreground cursor-not-allowed pointer-events-none"
                 : "inline-flex h-11 w-full items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 via-teal-500 to-green-500 px-5 text-white font-medium shadow-sm hover:opacity-95 active:opacity-90 transition"
             }
           >
@@ -166,9 +169,11 @@ export function SubscriptionCard() {
 
       if (error) {
         if (error.message?.includes('409') || error.status === 409) {
-          // Redirect to portal if already has subscription
-          const portalUrl = await handleCustomerPortal();
-          if (portalUrl) window.open(portalUrl, '_blank');
+          toast({
+            title: "Already on this plan",
+            description: "You're already subscribed to this plan.",
+            variant: "default",
+          });
           return;
         }
         throw error;

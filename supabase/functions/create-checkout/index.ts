@@ -67,6 +67,18 @@ serve(async (req) => {
     const { plan = "solo" } = body;
     logStep("Request parsed", { plan });
 
+    // Reject "free" plan requests immediately
+    if (plan === "free") {
+      logStep("ERROR: Free plan has no checkout");
+      return new Response(JSON.stringify({ 
+        error: "Free plan has no checkout",
+        reason: "invalid_plan"
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
     // Get user authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -87,6 +99,39 @@ serve(async (req) => {
       throw new Error("User not authenticated or email not available");
     }
     logStep("User authenticated", { userId: user.id, email: user.email });
+
+    // Check current billing status to prevent duplicate purchases
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('stripe_subscription_status, stripe_price_id')
+      .eq('id', user.id)
+      .single();
+
+    if (!profileError && profile) {
+      const currentStatus = (profile?.stripe_subscription_status || '').toLowerCase();
+      const currentPriceId = profile?.stripe_price_id;
+      
+      // Determine requested price ID
+      let requestedPriceId = stripePriceSolo; // default to solo
+      if (plan === 'team_monthly' || plan === 'team') {
+        requestedPriceId = Deno.env.get("STRIPE_PRICE_TEAM_MONTHLY") || stripePriceSolo;
+      } else if (plan === 'team_yearly') {
+        requestedPriceId = Deno.env.get("STRIPE_PRICE_TEAM_YEARLY") || stripePriceSolo;
+      }
+
+      // Check if user is trying to buy the same plan they already have
+      if (['active', 'trialing', 'past_due'].includes(currentStatus) && 
+          currentPriceId === requestedPriceId) {
+        logStep("ERROR: User already on this plan", { currentPriceId, requestedPriceId });
+        return new Response(JSON.stringify({ 
+          error: "Already on this plan",
+          reason: "same_price"
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 409,
+        });
+      }
+    }
 
     // Initialize Stripe
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
