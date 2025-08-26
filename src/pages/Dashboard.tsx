@@ -377,7 +377,7 @@ export default function Dashboard() {
                               const duration = formatDuration(minutes);
                               return (
                                 <>
-                                  <div className="text-[15px] sm:text-base font-semibold tabular-nums">
+                                  <div className="text-[15px] sm:text-base bg-gradient-to-r from-blue-500 via-teal-500 to-green-500 bg-clip-text text-transparent font-semibold tabular-nums">
                                     {duration.normal}
                                   </div>
                                   <div className="text-xs text-muted-foreground tabular-nums">
