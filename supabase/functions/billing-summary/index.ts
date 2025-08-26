@@ -25,10 +25,11 @@ serve(async (req) => {
   }
 
   try {
-    // Create Supabase client with anon key for user auth
+    // Create Supabase client with service role key for auth validation
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
     );
 
     // Get user from auth header

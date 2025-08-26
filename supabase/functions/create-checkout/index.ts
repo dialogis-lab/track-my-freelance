@@ -115,19 +115,30 @@ serve(async (req) => {
           statuses: activeSubscriptions.map(s => s.status)
         });
         
-        // Create portal session and return 409
-        const portalSession = await stripe.billingPortal.sessions.create({
-          customer: customerId,
-          return_url: `${req.headers.get("origin") || "https://timehatch.app"}/dashboard`,
-        });
-        
-        return new Response(JSON.stringify({ 
-          portalUrl: portalSession.url,
-          reason: 'already_subscribed'
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 409,
-        });
+        // Try to create portal session, but handle configuration errors gracefully
+        try {
+          const portalSession = await stripe.billingPortal.sessions.create({
+            customer: customerId,
+            return_url: `${req.headers.get("origin") || "https://timehatch.app"}/dashboard`,
+          });
+          
+          return new Response(JSON.stringify({ 
+            portalUrl: portalSession.url,
+            reason: 'already_subscribed'
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 409,
+          });
+        } catch (portalError) {
+          logStep("Portal creation failed, returning error message", { error: portalError });
+          return new Response(JSON.stringify({ 
+            error: 'You already have an active subscription. Please contact support to manage it.',
+            reason: 'already_subscribed_portal_unavailable'
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 409,
+          });
+        }
       }
     } else {
       logStep("No existing customer found");
