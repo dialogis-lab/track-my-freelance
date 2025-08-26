@@ -25,7 +25,7 @@ const wordmarkSizes = {
 export function BrandLogo({ size = 'md', className, noLink = false, showWordmark = false }: BrandLogoProps) {
   const logoImage = (
     <img
-      src="/lovable-uploads/616ce768-d85d-47c9-a922-8f85c874b052.png"
+      src="/lovable-uploads/60738053-891e-492a-8cbc-2ed116a458a9.png"
       alt="TimeHatch logo"
       width={512}
       height={512}
