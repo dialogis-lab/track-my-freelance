@@ -45,15 +45,13 @@ export function PlanBadge() {
         <span className="inline-flex items-center rounded-full border px-2.5 py-1 text-xs text-muted-foreground bg-background">
           Free plan • 1 client & 1 project
         </span>
-        <Button 
-          size="sm"
+        <button 
           onClick={handleUpgrade}
           disabled={upgradeLoading}
-          className="h-7 px-3 rounded-md bg-gradient-to-r from-blue-500 to-green-500 text-white text-xs font-medium hover:from-blue-600 hover:to-green-600"
+          className="h-7 px-3 rounded-md text-xs font-medium text-white bg-gradient-to-r from-blue-500 via-teal-500 to-green-500 hover:from-blue-600 hover:via-teal-600 hover:to-green-600 transition-colors"
         >
-          <Crown className="h-3 w-3 mr-1" />
           {upgradeLoading ? 'Processing...' : 'Upgrade'}
-        </Button>
+        </button>
       </div>
     );
   }

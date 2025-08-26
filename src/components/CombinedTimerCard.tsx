@@ -180,85 +180,86 @@ export function CombinedTimerCard() {
 
   return (
     <div className="w-full max-w-3xl">
-      <Card>
-        <CardHeader className="pb-4">
+      <Card className="rounded-xl border bg-card shadow-sm">
+        <CardHeader className="p-5 sm:p-6 pb-4">
           <CardTitle className="flex items-center justify-between">
             <span>Timer</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-5 sm:p-6 space-y-6">
+        <CardContent className="p-5 sm:p-6 pt-0 space-y-6">
           {/* Main Timer Display */}
           <div className="text-center">
-            <div className="font-mono font-semibold tracking-wider select-none leading-none text-[clamp(22px,4vw,44px)] bg-gradient-to-r from-blue-500 via-teal-500 to-green-500 bg-clip-text text-transparent mb-2">
+            <div className="font-mono font-semibold tracking-wider select-none leading-none text-[clamp(22px,4vw,44px)] bg-gradient-to-r from-blue-500 via-teal-500 to-green-500 bg-clip-text text-transparent">
               {formatMainTime(mainDisplayTime)}
             </div>
-            <div className="text-xs text-muted-foreground mt-1">
+            <div className="mt-1 text-xs text-muted-foreground">
               {isStopwatchRunning ? 'Running' : 'Stopped'}
             </div>
           </div>
 
-        {/* Project Selection */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Project</label>
-          <Select
-            value={selectedProjectId}
-            onValueChange={setSelectedProjectId}
-            disabled={isStopwatchRunning}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select a project" />
-            </SelectTrigger>
-            <SelectContent>
-              {projects.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
-                  {project.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Notes (optional) */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Notes (optional)</label>
-          <Input
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="What are you working on?"
-            disabled={isStopwatchRunning}
-          />
-        </div>
-
-        {/* Control Button */}
-        <Button
-          onClick={isStopwatchRunning ? handleStopwatchStop : handleStopwatchStart}
-          disabled={loading || (!selectedProjectId && !isStopwatchRunning)}
-          className="w-full"
-          size="lg"
-          variant={isStopwatchRunning ? "destructive" : "default"}
-        >
-          {loading ? (
-            "Loading..."
-          ) : isStopwatchRunning ? (
-            <>
-              <Square className="w-4 h-4 mr-2" />
-              Stop Timer
-            </>
-          ) : (
-            <>
-              <Play className="w-4 h-4 mr-2" />
-              Start Timer
-            </>
-          )}
-        </Button>
-
-        {/* Debug Info - only show if debug flag is set */}
-        {import.meta.env.VITE_TIMER_DEBUG === '1' && (
-          <div className="mt-4 p-4 bg-gray-100 rounded text-xs">
-            <div>Stopwatch Running: {isStopwatchRunning ? 'YES' : 'NO'}</div>
-            <div>Stopwatch Time: {getStopwatchDisplayTime()}ms</div>
+          {/* Project Selection */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Project</label>
+            <Select
+              value={selectedProjectId}
+              onValueChange={setSelectedProjectId}
+              disabled={isStopwatchRunning}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a project" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        )}
+
+          {/* Notes (optional) */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Notes (optional)</label>
+            <Input
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="What are you working on?"
+              disabled={isStopwatchRunning}
+              className="w-full"
+            />
+          </div>
+
+          {/* Control Button */}
+          <Button
+            onClick={isStopwatchRunning ? handleStopwatchStop : handleStopwatchStart}
+            disabled={loading || (!selectedProjectId && !isStopwatchRunning)}
+            className="w-full"
+            size="lg"
+            variant={isStopwatchRunning ? "destructive" : "default"}
+          >
+            {loading ? (
+              "Loading..."
+            ) : isStopwatchRunning ? (
+              <>
+                <Square className="w-4 h-4 mr-2" />
+                Stop Timer
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 mr-2" />
+                Start Timer
+              </>
+            )}
+          </Button>
+
+          {/* Debug Info - only show if debug flag is set */}
+          {import.meta.env.VITE_TIMER_DEBUG === '1' && (
+            <div className="mt-4 p-4 bg-gray-100 rounded text-xs">
+              <div>Stopwatch Running: {isStopwatchRunning ? 'YES' : 'NO'}</div>
+              <div>Stopwatch Time: {getStopwatchDisplayTime()}ms</div>
+            </div>
+          )}
       </CardContent>
     </Card>
     </div>

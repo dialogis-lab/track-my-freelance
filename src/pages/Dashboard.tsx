@@ -209,150 +209,151 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="p-6 space-y-6">
-        <div>
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-brand-gradient">Dashboard</h1>
-              <p className="text-muted-foreground">Welcome back! Here's your time tracking overview.</p>
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="py-6 space-y-6">
+          <div>
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h1 className="text-3xl font-bold text-brand-gradient">Dashboard</h1>
+                <p className="text-muted-foreground">Welcome back! Here's your time tracking overview.</p>
+              </div>
+              <PlanBadge />
             </div>
-            <PlanBadge />
           </div>
-        </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card 
-            className="cursor-pointer card-hover transition-smooth group relative rounded-2xl"
-            onClick={() => handleCardClick('/reports?range=today')}
-            onKeyDown={(e) => handleKeyDown(e, '/reports?range=today')}
-            tabIndex={0}
-            role="button"
-            aria-label="View today's time report"
-          >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Today's Hours</CardTitle>
-              <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-brand-gradient" />
-                <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-brand-gradient">{stats.todayHours.toFixed(1)}h</div>
-            </CardContent>
-          </Card>
-
-          <Card 
-            className="cursor-pointer card-hover transition-smooth group relative rounded-2xl"
-            onClick={() => handleCardClick('/reports?range=week')}
-            onKeyDown={(e) => handleKeyDown(e, '/reports?range=week')}
-            tabIndex={0}
-            role="button"
-            aria-label="View this week's time report"
-          >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">This Week</CardTitle>
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="h-4 w-4 text-brand-gradient" />
-                <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-brand-gradient">{stats.weekHours.toFixed(1)}h</div>
-            </CardContent>
-          </Card>
-
-          <Card 
-            className="cursor-pointer card-hover transition-smooth group relative rounded-2xl"
-            onClick={() => handleCardClick('/projects?status=active')}
-            onKeyDown={(e) => handleKeyDown(e, '/projects?status=active')}
-            tabIndex={0}
-            role="button"
-            aria-label="View active projects"
-          >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
-              <div className="flex items-center space-x-2">
-                <FolderOpen className="h-4 w-4 text-brand-gradient" />
-                <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-brand-gradient">{stats.totalProjects}</div>
-            </CardContent>
-          </Card>
-
-          <Card 
-            className="cursor-pointer card-hover transition-smooth group relative rounded-2xl"
-            onClick={() => handleCardClick('/clients?status=active')}
-            onKeyDown={(e) => handleKeyDown(e, '/clients?status=active')}
-            tabIndex={0}
-            role="button"
-            aria-label="View active clients"
-          >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Clients</CardTitle>
-              <div className="flex items-center space-x-2">
-                <Users className="h-4 w-4 text-brand-gradient" />
-                <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-brand-gradient">{stats.totalClients}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Second row of stats - Expenses */}
-        {Object.keys(stats.totalExpenses).length > 0 && (
+          {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="cursor-pointer card-hover transition-smooth group relative rounded-2xl">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+            <Card 
+              className="cursor-pointer card-hover transition-smooth group relative rounded-xl border bg-card shadow-sm p-4 sm:p-5"
+              onClick={() => handleCardClick('/reports?range=today')}
+              onKeyDown={(e) => handleKeyDown(e, '/reports?range=today')}
+              tabIndex={0}
+              role="button"
+              aria-label="View today's time report"
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0">
+                <CardTitle className="text-sm font-medium">Today's Hours</CardTitle>
                 <div className="flex items-center space-x-2">
-                  <Receipt className="h-4 w-4 text-brand-gradient" />
+                  <Clock className="h-4 w-4 text-brand-gradient" />
+                  <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-1">
-                  {Object.entries(stats.totalExpenses).map(([currency, amount]) => (
-                    <div key={currency} className="text-lg font-bold text-brand-gradient">
-                      {formatMoney(amount, currency as Currency)}
-                    </div>
-                  ))}
+              <CardContent className="p-0">
+                <div className="text-2xl font-bold text-brand-gradient">{stats.todayHours.toFixed(1)}h</div>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer card-hover transition-smooth group relative rounded-xl border bg-card shadow-sm p-4 sm:p-5"
+              onClick={() => handleCardClick('/reports?range=week')}
+              onKeyDown={(e) => handleKeyDown(e, '/reports?range=week')}
+              tabIndex={0}
+              role="button"
+              aria-label="View this week's time report"
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0">
+                <CardTitle className="text-sm font-medium">This Week</CardTitle>
+                <div className="flex items-center space-x-2">
+                  <TrendingUp className="h-4 w-4 text-brand-gradient" />
+                  <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                 </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="text-2xl font-bold text-brand-gradient">{stats.weekHours.toFixed(1)}h</div>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer card-hover transition-smooth group relative rounded-xl border bg-card shadow-sm p-4 sm:p-5"
+              onClick={() => handleCardClick('/projects?status=active')}
+              onKeyDown={(e) => handleKeyDown(e, '/projects?status=active')}
+              tabIndex={0}
+              role="button"
+              aria-label="View active projects"
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0">
+                <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
+                <div className="flex items-center space-x-2">
+                  <FolderOpen className="h-4 w-4 text-brand-gradient" />
+                  <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="text-2xl font-bold text-brand-gradient">{stats.totalProjects}</div>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer card-hover transition-smooth group relative rounded-xl border bg-card shadow-sm p-4 sm:p-5"
+              onClick={() => handleCardClick('/clients?status=active')}
+              onKeyDown={(e) => handleKeyDown(e, '/clients?status=active')}
+              tabIndex={0}
+              role="button"
+              aria-label="View active clients"
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0">
+                <CardTitle className="text-sm font-medium">Active Clients</CardTitle>
+                <div className="flex items-center space-x-2">
+                  <Users className="h-4 w-4 text-brand-gradient" />
+                  <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="text-2xl font-bold text-brand-gradient">{stats.totalClients}</div>
               </CardContent>
             </Card>
           </div>
-        )}
 
-          <div className="grid grid-cols-1 xl:grid-cols-[1fr_1000px] gap-4 items-start">
+          {/* Second row of stats - Expenses */}
+          {Object.keys(stats.totalExpenses).length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card className="cursor-pointer card-hover transition-smooth group relative rounded-xl border bg-card shadow-sm p-4 sm:p-5">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0">
+                  <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+                  <div className="flex items-center space-x-2">
+                    <Receipt className="h-4 w-4 text-brand-gradient" />
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="space-y-1">
+                    {Object.entries(stats.totalExpenses).map(([currency, amount]) => (
+                      <div key={currency} className="text-lg font-bold text-brand-gradient">
+                        {formatMoney(amount, currency as Currency)}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(420px,520px)] gap-6 items-start">
             {/* Combined Timer Card */}
             <div className="flex justify-center xl:justify-start">
               <CombinedTimerCard />
             </div>
             
             {/* Recent Activity */}
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">Recent Activity</CardTitle>
+            <Card className="rounded-xl border bg-card shadow-sm">
+              <CardHeader className="p-4 sm:p-5 pb-3">
+                <CardTitle className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Recent Activity</CardTitle>
               </CardHeader>
-              <CardContent className="p-6 sm:p-8">
+              <CardContent className="p-4 sm:p-5 pt-0">
                 {recentEntries.length === 0 ? (
-                  <div className="text-base text-muted-foreground py-12 text-center">
+                  <div className="py-10 text-sm text-muted-foreground text-center">
                     No time entries yet. Start tracking your first project!
                   </div>
                 ) : (
                   <>
-                    <ul className="divide-y divide-border space-y-1">
+                    <ul className="divide-y divide-border">
                       {recentEntries.map((entry) => (
                         <li
                           key={entry.id}
-                          className="group flex items-center justify-between gap-4 py-5 sm:py-6 min-h-[60px] hover:bg-muted/50 rounded-lg px-3 -mx-3 transition-colors"
+                          className="group flex items-center justify-between gap-3 py-3.5 sm:py-4 min-h-[44px] hover:bg-muted/50 rounded-md px-2 -mx-2 transition-colors"
                         >
-                          <div className="min-w-0 flex-1">
+                          <div className="min-w-0">
                             <div 
-                              className="text-base sm:text-lg font-semibold truncate mb-1"
+                              className="text-[15px] sm:text-base font-medium truncate"
                               title={`${entry.projects.clients?.name ? `${entry.projects.clients.name} — ` : ''}${entry.projects.name}`}
                             >
                               {entry.projects.clients?.name ? `${entry.projects.clients.name} — ` : ''}
@@ -360,13 +361,13 @@ export default function Dashboard() {
                             </div>
                             {entry.notes && (
                               <div 
-                                className="text-sm sm:text-base text-muted-foreground truncate mb-2"
+                                className="text-xs sm:text-sm text-muted-foreground truncate"
                                 title={entry.notes}
                               >
                                 {entry.notes}
                               </div>
                             )}
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-xs text-muted-foreground mt-0.5">
                               {formatDate(entry.started_at)}
                             </div>
                           </div>
@@ -376,10 +377,10 @@ export default function Dashboard() {
                               const duration = formatDuration(minutes);
                               return (
                                 <>
-                                  <div className="text-lg sm:text-xl font-bold tabular-nums text-primary">
+                                  <div className="text-[15px] sm:text-base font-semibold tabular-nums">
                                     {duration.normal}
                                   </div>
-                                  <div className="text-sm text-muted-foreground tabular-nums">
+                                  <div className="text-xs text-muted-foreground tabular-nums">
                                     = {duration.industrial}h
                                   </div>
                                 </>
@@ -389,15 +390,15 @@ export default function Dashboard() {
                         </li>
                       ))}
                     </ul>
-                    <div className="pt-6 border-t border-border mt-6">
-                      <a href="/reports" className="text-sm sm:text-base text-primary hover:underline font-medium">View all entries →</a>
+                    <div className="pt-3">
+                      <a href="/reports" className="text-xs sm:text-sm text-primary hover:underline">View all entries →</a>
                     </div>
                   </>
                 )}
               </CardContent>
             </Card>
           </div>
-
+        </div>
       </div>
     </AppLayout>
   );
