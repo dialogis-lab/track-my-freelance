@@ -35,6 +35,56 @@ export function CombinedTimerCard() {
     }
   }, [user]);
 
+  // Load project details and notes when a timer is running
+  useEffect(() => {
+    if (isStopwatchRunning && stopwatch?.id) {
+      // Load notes from the current running timer
+      loadTimerNotes(stopwatch.id);
+    } else if (!isStopwatchRunning) {
+      // Clear notes when no timer is running
+      setNotes('');
+    }
+  }, [isStopwatchRunning, stopwatch?.id]);
+
+  const loadTimerNotes = async (timerId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('time_entries')
+        .select('notes, project_id')
+        .eq('id', timerId)
+        .single();
+      
+      if (error) {
+        debugLog('Error loading timer notes:', error);
+        return;
+      }
+      
+      if (data) {
+        setNotes(data.notes || '');
+        setSelectedProjectId(data.project_id);
+      }
+    } catch (error) {
+      debugLog('Exception loading timer notes:', error);
+    }
+  };
+
+  const updateNotesInRunningTimer = async () => {
+    if (!stopwatch?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('time_entries')
+        .update({ notes })
+        .eq('id', stopwatch.id);
+
+      if (error) {
+        debugLog('Error updating notes:', error);
+      }
+    } catch (error) {
+      debugLog('Exception updating notes:', error);
+    }
+  };
+
   const loadProjects = async () => {
     try {
       const { data, error } = await supabase
@@ -119,13 +169,7 @@ export function CombinedTimerCard() {
       debugLog('Timer started successfully:', timeEntryData);
       toast({ title: "Timer started" });
       
-      // Force immediate refresh to ensure the timer shows up
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
-      
-      // Clear notes after starting
-      setNotes('');
+      // Don't clear notes or reload - let the real-time updates handle the UI changes
       
     } catch (error) {
       debugLog('Error starting timer:', error);
@@ -159,6 +203,9 @@ export function CombinedTimerCard() {
       }
 
       toast({ title: "Timer stopped" });
+      
+      // Clear notes after stopping
+      setNotes('');
       
     } catch (error) {
       debugLog('Error stopping timer:', error);
@@ -221,13 +268,13 @@ export function CombinedTimerCard() {
           {/* Notes (optional) */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Notes (optional)</label>
-            <Input
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="What are you working on?"
-              disabled={isStopwatchRunning}
-              className="w-full"
-            />
+              <Input
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                onBlur={updateNotesInRunningTimer}
+                placeholder="What are you working on?"
+                className="w-full"
+              />
           </div>
 
           {/* Control Button */}
