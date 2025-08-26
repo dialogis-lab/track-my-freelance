@@ -278,10 +278,8 @@ All colors MUST be HSL.
     scrollbar-width: none;
   }
 
-/* Prevent any global img rules from shrinking the hero logo */
-.hero-logo img {
-  height: inherit !important;
-  width: auto !important;
-  max-height: none !important;
-}
+  /* Prevent global image rules from shrinking the hero logo */
+  .hero-logo img, .hero-logo {
+    max-height: none !important;
+  }
 }

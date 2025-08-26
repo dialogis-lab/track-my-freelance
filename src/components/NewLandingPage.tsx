@@ -61,12 +61,12 @@ const NewLandingPage = () => {
         <section className="pt-12 sm:pt-14 md:pt-16 pb-10 sm:pb-12 md:pb-14 bg-gradient-to-br from-muted/30 to-background">
           <div className="container mx-auto px-4">
             <div className="text-center max-w-4xl mx-auto">
-              <div className="hero-logo flex justify-center">
+              <div className="mb-4 flex justify-center hero-logo">
                 <div onClick={handleLogoClick} className="cursor-pointer">
                   <img
-                    src="/brand/timehatch-hero.svg"
+                    src="/lovable-uploads/60738053-891e-492a-8cbc-2ed116a458a9.png"
                     alt="TimeHatch - Effortless Time Tracking & Smart Invoicing"
-                    className="block h-16 sm:h-20 lg:h-24 w-auto object-contain"
+                    className="block mx-auto h-16 sm:h-[4.5rem] lg:h-20 w-auto object-contain"
                   />
                 </div>
               </div>
