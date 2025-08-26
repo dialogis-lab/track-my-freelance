@@ -66,7 +66,7 @@ const NewLandingPage = () => {
                   <img
                     src="/lovable-uploads/60738053-891e-492a-8cbc-2ed116a458a9.png"
                     alt="TimeHatch - Effortless Time Tracking & Smart Invoicing"
-                    className="block mx-auto h-16 sm:h-[4.5rem] lg:h-20 w-auto object-contain"
+                    className="block mx-auto h-16 sm:h-[4.5rem] lg:h-24 w-auto object-contain"
                   />
                 </div>
               </div>
