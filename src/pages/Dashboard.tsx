@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTimerContext } from '@/contexts/TimerContext';
 import { useDashboardTimers } from '@/hooks/useDashboardTimers';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/AppLayout';
 import { CombinedTimerCard } from '@/components/CombinedTimerCard';
@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, FolderOpen, Users, TrendingUp, ExternalLink, Receipt } from 'lucide-react';
 import { formatTime, hoursToMinutes, calculateDurationMinutes, formatDuration } from '@/lib/timeUtils';
 import { formatMoney, type Currency } from '@/lib/currencyUtils';
+import { usePlan } from '@/hooks/usePlan';
 
 interface DashboardStats {
   totalProjects: number;
@@ -40,6 +41,8 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { timerUpdated } = useTimerContext();
   const navigate = useNavigate();
+  const [, setSearchParams] = useSearchParams();
+  const { refetchPlan } = usePlan();
   
   // Dashboard Timer Hook
   const {
@@ -47,6 +50,29 @@ export default function Dashboard() {
     isStopwatchRunning,
     loading: timerLoading
   } = useDashboardTimers();
+
+  useEffect(() => {
+    const handleBillingUpdate = async () => {
+      const justUpgraded = localStorage.getItem('billingJustUpgraded');
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasUpgradedParam = urlParams.get('upgraded');
+      
+      if (justUpgraded === '1' || hasUpgradedParam === '1') {
+        console.log('Billing just upgraded, refreshing plan status');
+        await refetchPlan();
+        localStorage.removeItem('billingJustUpgraded');
+        
+        // Clean up URL parameter
+        if (hasUpgradedParam) {
+          urlParams.delete('upgraded');
+          const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+          window.history.replaceState({}, '', newUrl);
+        }
+      }
+    };
+
+    handleBillingUpdate();
+  }, [refetchPlan]);
 
   useEffect(() => {
     if (user) {

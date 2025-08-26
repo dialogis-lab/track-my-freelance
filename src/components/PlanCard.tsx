@@ -17,13 +17,21 @@ export function PlanCard() {
   const handleUpgrade = async () => {
     setUpgradeLoading(true);
     try {
-      const url = await createCheckout('solo');
-      if (url) {
-        window.open(url, '_blank');
+      const response = await createCheckout('solo');
+      if (typeof response === 'string') {
+        // Success - redirect to checkout
+        window.location.href = response;
+      } else if (response && 'portalUrl' in response) {
+        // Conflict - redirect to portal
+        window.location.href = response.portalUrl;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upgrade error:', error);
-      toast.error('Failed to create checkout session');
+      if (error.status === 409 && error.portalUrl) {
+        window.location.href = error.portalUrl;
+      } else {
+        toast.error('Failed to create checkout session');
+      }
     } finally {
       setUpgradeLoading(false);
     }

@@ -97,6 +97,38 @@ serve(async (req) => {
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
       logStep("Found existing customer", { customerId });
+      
+      // Check for existing active subscriptions to prevent duplicates
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        status: 'all',
+        limit: 10
+      });
+      
+      const activeSubscriptions = subscriptions.data.filter(sub => 
+        ['active', 'trialing', 'past_due', 'unpaid'].includes(sub.status)
+      );
+      
+      if (activeSubscriptions.length > 0) {
+        logStep("Active subscription found, redirecting to portal", { 
+          subscriptionCount: activeSubscriptions.length,
+          statuses: activeSubscriptions.map(s => s.status)
+        });
+        
+        // Create portal session and return 409
+        const portalSession = await stripe.billingPortal.sessions.create({
+          customer: customerId,
+          return_url: `${req.headers.get("origin") || "https://timehatch.app"}/dashboard`,
+        });
+        
+        return new Response(JSON.stringify({ 
+          portalUrl: portalSession.url,
+          reason: 'already_subscribed'
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 409,
+        });
+      }
     } else {
       logStep("No existing customer found");
     }

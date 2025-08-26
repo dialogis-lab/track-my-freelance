@@ -1,24 +1,41 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle } from 'lucide-react';
-import { useSubscription } from '@/hooks/useSubscription';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function SubscriptionSuccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
-  const { refetch } = useSubscription();
+  const [syncComplete, setSyncComplete] = useState(false);
 
   useEffect(() => {
-    if (sessionId) {
-      // Refresh subscription status after successful payment
-      setTimeout(() => {
-        refetch();
-      }, 2000);
-    }
-  }, [sessionId, refetch]);
+    const syncSubscription = async () => {
+      if (!sessionId) return;
+      
+      try {
+        console.log('Syncing subscription from session:', sessionId);
+        const { data, error } = await supabase.functions.invoke('sync-from-session', {
+          body: { session_id: sessionId }
+        });
+        
+        if (error) {
+          console.error('Sync error:', error);
+        } else {
+          console.log('Subscription synced:', data);
+          // Set flag for dashboard to know billing was just updated
+          localStorage.setItem('billingJustUpgraded', '1');
+          setSyncComplete(true);
+        }
+      } catch (error) {
+        console.error('Failed to sync subscription:', error);
+      }
+    };
+
+    syncSubscription();
+  }, [sessionId]);
 
   return (
     <div className="container mx-auto px-4 py-16 max-w-2xl">
@@ -43,7 +60,7 @@ export default function SubscriptionSuccess() {
           )}
           <div className="space-y-2">
             <Button 
-              onClick={() => navigate('/dashboard')} 
+              onClick={() => navigate('/dashboard?upgraded=1')} 
               className="w-full"
             >
               Go to Dashboard
