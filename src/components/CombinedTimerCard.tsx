@@ -120,6 +120,8 @@ export function CombinedTimerCard() {
     setLoading(true);
     try {
       debugLog('Attempting to start timer for project:', selectedProjectId);
+      debugLog('Current user:', user?.id);
+      debugLog('User object:', user);
       
       // First check if there's already a running timer
       const { data: runningTimer, error: checkError } = await supabase
@@ -131,7 +133,14 @@ export function CombinedTimerCard() {
 
       if (checkError) {
         debugLog('Error checking running timer:', checkError);
-        throw checkError;
+        console.error('RLS or permission error:', checkError);
+        toast({
+          title: "Database Error",
+          description: `Failed to check existing timers: ${checkError.message}`,
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
       }
 
       debugLog('Running timer check result:', runningTimer);
@@ -149,21 +158,31 @@ export function CombinedTimerCard() {
       debugLog('Inserting new timer entry...');
       
       const now = new Date().toISOString();
+      const insertData = {
+        user_id: user!.id,
+        project_id: selectedProjectId,
+        started_at: now,
+        notes: notes || null
+      };
+      
+      debugLog('Insert data:', insertData);
       
       const { data: timeEntryData, error: timeEntryError } = await supabase
         .from('time_entries')
-        .insert([{
-          user_id: user!.id,
-          project_id: selectedProjectId,
-          started_at: now,
-          notes: notes || null
-        }])
+        .insert([insertData])
         .select()
         .single();
 
       if (timeEntryError) {
         debugLog('Error inserting timer:', timeEntryError);
-        throw timeEntryError;
+        console.error('Timer creation failed:', timeEntryError);
+        toast({
+          title: "Failed to start timer",
+          description: `Error: ${timeEntryError.message}. Code: ${timeEntryError.code}`,
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
       }
 
       debugLog('Timer started successfully:', timeEntryData);
@@ -172,10 +191,11 @@ export function CombinedTimerCard() {
       // Don't clear notes or reload - let the real-time updates handle the UI changes
       
     } catch (error) {
-      debugLog('Error starting timer:', error);
+      debugLog('Exception starting timer:', error);
+      console.error('Unexpected error:', error);
       toast({ 
         title: "Error starting timer", 
-        description: error.message || "Please try again",
+        description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive" 
       });
     }
