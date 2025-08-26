@@ -189,7 +189,7 @@ export function CombinedTimerCard() {
         <CardContent className="p-5 sm:p-6 space-y-6">
           {/* Main Timer Display */}
           <div className="text-center">
-            <div className="font-mono font-semibold tracking-wider select-none leading-none text-[clamp(22px,4vw,44px)] text-primary mb-2">
+            <div className="font-mono font-semibold tracking-wider select-none leading-none text-[clamp(22px,4vw,44px)] bg-gradient-to-r from-blue-500 via-teal-500 to-green-500 bg-clip-text text-transparent mb-2">
               {formatMainTime(mainDisplayTime)}
             </div>
             <div className="text-xs text-muted-foreground mt-1">
