@@ -302,7 +302,9 @@ export function SubscriptionCard() {
   const renderPlanCard = (planKey: Plan) => {
     const plan = PLANS[planKey];
     const isCurrentPlan = currentPlan === planKey;
-    const shouldShowCurrent = isCurrentPlan && (isActive || isPastDue);
+    // Für Free Plan: immer als current anzeigen wenn es der aktuelle Plan ist
+    // Für bezahlte Pläne: nur als current anzeigen wenn aktiv oder past_due
+    const shouldShowCurrent = isCurrentPlan && (planKey === 'free' || isActive || isPastDue);
     
     // Extract price and cadence
     const [price, cadence] = planKey === 'free' 
