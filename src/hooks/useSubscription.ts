@@ -46,7 +46,7 @@ export function useSubscription() {
     fetchSubscription();
   }, [user]);
 
-  const createCheckout = async (plan: 'solo' | 'starter' | 'team' = 'solo') => {
+  const createCheckout = async (plan: 'solo' | 'team_monthly' | 'team_yearly' = 'solo') => {
     if (!user) return null;
 
     try {

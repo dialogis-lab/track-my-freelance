@@ -12,23 +12,15 @@ export function UpgradeButton() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleUpgrade = async () => {
-    if (isLoading) return;
-    
     setIsLoading(true);
     try {
-      const checkoutUrl = await createCheckout('solo');
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl;
+      const url = await createCheckout('solo');
+      if (url) {
+        window.open(url, '_blank');
       }
     } catch (error) {
-      console.error('Checkout error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to start checkout process';
-      
-      if (errorMessage.includes('Price not configured')) {
-        toast.error('Solo plan is not configured. Please contact support.');
-      } else {
-        toast.error(errorMessage);
-      }
+      console.error('Upgrade error details:', error);
+      toast.error(error instanceof Error ? error.message : "Failed to create checkout session. Please try again.");
     } finally {
       setIsLoading(false);
     }

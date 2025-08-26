@@ -64,14 +64,15 @@ export function SubscriptionCard() {
   const handleCheckout = async (planId: string) => {
     setCheckoutLoading(planId);
     try {
-      const url = await createCheckout(planId as any);
+      const url = await createCheckout(planId as 'solo' | 'team_monthly' | 'team_yearly');
       if (url) {
         window.open(url, '_blank');
       }
     } catch (error) {
+      console.error('Checkout error details:', error);
       toast({
         title: "Error",
-        description: "Failed to create checkout session. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to create checkout session. Please try again.",
         variant: "destructive",
       });
     } finally {
