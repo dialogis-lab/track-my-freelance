@@ -14,8 +14,10 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
-import { Plus, Archive, Edit2, ArchiveRestore, FolderOpen, Clock, ExternalLink, Trash2 } from 'lucide-react';
+import { Plus, Archive, Edit2, ArchiveRestore, FolderOpen, Clock, ExternalLink, Trash2, Crown } from 'lucide-react';
 import { formatDuration, calculateDurationMinutes } from '@/lib/timeUtils';
+import { usePlan } from '@/hooks/usePlan';
+import { UpgradeModal } from '@/components/UpgradeModal';
 
 interface Client {
   id: string;
@@ -43,6 +45,7 @@ export default function Clients() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     company_name: '',
@@ -62,6 +65,7 @@ export default function Clients() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { plan, isFree } = usePlan();
 
   useEffect(() => {
     if (user) {
@@ -124,6 +128,13 @@ export default function Clients() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    // Check for Free plan limit only when creating new clients
+    if (!editingClient && isFree && activeClients.length >= 1) {
+      setUpgradeModalOpen(true);
+      setLoading(false);
+      return;
+    }
 
     const clientData = {
       name: formData.name,
@@ -322,18 +333,38 @@ export default function Clients() {
   const activeClients = clients.filter(c => !c.archived);
   const archivedClients = clients.filter(c => c.archived);
 
+  const handleNewClientClick = () => {
+    if (isFree && activeClients.length >= 1) {
+      setUpgradeModalOpen(true);
+      return;
+    }
+    resetForm();
+  };
+
   return (
     <AppLayout>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-brand-gradient">Clients</h1>
-            <p className="text-muted-foreground">Manage your clients and their invoicing information.</p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-muted-foreground">Manage your clients and their invoicing information.</p>
+              {isFree && (
+                <Badge variant="outline" className="text-xs">
+                  <Crown className="h-3 w-3 mr-1" />
+                  Free: {activeClients.length}/1 client
+                </Badge>
+              )}
+            </div>
           </div>
           
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => resetForm()}>
+              <Button 
+                onClick={handleNewClientClick}
+                disabled={isFree && activeClients.length >= 1}
+                className={isFree && activeClients.length >= 1 ? "opacity-50" : ""}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 New Client
               </Button>
@@ -520,6 +551,13 @@ export default function Clients() {
             </DialogContent>
           </Dialog>
         </div>
+
+        <UpgradeModal 
+          open={upgradeModalOpen}
+          onOpenChange={setUpgradeModalOpen}
+          title="Client Limit Reached"
+          description="You've reached the Free plan limit of 1 client. Upgrade to create unlimited clients and unlock more features."
+        />
 
         <Tabs defaultValue="active" className="w-full">
           <TabsList>

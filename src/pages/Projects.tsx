@@ -10,8 +10,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { Plus, Archive, Edit2, ArchiveRestore, Play, Square, BarChart3 } from 'lucide-react';
+import { Plus, Archive, Edit2, ArchiveRestore, Play, Square, BarChart3, Crown } from 'lucide-react';
+import { usePlan } from '@/hooks/usePlan';
+import { UpgradeModal } from '@/components/UpgradeModal';
 
 interface Client {
   id: string;
@@ -33,6 +36,7 @@ export default function Projects() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     client_id: '',
@@ -44,6 +48,7 @@ export default function Projects() {
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
+  const { plan, isFree } = usePlan();
 
   useEffect(() => {
     if (user) {
@@ -128,6 +133,13 @@ export default function Projects() {
     e.preventDefault();
     setLoading(true);
 
+    // Check for Free plan limit only when creating new projects
+    if (!editingProject && isFree && activeProjects.length >= 1) {
+      setUpgradeModalOpen(true);
+      setLoading(false);
+      return;
+    }
+
     const projectData = {
       name: formData.name,
       client_id: formData.client_id || null,
@@ -161,6 +173,13 @@ export default function Projects() {
     }
 
     if (error) {
+      // Handle specific Free plan limit errors
+      if (error.message?.includes('FREE_LIMIT_PROJECTS_REACHED')) {
+        setUpgradeModalOpen(true);
+        setLoading(false);
+        return;
+      }
+      
       toast({
         title: editingProject ? "Error updating project" : "Error creating project",
         description: error.message,
@@ -295,18 +314,38 @@ export default function Projects() {
   const activeProjects = projects.filter(p => !p.archived);
   const archivedProjects = projects.filter(p => p.archived);
 
+  const handleNewProjectClick = () => {
+    if (isFree && activeProjects.length >= 1) {
+      setUpgradeModalOpen(true);
+      return;
+    }
+    resetForm();
+  };
+
   return (
     <AppLayout>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Projects</h1>
-            <p className="text-muted-foreground">Manage your projects and hourly rates.</p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-muted-foreground">Manage your projects and hourly rates.</p>
+              {isFree && (
+                <Badge variant="outline" className="text-xs">
+                  <Crown className="h-3 w-3 mr-1" />
+                  Free: {activeProjects.length}/1 project
+                </Badge>
+              )}
+            </div>
           </div>
           
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => resetForm()}>
+              <Button 
+                onClick={handleNewProjectClick}
+                disabled={isFree && activeProjects.length >= 1}
+                className={isFree && activeProjects.length >= 1 ? "opacity-50" : ""}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 New Project
               </Button>
@@ -376,6 +415,13 @@ export default function Projects() {
             </DialogContent>
           </Dialog>
         </div>
+
+        <UpgradeModal 
+          open={upgradeModalOpen}
+          onOpenChange={setUpgradeModalOpen}
+          title="Project Limit Reached"
+          description="You've reached the Free plan limit of 1 project. Upgrade to create unlimited projects and unlock more features."
+        />
 
         <Tabs defaultValue="active" className="w-full">
           <TabsList>

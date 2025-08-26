@@ -743,6 +743,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_free_user: {
+        Args: { p_user?: string }
+        Returns: boolean
+      }
       server_time: {
         Args: Record<PropertyKey, never>
         Returns: string
