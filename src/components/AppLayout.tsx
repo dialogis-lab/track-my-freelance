@@ -36,82 +36,85 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Top Navigation */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="w-full">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="ml-2">
-            <BrandLogo size="md" showWordmark />
-          </div>
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center">
+            {/* Left: Logo - Fixed width */}
+            <div className="flex items-center min-w-[200px]">
+              <BrandLogo size="md" showWordmark />
+            </div>
 
-          <div className="no-scrollbar -mx-2 overflow-x-auto">
-            <nav className="hidden md:flex gap-1 px-2 snap-x">
-              {navigation.map((item) => {
-                const isActive = location.pathname === item.href;
-                const Icon = item.icon;
-                const baseClasses = "inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors snap-start relative";
-                const idleClasses = "text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
-                const activeClasses = "text-foreground before:content-[''] before:absolute before:left-0 before:right-0 before:-bottom-1 before:h-0.5 before:rounded-full before:bg-gradient-to-r before:from-blue-500 before:via-teal-500 before:to-green-500";
-                
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={`${baseClasses} ${isActive ? activeClasses : idleClasses}`}
-                    aria-current={isActive ? "page" : undefined}
-                  >
-                    <Icon className="shrink-0 h-4 w-4" />
-                    <span className="truncate">{item.name}</span>
+            {/* Center: Navigation - Flexible width */}
+            <div className="flex-1 flex justify-center">
+              <nav className="hidden md:flex gap-1">
+                {navigation.map((item) => {
+                  const isActive = location.pathname === item.href;
+                  const Icon = item.icon;
+                  const baseClasses = "inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors relative whitespace-nowrap";
+                  const idleClasses = "text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
+                  const activeClasses = "text-foreground before:content-[''] before:absolute before:left-0 before:right-0 before:-bottom-1 before:h-0.5 before:rounded-full before:bg-gradient-to-r before:from-blue-500 before:via-teal-500 before:to-green-500";
+                  
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className={`${baseClasses} ${isActive ? activeClasses : idleClasses}`}
+                      aria-current={isActive ? "page" : undefined}
+                    >
+                      <Icon className="shrink-0 h-4 w-4" />
+                      <span>{item.name}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* Right: Actions - Fixed width */}
+            <div className="flex items-center gap-2 justify-end min-w-[200px]">
+              {roleLoading ? (
+                <div className="h-8 w-[70px] rounded-md bg-muted animate-pulse" />
+              ) : isAdmin ? (
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/admin">
+                    <ShieldCheck className="w-4 h-4 mr-2" />
+                    Admin
                   </Link>
-                );
-              })}
-            </nav>
-          </div>
-
-          <div className="flex items-center gap-2 justify-end min-w-[200px]">
-            {roleLoading ? (
-              <div className="h-8 w-[70px] rounded-md bg-muted animate-pulse" />
-            ) : isAdmin ? (
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/admin">
-                  <ShieldCheck className="w-4 h-4 mr-2" />
-                  Admin
-                </Link>
-              </Button>
-            ) : (
-              <div className="w-[70px]" />
-            )}
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-                  <User className="w-4 h-4" />
-                  <span className="hidden sm:block text-sm">{user?.email}</span>
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                {isFree && (
-                  <>
-                    <DropdownMenuItem asChild>
-                      <Link to="/settings" className="flex items-center">
-                        <Crown className="w-4 h-4 mr-2 text-primary" />
-                        Upgrade Plan
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
-                <DropdownMenuItem asChild>
-                  <Link to="/settings" className="flex items-center">
-                    <Settings className="w-4 h-4 mr-2" />
-                    Settings
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+              ) : (
+                <div className="w-[70px]" />
+              )}
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                    <User className="w-4 h-4" />
+                    <span className="hidden sm:block text-sm">{user?.email}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {isFree && (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to="/settings" className="flex items-center">
+                          <Crown className="w-4 h-4 mr-2 text-primary" />
+                          Upgrade Plan
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" className="flex items-center">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </header>
