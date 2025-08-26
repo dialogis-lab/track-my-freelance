@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Upload, X, Building2, Lock, AlertTriangle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Upload, X, Building2, Lock, AlertTriangle, Shield } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -17,6 +18,10 @@ interface Profile {
   vat_id: string | null;
   bank_details: string | null;
   logo_url: string | null;
+  encryption_status?: {
+    enabled: boolean;
+    errors?: string[];
+  };
 }
 
 export function ProfileForm() {
@@ -30,6 +35,7 @@ export function ProfileForm() {
   const [originalProfile, setOriginalProfile] = useState<Profile | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [encryptionError, setEncryptionError] = useState<string | null>(null);
+  const [encryptionStatus, setEncryptionStatus] = useState<{ enabled: boolean; errors?: string[] } | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -83,6 +89,11 @@ export function ProfileForm() {
       const data = result.profile;
       setProfile(data);
       setOriginalProfile(data);
+      
+      // Set encryption status from response
+      if (data.encryption_status) {
+        setEncryptionStatus(data.encryption_status);
+      }
       
       if (data.logo_url) {
         // If we have a logo URL, try to create a fresh signed URL

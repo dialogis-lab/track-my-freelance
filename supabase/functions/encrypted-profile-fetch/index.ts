@@ -1,84 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-// Import crypto utilities - these functions are defined inline for edge functions
-async function validateEncryptionConfig(): Promise<{ isValid: boolean; error?: string }> {
-  const key = Deno.env.get('ENCRYPTION_KEY');
-  
-  if (!key) {
-    return {
-      isValid: false,
-      error: 'ENCRYPTION_KEY not configured. Admin must set a 32-byte base64 encryption key.'
-    };
-  }
-
-  try {
-    const keyBuffer = new Uint8Array(atob(key).split('').map(c => c.charCodeAt(0)));
-    if (keyBuffer.length !== 32) {
-      return {
-        isValid: false,
-        error: `ENCRYPTION_KEY must be 32 bytes, got ${keyBuffer.length} bytes.`
-      };
-    }
-  } catch {
-    return {
-      isValid: false,
-      error: 'ENCRYPTION_KEY is not valid base64.'
-    };
-  }
-
-  return { isValid: true };
-}
-
-async function decryptString(payload: { iv: string; ct: string }): Promise<string> {
-  if (!payload.iv || !payload.ct) {
-    throw new Error('Invalid encrypted payload: missing iv or ct');
-  }
-
-  // Try current key first, then previous key for rotation support
-  const keys = [
-    { version: 'current', envVar: 'ENCRYPTION_KEY' },
-    { version: 'prev', envVar: 'ENCRYPTION_KEY_PREV' }
-  ];
-  
-  for (const keyConfig of keys) {
-    try {
-      const keyB64 = Deno.env.get(keyConfig.envVar);
-      if (!keyB64 && keyConfig.version === 'prev') continue; // Previous key is optional
-      if (!keyB64) throw new Error(`Missing ${keyConfig.envVar}`);
-      
-      const keyBuffer = new Uint8Array(atob(keyB64).split('').map(c => c.charCodeAt(0)));
-      const key = await crypto.subtle.importKey(
-        'raw',
-        keyBuffer,
-        { name: 'AES-GCM' },
-        false,
-        ['encrypt', 'decrypt']
-      );
-      
-      // Decode base64 IV and ciphertext
-      const iv = new Uint8Array(atob(payload.iv).split('').map(c => c.charCodeAt(0)));
-      const ciphertext = new Uint8Array(atob(payload.ct).split('').map(c => c.charCodeAt(0)));
-      
-      // Decrypt
-      const decrypted = await crypto.subtle.decrypt(
-        { name: 'AES-GCM', iv },
-        key,
-        ciphertext
-      );
-      
-      return new TextDecoder().decode(decrypted);
-    } catch (error) {
-      // If it's the last key to try, throw the error
-      if (keyConfig.version === 'prev') {
-        throw new Error(`Decryption failed with all available keys: ${error.message}`);
-      }
-      // Otherwise, try the next key
-      continue;
-    }
-  }
-  
-  throw new Error('Decryption failed: no valid keys found');
-}
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { 
+  validateEncryptionConfig, 
+  getWorkspaceDEK, 
+  decryptField, 
+  DecryptionError 
+} from '../workspace-crypto/index.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -93,15 +20,14 @@ serve(async (req) => {
 
   try {
     // Validate encryption configuration
-    const encryptionCheck = await validateEncryptionConfig();
-    if (!encryptionCheck.isValid) {
-      console.error('Encryption config invalid:', encryptionCheck.error);
+    const config = validateEncryptionConfig();
+    if (!config.valid) {
+      console.error('Encryption configuration error:', config.error);
       return new Response(
         JSON.stringify({ 
-          error: 'Server configuration error', 
-          message: encryptionCheck.error,
-          adminAction: 'Configure ENCRYPTION_KEY environment variable'
-        }),
+          error: 'Server configuration error',
+          details: config.error 
+        }), 
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -150,30 +76,77 @@ serve(async (req) => {
       );
     }
 
-    // Decrypt sensitive fields
-    const decryptedProfile = { ...profile };
-
+    // Use user_id as workspace_id until workspaces are implemented
+    const workspaceId = user.id;
+    
+    // Decrypt sensitive fields if they exist and are encrypted
+    let bank_details = null;
+    let vat_id = null;
+    let company_name = profile.company_name;
+    let address = profile.address;
+    let encryptionErrors: string[] = [];
+    
     try {
+      // Handle bank_details (both old and new formats)
       if (profile.bank_details_enc) {
-        decryptedProfile.bank_details = await decryptString(profile.bank_details_enc);
+        try {
+          if (typeof profile.bank_details_enc === 'object' && profile.bank_details_enc.iv && profile.bank_details_enc.ct) {
+            // Old format - need to convert to new workspace format
+            // For now, just return null and mark as needing re-encryption
+            bank_details = null;
+            encryptionErrors.push('bank_details');
+          } else if (typeof profile.bank_details_enc === 'string') {
+            bank_details = await decryptField(supabase, workspaceId, profile.bank_details_enc);
+          }
+        } catch (error) {
+          console.error('Failed to decrypt bank_details:', error.message);
+          encryptionErrors.push('bank_details');
+        }
+      } else if (profile.bank_details && !profile.bank_details.startsWith('enc:')) {
+        // Fallback to plain text field
+        bank_details = profile.bank_details;
       }
-    } catch (error) {
-      console.error('Failed to decrypt bank_details:', error);
-      decryptedProfile.bank_details = '[DECRYPTION_ERROR]';
-    }
-
-    try {
+      
+      // Handle vat_id (both old and new formats)
       if (profile.vat_id_enc) {
-        decryptedProfile.vat_id = await decryptString(profile.vat_id_enc);
+        try {
+          if (typeof profile.vat_id_enc === 'object' && profile.vat_id_enc.iv && profile.vat_id_enc.ct) {
+            // Old format - need to convert to new workspace format
+            // For now, just return null and mark as needing re-encryption
+            vat_id = null;
+            encryptionErrors.push('vat_id');
+          } else if (typeof profile.vat_id_enc === 'string') {
+            vat_id = await decryptField(supabase, workspaceId, profile.vat_id_enc);
+          }
+        } catch (error) {
+          console.error('Failed to decrypt vat_id:', error.message);
+          encryptionErrors.push('vat_id');
+        }
+      } else if (profile.vat_id && !profile.vat_id.startsWith('enc:')) {
+        // Fallback to plain text field
+        vat_id = profile.vat_id;
       }
+      
     } catch (error) {
-      console.error('Failed to decrypt vat_id:', error);
-      decryptedProfile.vat_id = '[DECRYPTION_ERROR]';
+      console.error('Decryption error:', error.message);
     }
 
-    // Remove encrypted fields from response (never send ciphertext to client)
-    delete decryptedProfile.bank_details_enc;
-    delete decryptedProfile.vat_id_enc;
+    // Return profile with decrypted sensitive fields
+    // Remove encrypted fields from response
+    const { bank_details_enc, vat_id_enc, ...cleanProfile } = profile;
+    
+    const responseProfile = {
+      ...cleanProfile,
+      bank_details,
+      vat_id,
+      company_name,
+      address,
+      // Include encryption status for UI
+      encryption_status: {
+        enabled: true,
+        errors: encryptionErrors.length > 0 ? encryptionErrors : undefined
+      }
+    };
 
     // Log the access for audit
     await supabase.from('audit_logs').insert({
@@ -182,6 +155,7 @@ serve(async (req) => {
       details: {
         has_encrypted_bank_details: !!profile.bank_details_enc,
         has_encrypted_vat_id: !!profile.vat_id_enc,
+        encryption_errors: encryptionErrors,
         timestamp: new Date().toISOString()
       },
       ip_address: req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip'),
@@ -189,7 +163,7 @@ serve(async (req) => {
     });
 
     return new Response(
-      JSON.stringify({ profile: decryptedProfile }),
+      JSON.stringify({ profile: responseProfile }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
