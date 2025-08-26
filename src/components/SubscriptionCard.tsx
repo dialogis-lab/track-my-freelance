@@ -74,15 +74,16 @@ function PlanCard({
 
         {/* CTA sits at the bottom across all cards */}
         <div className="mt-6">
-          <button
+        <button
             type="button"
-            onClick={ctaDisabled ? undefined : onCta}
+            onClick={ctaDisabled ? () => {} : onCta}
             disabled={ctaDisabled || ctaLoading}
             aria-disabled={ctaDisabled || ctaLoading}
             tabIndex={ctaDisabled ? -1 : 0}
+            style={ctaDisabled ? { pointerEvents: 'none' } : {}}
             className={
               isCurrent
-                ? "inline-flex h-11 w-full items-center justify-center rounded-lg border bg-muted text-sm text-muted-foreground cursor-not-allowed pointer-events-none"
+                ? "inline-flex h-11 w-full items-center justify-center rounded-lg border bg-muted text-sm text-muted-foreground cursor-not-allowed"
                 : "inline-flex h-11 w-full items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 via-teal-500 to-green-500 px-5 text-white font-medium shadow-sm hover:opacity-95 active:opacity-90 transition"
             }
           >
