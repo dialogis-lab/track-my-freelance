@@ -1,9 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { Building2, User, Bell, DollarSign, Clock, Shield, Info, Cookie, Palette, Timer, Settings } from 'lucide-react';
+import { Building2, User, Bell, DollarSign, Clock, Shield, Info, Cookie, Palette, Timer, Settings, CreditCard } from 'lucide-react';
 
 const settingsItems = [
   { title: "Profile", path: "/settings", icon: Building2, exact: true },
   { title: "Account", path: "/settings/account", icon: User },
+  { title: "Subscription", path: "/settings/subscription", icon: CreditCard },
   { title: "Timer Mode", path: "/settings/timer-mode", icon: Settings },
   { title: "Timer Style", path: "/settings/timer-style", icon: Palette },
   { title: "Pomodoro", path: "/settings/pomodoro", icon: Timer },

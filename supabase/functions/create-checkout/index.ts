@@ -102,13 +102,22 @@ serve(async (req) => {
     }
 
     // Create checkout session
-    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const origin = req.headers.get("origin") || "https://timehatch.app";
+    
+    // Determine price ID based on plan
+    let priceId = stripePriceSolo; // default to solo
+    if (plan === 'team_monthly') {
+      priceId = Deno.env.get("STRIPE_PRICE_TEAM_MONTHLY") || stripePriceSolo;
+    } else if (plan === 'team_yearly') {
+      priceId = Deno.env.get("STRIPE_PRICE_TEAM_YEARLY") || stripePriceSolo;
+    }
+    
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: stripePriceSolo,
+          price: priceId,
           quantity: 1,
         },
       ],

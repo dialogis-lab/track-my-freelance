@@ -3,6 +3,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { SettingsSidebar } from '@/components/SettingsSidebar';
 import { ProfileForm } from '@/components/ProfileForm';
 import { SettingsAccount } from '@/components/SettingsAccount';
+import { SettingsSubscription } from '@/components/SettingsSubscription';
 import { SettingsTimerStyle } from '@/components/SettingsTimerStyle';
 import { SettingsReminders } from '@/components/SettingsReminders';
 import { SettingsCurrency } from '@/components/SettingsCurrency';
@@ -28,6 +29,7 @@ export default function Settings() {
               <Routes>
                 <Route path="/" element={<ProfileForm />} />
                 <Route path="/account" element={<SettingsAccount />} />
+                <Route path="/subscription" element={<SettingsSubscription />} />
                 <Route path="/timer-style" element={<SettingsTimerStyle />} />
                 <Route path="/reminders" element={<SettingsReminders />} />
                 <Route path="/currency" element={<SettingsCurrency />} />

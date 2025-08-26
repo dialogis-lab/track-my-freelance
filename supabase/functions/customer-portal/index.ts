@@ -57,7 +57,7 @@ serve(async (req) => {
     logStep("Found customer ID", { customerId: profile.stripe_customer_id });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
-    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const origin = req.headers.get("origin") || "https://timehatch.app";
     
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: profile.stripe_customer_id,
