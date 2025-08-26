@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Download, FileText, FileSpreadsheet } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { TrendChart } from '@/components/TrendChart';
+import { TimeEntriesTable } from '@/components/TimeEntriesTable';
 import { formatTime, calculateDurationMinutes, formatTimeForCSV, formatDuration } from '@/lib/timeUtils';
 
 interface TimeEntry {
@@ -58,6 +59,7 @@ export default function Reports() {
   const [clientFilter, setClientFilter] = useState('all');
   const [projectFilter, setProjectFilter] = useState('all');
   const [tagFilter, setTagFilter] = useState('all');
+  const [searchFilter, setSearchFilter] = useState('');
   const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
   const [projects, setProjects] = useState<{ id: string; name: string; client_name?: string }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -428,15 +430,16 @@ export default function Reports() {
               </Select>
             </div>
 
-            <div className="flex items-end gap-2">
-              <Button onClick={exportToCSV} disabled={loading || entries.length === 0} className="h-9 px-3" size="sm">
-                <FileSpreadsheet className="w-4 h-4 mr-2" />
-                Export CSV
-              </Button>
-              <Button onClick={exportToPDF} disabled={loading || entries.length === 0} variant="outline" className="h-9 px-3" size="sm">
-                <FileText className="w-4 h-4 mr-2" />
-                Export PDF
-              </Button>
+            <div className="space-y-2">
+              <Label htmlFor="searchFilter" className="text-sm font-medium">Search Notes</Label>
+              <Input
+                id="searchFilter"
+                type="text"
+                placeholder="Search in notes..."
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                className="h-9 text-sm"
+              />
             </div>
           </div>
           
@@ -603,66 +606,14 @@ export default function Reports() {
         </div>
 
         {/* Time Entries Table */}
-        <div className="rounded-xl border bg-card shadow-sm p-4 sm:p-5">
-          <h3 className="text-lg font-semibold mb-3">Time Entries</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-2">Date</th>
-                  <th className="text-left p-2">Project</th>
-                  <th className="text-left p-2">Client</th>
-                  <th className="text-left p-2">Duration</th>
-                  <th className="text-left p-2">Rate</th>
-                  <th className="text-left p-2">Value</th>
-                  <th className="text-left p-2">Tags</th>
-                  <th className="text-left p-2">Notes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((entry) => {
-                  const start = new Date(entry.started_at);
-                  const end = entry.stopped_at ? new Date(entry.stopped_at) : null;
-                  const minutes = end ? calculateDurationMinutes(start, end) : 0;
-                  const hours = minutes / 60;
-                  const value = (entry.projects.rate_hour || 0) * hours;
-
-                  return (
-                    <tr key={entry.id} className="border-b min-h-[56px]">
-                      <td className="p-2">{start.toLocaleDateString()}</td>
-                      <td className="p-2">{entry.projects.name}</td>
-                      <td className="p-2">{entry.projects.clients?.name || 'No Client'}</td>
-                      <td className="p-2">
-                        <div className="font-mono">
-                          <div className="font-bold">{formatDuration(minutes).normal}</div>
-                          <div className="text-xs text-muted-foreground tabular-nums">
-                            = {formatDuration(minutes).industrial}h
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-2 tabular-nums">${(entry.projects.rate_hour || 0).toFixed(2)}/h</td>
-                      <td className="p-2 tabular-nums">${value.toFixed(2)}</td>
-                      <td className="p-2">
-                        {entry.tags?.length ? (
-                          <div className="flex flex-wrap gap-1">
-                            {entry.tags.map((tag, index) => (
-                              <span key={index} className="bg-primary/10 text-primary px-2 py-1 rounded text-xs">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          '-'
-                        )}
-                      </td>
-                      <td className="p-2">{entry.notes || '-'}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <TimeEntriesTable
+          startDate={startDate}
+          endDate={endDate}
+          clientFilter={clientFilter}
+          projectFilter={projectFilter}
+          tagFilter={tagFilter}
+          searchFilter={searchFilter}
+        />
       </div>
     </AppLayout>
   );
