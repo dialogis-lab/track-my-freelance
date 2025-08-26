@@ -6,7 +6,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/AppLayout';
 import { CombinedTimerCard } from '@/components/CombinedTimerCard';
-import { PlanCard } from '@/components/PlanCard';
+import { PlanBadge } from '@/components/PlanBadge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, FolderOpen, Users, TrendingUp, ExternalLink, Receipt } from 'lucide-react';
 import { formatTime, hoursToMinutes, calculateDurationMinutes, formatDuration } from '@/lib/timeUtils';
@@ -211,11 +211,12 @@ export default function Dashboard() {
     <AppLayout>
       <div className="p-6 space-y-6">
         <div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <h1 className="text-3xl font-bold text-brand-gradient">Dashboard</h1>
               <p className="text-muted-foreground">Welcome back! Here's your time tracking overview.</p>
             </div>
+            <PlanBadge />
           </div>
         </div>
 
@@ -325,24 +326,10 @@ export default function Dashboard() {
           </div>
         )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_auto] gap-6 items-start">
             {/* Combined Timer Card */}
-            <div className="lg:col-span-2">
+            <div className="flex justify-center xl:justify-start">
               <CombinedTimerCard />
-              
-              {/* Debug Info */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="mt-4 p-4 bg-gray-100 rounded text-xs">
-                  <div>Stopwatch Running: {isStopwatchRunning ? 'YES' : 'NO'}</div>
-                  <div>Stopwatch Time: {getStopwatchDisplayTime()}ms</div>
-                  <div>Timer Loading: {timerLoading ? 'YES' : 'NO'}</div>
-                </div>
-              )}
-            </div>
-
-            {/* Plan Card */}
-            <div>
-              <PlanCard />
             </div>
           </div>
 

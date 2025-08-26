@@ -179,22 +179,23 @@ export function CombinedTimerCard() {
   const mainDisplayTime = getStopwatchDisplayTime();
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Timer</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Main Timer Display */}
-        <div className="text-center">
-          <div className="text-4xl font-mono font-bold text-primary mb-2">
-            {formatMainTime(mainDisplayTime)}
+    <div className="w-full max-w-3xl">
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center justify-between">
+            <span>Timer</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-5 sm:p-6 space-y-6">
+          {/* Main Timer Display */}
+          <div className="text-center">
+            <div className="font-mono font-semibold tracking-wider select-none leading-none text-[clamp(22px,4vw,44px)] text-primary mb-2">
+              {formatMainTime(mainDisplayTime)}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {isStopwatchRunning ? 'Running' : 'Stopped'}
+            </div>
           </div>
-          <div className="text-sm text-muted-foreground">
-            {isStopwatchRunning ? 'Running' : 'Stopped'}
-          </div>
-        </div>
 
         {/* Project Selection */}
         <div className="space-y-2">
@@ -250,7 +251,16 @@ export function CombinedTimerCard() {
             </>
           )}
         </Button>
+
+        {/* Debug Info - only show if debug flag is set */}
+        {process.env.NEXT_PUBLIC_TIMER_DEBUG === '1' && (
+          <div className="mt-4 p-4 bg-gray-100 rounded text-xs">
+            <div>Stopwatch Running: {isStopwatchRunning ? 'YES' : 'NO'}</div>
+            <div>Stopwatch Time: {getStopwatchDisplayTime()}ms</div>
+          </div>
+        )}
       </CardContent>
     </Card>
+    </div>
   );
 }
