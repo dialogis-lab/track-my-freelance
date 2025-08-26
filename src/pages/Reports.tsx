@@ -2,14 +2,12 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/AppLayout';
-import { AppSidebar } from '@/components/AppSidebar';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { Download, FileText, FileSpreadsheet } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { TrendChart } from '@/components/TrendChart';
@@ -365,24 +363,12 @@ export default function Reports() {
   };
 
   return (
-    <SidebarProvider defaultOpen>
-      <div className="min-h-screen flex w-full">
-        <AppSidebar />
-        
-        <div className="flex-1 flex flex-col">
-          <header className="h-12 flex items-center border-b bg-background/80 backdrop-blur">
-            <SidebarTrigger className="ml-4" />
-            <div className="flex-1 px-4">
-              <h1 className="text-lg font-semibold">Reports</h1>
-            </div>
-          </header>
-
-          <main className="flex-1 overflow-auto">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Reports</h1>
-                <p className="text-sm text-muted-foreground">Analyze your time entries and export data.</p>
-              </div>
+    <AppLayout>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Reports</h1>
+          <p className="text-sm text-muted-foreground">Analyze your time entries and export data.</p>
+        </div>
 
         {/* Filters */}
         <div className="rounded-xl border bg-card shadow-sm p-4 sm:p-5">
@@ -628,10 +614,7 @@ export default function Reports() {
           tagFilter={tagFilter}
           searchFilter={searchFilter}
         />
-            </div>
-          </main>
-        </div>
       </div>
-    </SidebarProvider>
+    </AppLayout>
   );
 }
