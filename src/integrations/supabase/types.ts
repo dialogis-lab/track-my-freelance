@@ -55,10 +55,12 @@ export type Database = {
           contact_person: string | null
           created_at: string
           email: string | null
+          email_fp: string | null
           id: string
           name: string
           notes: string | null
           phone: string | null
+          tax_id_fp: string | null
           tax_number: string | null
           updated_at: string | null
           user_id: string
@@ -75,10 +77,12 @@ export type Database = {
           contact_person?: string | null
           created_at?: string
           email?: string | null
+          email_fp?: string | null
           id?: string
           name: string
           notes?: string | null
           phone?: string | null
+          tax_id_fp?: string | null
           tax_number?: string | null
           updated_at?: string | null
           user_id: string
@@ -95,10 +99,12 @@ export type Database = {
           contact_person?: string | null
           created_at?: string
           email?: string | null
+          email_fp?: string | null
           id?: string
           name?: string
           notes?: string | null
           phone?: string | null
+          tax_id_fp?: string | null
           tax_number?: string | null
           updated_at?: string | null
           user_id?: string
@@ -295,6 +301,7 @@ export type Database = {
       }
       invoices: {
         Row: {
+          bill_to_email_fp: string | null
           client_id: string
           created_at: string
           currency: string
@@ -309,6 +316,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bill_to_email_fp?: string | null
           client_id: string
           created_at?: string
           currency?: string
@@ -323,6 +331,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          bill_to_email_fp?: string | null
           client_id?: string
           created_at?: string
           currency?: string
@@ -447,8 +456,10 @@ export type Database = {
           address: string | null
           bank_details: string | null
           bank_details_enc: Json | null
+          billing_email_fp: string | null
           company_name: string | null
           created_at: string
+          iban_fp: string | null
           id: string
           logo_url: string | null
           stripe_current_period_end: string | null
@@ -461,6 +472,7 @@ export type Database = {
           subscription_status: string | null
           timer_skin: string
           updated_at: string
+          vat_fp: string | null
           vat_id: string | null
           vat_id_enc: Json | null
         }
@@ -468,8 +480,10 @@ export type Database = {
           address?: string | null
           bank_details?: string | null
           bank_details_enc?: Json | null
+          billing_email_fp?: string | null
           company_name?: string | null
           created_at?: string
+          iban_fp?: string | null
           id: string
           logo_url?: string | null
           stripe_current_period_end?: string | null
@@ -482,6 +496,7 @@ export type Database = {
           subscription_status?: string | null
           timer_skin?: string
           updated_at?: string
+          vat_fp?: string | null
           vat_id?: string | null
           vat_id_enc?: Json | null
         }
@@ -489,8 +504,10 @@ export type Database = {
           address?: string | null
           bank_details?: string | null
           bank_details_enc?: Json | null
+          billing_email_fp?: string | null
           company_name?: string | null
           created_at?: string
+          iban_fp?: string | null
           id?: string
           logo_url?: string | null
           stripe_current_period_end?: string | null
@@ -503,6 +520,7 @@ export type Database = {
           subscription_status?: string | null
           timer_skin?: string
           updated_at?: string
+          vat_fp?: string | null
           vat_id?: string | null
           vat_id_enc?: Json | null
         }
@@ -644,6 +662,33 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      workspace_keys: {
+        Row: {
+          created_at: string
+          dek_cipher: string
+          dek_nonce: string
+          dek_tag: string
+          version: number
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          dek_cipher: string
+          dek_nonce: string
+          dek_tag: string
+          version?: number
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          dek_cipher?: string
+          dek_nonce?: string
+          dek_tag?: string
+          version?: number
+          workspace_id?: string
         }
         Relationships: []
       }
