@@ -751,6 +751,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      user_can_access_client: {
+        Args: { client_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "user"
