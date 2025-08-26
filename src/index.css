@@ -277,4 +277,9 @@ All colors MUST be HSL.
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Prevent global image rules from shrinking the hero logo */
+  .hero-logo img, .hero-logo {
+    max-height: none !important;
+  }
 }
