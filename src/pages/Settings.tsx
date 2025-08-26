@@ -15,16 +15,16 @@ import { SettingsAbout } from '@/components/SettingsAbout';
 export default function Settings() {
   return (
     <AppLayout>
-      <div className="p-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-          <p className="text-muted-foreground">Manage your account and preferences.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Settings</h1>
+          <p className="text-sm text-muted-foreground">Manage your account and preferences.</p>
         </div>
 
         <div className="flex min-h-[600px] w-full rounded-xl border bg-card shadow-sm overflow-hidden">
           <SettingsSidebar />
           
-          <main className="flex-1 p-6 bg-background">
+          <main className="flex-1 p-6 bg-background max-w-3xl">
             <div className="animate-fade-in">
               <Routes>
                 <Route path="/" element={<ProfileForm />} />

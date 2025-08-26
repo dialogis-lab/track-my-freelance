@@ -324,12 +324,12 @@ export default function Projects() {
 
   return (
     <AppLayout>
-      <div className="p-6 space-y-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Projects</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Projects</h1>
             <div className="flex items-center gap-2 mt-1">
-              <p className="text-muted-foreground">Manage your projects and hourly rates.</p>
+              <p className="text-sm text-muted-foreground">Manage your projects and hourly rates.</p>
               {isFree && (
                 <Badge variant="outline" className="text-xs">
                   <Crown className="h-3 w-3 mr-1" />

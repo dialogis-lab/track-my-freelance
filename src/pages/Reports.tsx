@@ -448,67 +448,43 @@ export default function Reports() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Total Hours</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{formatDuration(Math.round(summary.totalHours * 60)).normal}</div>
-              <div className="text-sm text-muted-foreground">= {formatDuration(Math.round(summary.totalHours * 60)).industrial}h</div>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border bg-card shadow-sm p-4 sm:p-5">
+            <h3 className="text-sm font-medium text-muted-foreground">Total Hours</h3>
+            <div className="text-2xl font-bold tabular-nums">{formatDuration(Math.round(summary.totalHours * 60)).normal}</div>
+            <div className="text-sm text-muted-foreground">= {formatDuration(Math.round(summary.totalHours * 60)).industrial}h</div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Total Value</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">${summary.totalValue.toFixed(2)}</div>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border bg-card shadow-sm p-4 sm:p-5">
+            <h3 className="text-sm font-medium text-muted-foreground">Total Value</h3>
+            <div className="text-2xl font-bold tabular-nums">${summary.totalValue.toFixed(2)}</div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Entries</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{summary.entriesCount}</div>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border bg-card shadow-sm p-4 sm:p-5">
+            <h3 className="text-sm font-medium text-muted-foreground">Entries</h3>
+            <div className="text-2xl font-bold tabular-nums">{summary.entriesCount}</div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Pomodoro Focus</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatDuration(Math.round(summary.pomodoroHours * 60)).normal}</div>
-              <div className="text-sm text-muted-foreground">{summary.pomodoroSessions} sessions</div>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border bg-card shadow-sm p-4 sm:p-5">
+            <h3 className="text-sm font-medium text-muted-foreground">Pomodoro Focus</h3>
+            <div className="text-xl font-bold tabular-nums">{formatDuration(Math.round(summary.pomodoroHours * 60)).normal}</div>
+            <div className="text-sm text-muted-foreground">{summary.pomodoroSessions} sessions</div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Focus Ratio</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {summary.totalHours > 0 ? Math.round((summary.pomodoroHours / summary.totalHours) * 100) : 0}%
-              </div>
-              <div className="text-sm text-muted-foreground">of total time</div>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border bg-card shadow-sm p-4 sm:p-5">
+            <h3 className="text-sm font-medium text-muted-foreground">Focus Ratio</h3>
+            <div className="text-xl font-bold tabular-nums">
+              {summary.totalHours > 0 ? Math.round((summary.pomodoroHours / summary.totalHours) * 100) : 0}%
+            </div>
+            <div className="text-sm text-muted-foreground">of total time</div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Average Streak</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {summary.pomodoroSessions > 0 ? Math.round(summary.pomodoroSessions / (summary.entriesCount > 0 ? summary.entriesCount : 1)) : 0}
-              </div>
-              <div className="text-sm text-muted-foreground">sessions per day</div>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border bg-card shadow-sm p-4 sm:p-5">
+            <h3 className="text-sm font-medium text-muted-foreground">Average Streak</h3>
+            <div className="text-xl font-bold tabular-nums">
+              {summary.pomodoroSessions > 0 ? Math.round(summary.pomodoroSessions / (summary.entriesCount > 0 ? summary.entriesCount : 1)) : 0}
+            </div>
+            <div className="text-sm text-muted-foreground">sessions per day</div>
+          </div>
         </div>
 
         {/* Export Buttons */}
@@ -524,72 +500,66 @@ export default function Reports() {
         </div>
 
         {/* Trend Chart */}
-        <TrendChart
-          startDate={startDate}
-          endDate={endDate}
-          clientFilter={clientFilter}
-          projectFilter={projectFilter}
-          tagFilter={tagFilter}
-        />
+        <div className="rounded-xl border bg-card shadow-sm min-h-[280px]">
+          <TrendChart
+            startDate={startDate}
+            endDate={endDate}
+            clientFilter={clientFilter}
+            projectFilter={projectFilter}
+            tagFilter={tagFilter}
+          />
+        </div>
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Hours by Project</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {Object.keys(summary.byProject).length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={Object.entries(summary.byProject).map(([name, data]) => ({
-                    name,
-                    hours: data.hours
-                  }))}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="hours" fill="hsl(var(--primary))" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                  No data for selected period
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border bg-card shadow-sm p-4 sm:p-5">
+            <h3 className="text-lg font-semibold mb-3">Hours by Project</h3>
+            {Object.keys(summary.byProject).length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={Object.entries(summary.byProject).map(([name, data]) => ({
+                  name,
+                  hours: data.hours
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="hours" fill="hsl(var(--primary))" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                No data for selected period
+              </div>
+            )}
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Hours by Client</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {Object.keys(summary.byClient).length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={Object.entries(summary.byClient).map(([name, data], index) => ({
-                        name,
-                        hours: data.hours,
-                        fill: `hsl(${index * 137.5 % 360}, 70%, 50%)`
-                      }))}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      dataKey="hours"
-                      label={({ name, hours }) => `${name}: ${hours.toFixed(1)}h`}
-                    />
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                  No data for selected period
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border bg-card shadow-sm p-4 sm:p-5">
+            <h3 className="text-lg font-semibold mb-3">Hours by Client</h3>
+            {Object.keys(summary.byClient).length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={Object.entries(summary.byClient).map(([name, data], index) => ({
+                      name,
+                      hours: data.hours,
+                      fill: `hsl(${index * 137.5 % 360}, 70%, 50%)`
+                    }))}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    dataKey="hours"
+                    label={({ name, hours }) => `${name}: ${hours.toFixed(1)}h`}
+                  />
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                No data for selected period
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Breakdown Tables */}

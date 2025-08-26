@@ -256,12 +256,12 @@ export default function Invoices() {
 
   return (
     <AppLayout>
-      <div className="p-6 space-y-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Invoices</h1>
-            <p className="text-muted-foreground">Manage your invoices and billing</p>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Invoices</h1>
+            <p className="text-sm text-muted-foreground">Manage your invoices and billing</p>
           </div>
           
           <Button onClick={() => navigate('/invoices/new')}>
@@ -271,147 +271,145 @@ export default function Invoices() {
         </div>
 
         {/* Filters */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="space-y-4">
-              {/* Basic Filters */}
-              <div className="flex gap-4 flex-wrap">
-                <div className="flex-1 min-w-64">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                    <Input
-                      placeholder="Search by client name or invoice number..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
+        <div className="rounded-xl border bg-card shadow-sm p-4 sm:p-5">
+          <div className="space-y-4">
+            {/* Basic Filters */}
+            <div className="flex gap-4 flex-wrap">
+              <div className="flex-1 min-w-64">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input
+                    placeholder="Search by client name or invoice number..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 h-9"
+                  />
                 </div>
-                
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="sent">Sent</SelectItem>
-                    <SelectItem value="paid">Paid</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Button
-                  variant="outline"
-                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                  className="flex items-center gap-2"
-                >
-                  <Filter className="w-4 h-4" />
-                  Advanced
-                  <ChevronDown className={`w-4 h-4 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`} />
-                </Button>
-
-                {(searchTerm || statusFilter !== 'all' || clientFilter !== 'all' || dateFrom || dateTo || minAmount || maxAmount) && (
-                  <Button variant="ghost" onClick={clearFilters} className="flex items-center gap-2">
-                    <X className="w-4 h-4" />
-                    Clear
-                  </Button>
-                )}
               </div>
+              
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-48 h-9">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="sent">Sent</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                </SelectContent>
+              </Select>
 
-              {/* Advanced Filters */}
-              <Collapsible open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
-                <CollapsibleContent className="space-y-4 pt-4 border-t">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Client Filter */}
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground mb-2 block">Client</label>
-                      <Select value={clientFilter} onValueChange={setClientFilter}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="All clients" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Clients</SelectItem>
-                          {allClients.map(client => (
-                            <SelectItem key={client.id} value={client.name}>{client.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+              <Button
+                variant="outline"
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className="flex items-center gap-2 h-9"
+              >
+                <Filter className="w-4 h-4" />
+                Advanced
+                <ChevronDown className={`w-4 h-4 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`} />
+              </Button>
 
-                    {/* Date From */}
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground mb-2 block">Date From</label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full justify-start text-left font-normal">
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {dateFrom ? format(dateFrom, 'PPP') : 'Pick a date'}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={dateFrom}
-                            onSelect={setDateFrom}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
+              {(searchTerm || statusFilter !== 'all' || clientFilter !== 'all' || dateFrom || dateTo || minAmount || maxAmount) && (
+                <Button variant="ghost" onClick={clearFilters} className="flex items-center gap-2 h-9">
+                  <X className="w-4 h-4" />
+                  Clear
+                </Button>
+              )}
+            </div>
 
-                    {/* Date To */}
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground mb-2 block">Date To</label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full justify-start text-left font-normal">
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {dateTo ? format(dateTo, 'PPP') : 'Pick a date'}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={dateTo}
-                            onSelect={setDateTo}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
+            {/* Advanced Filters */}
+            <Collapsible open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
+              <CollapsibleContent className="space-y-4 pt-4 border-t">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Client Filter */}
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">Client</label>
+                    <Select value={clientFilter} onValueChange={setClientFilter}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="All clients" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Clients</SelectItem>
+                        {allClients.map(client => (
+                          <SelectItem key={client.id} value={client.name}>{client.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                    {/* Amount Range */}
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground mb-2 block">Amount Range</label>
-                      <div className="space-y-2">
-                        <div className="relative">
-                          <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                          <Input
-                            placeholder="Min amount"
-                            value={minAmount}
-                            onChange={(e) => setMinAmount(e.target.value)}
-                            type="number"
-                            className="pl-10"
-                          />
-                        </div>
-                        <div className="relative">
-                          <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                          <Input
-                            placeholder="Max amount"
-                            value={maxAmount}
-                            onChange={(e) => setMaxAmount(e.target.value)}
-                            type="number"
-                            className="pl-10"
-                          />
-                        </div>
+                  {/* Date From */}
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">Date From</label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left font-normal h-9">
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {dateFrom ? format(dateFrom, 'PPP') : 'Pick a date'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={dateFrom}
+                          onSelect={setDateFrom}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* Date To */}
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">Date To</label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left font-normal h-9">
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {dateTo ? format(dateTo, 'PPP') : 'Pick a date'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={dateTo}
+                          onSelect={setDateTo}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* Amount Range */}
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">Amount Range</label>
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                        <Input
+                          placeholder="Min amount"
+                          value={minAmount}
+                          onChange={(e) => setMinAmount(e.target.value)}
+                          type="number"
+                          className="pl-10 h-9"
+                        />
+                      </div>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                        <Input
+                          placeholder="Max amount"
+                          value={maxAmount}
+                          onChange={(e) => setMaxAmount(e.target.value)}
+                          type="number"
+                          className="pl-10 h-9"
+                        />
                       </div>
                     </div>
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
-            </div>
-          </CardContent>
-        </Card>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+        </div>
 
         {/* Invoices List */}
         {filteredInvoices.length === 0 ? (
