@@ -14,7 +14,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { signOut, user } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const { isFree } = usePlan();
   const location = useLocation();
 
@@ -66,13 +66,17 @@ export function AppLayout({ children }: AppLayoutProps) {
           </div>
 
           <div className="flex items-center gap-2 justify-end min-w-[200px]">
-            {isAdmin && (
+            {roleLoading ? (
+              <div className="h-8 w-[70px] rounded-md bg-muted animate-pulse" />
+            ) : isAdmin ? (
               <Button variant="outline" size="sm" asChild>
                 <Link to="/admin">
                   <ShieldCheck className="w-4 h-4 mr-2" />
                   Admin
                 </Link>
               </Button>
+            ) : (
+              <div className="w-[70px]" />
             )}
             
             <DropdownMenu>
