@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/components/ui/use-toast';
 import { Download, FileText, FileSpreadsheet } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { TrendChart } from '@/components/TrendChart';
 import { formatTime, calculateDurationMinutes, formatTimeForCSV, formatDuration } from '@/lib/timeUtils';
 
 interface TimeEntry {
@@ -521,6 +522,15 @@ export default function Reports() {
             Export PDF
           </Button>
         </div>
+
+        {/* Trend Chart */}
+        <TrendChart
+          startDate={startDate}
+          endDate={endDate}
+          clientFilter={clientFilter}
+          projectFilter={projectFilter}
+          tagFilter={tagFilter}
+        />
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Plus, FolderOpen, Clock, TrendingUp, Play, Square, FileText, Edit2 } from 'lucide-react';
 import { InvoiceWizard } from '@/components/InvoiceWizard';
+import { TrendSparkline } from '@/components/TrendSparkline';
 import { formatDuration, calculateDurationMinutes } from '@/lib/timeUtils';
 
 interface Client {
@@ -436,19 +437,22 @@ export default function ClientDetail() {
             </div>
           </div>
           
-          <div className="flex space-x-2">
-            <Button variant="outline" onClick={startEdit}>
-              <Edit2 className="w-4 h-4 mr-2" />
-              Edit Client
-            </Button>
-            <Button onClick={() => navigate(`/invoices/new?clientId=${id}`)}>
-              <FileText className="w-4 h-4 mr-2" />
-              Create Invoice
-            </Button>
-            <Button onClick={handleCreateProject}>
-              <Plus className="w-4 h-4 mr-2" />
-              New Project
-            </Button>
+          <div className="flex items-center space-x-4">
+            <TrendSparkline clientId={id!} />
+            <div className="flex space-x-2">
+              <Button variant="outline" onClick={startEdit}>
+                <Edit2 className="w-4 h-4 mr-2" />
+                Edit Client
+              </Button>
+              <Button onClick={() => navigate(`/invoices/new?clientId=${id}`)}>
+                <FileText className="w-4 h-4 mr-2" />
+                Create Invoice
+              </Button>
+              <Button onClick={handleCreateProject}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Project
+              </Button>
+            </div>
           </div>
         </div>
 
