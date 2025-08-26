@@ -47,7 +47,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 const Icon = item.icon;
                 const baseClasses = "inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors snap-start";
                 const idleClasses = "text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
-                const activeClasses = "text-foreground relative after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-gradient-to-r after:from-blue-500 after:via-teal-500 after:to-green-500";
+                const activeClasses = "text-foreground relative after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-brand-gradient";
                 
                 return (
                   <Link
@@ -119,7 +119,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               const Icon = item.icon;
               const baseClasses = "inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors snap-start min-h-[44px]";
               const idleClasses = "text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
-              const activeClasses = "text-foreground relative after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-gradient-to-r after:from-blue-500 after:via-teal-500 after:to-green-500";
+              const activeClasses = "text-foreground relative after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-brand-gradient";
               
               return (
                 <Link
