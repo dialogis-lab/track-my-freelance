@@ -39,9 +39,10 @@ serve(async (req) => {
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
+      logStep("ERROR: STRIPE_SECRET_KEY not found in environment");
       throw new Error("STRIPE_SECRET_KEY is not configured");
     }
-    logStep("Stripe key verified");
+    logStep("Stripe key verified", { keyExists: !!stripeKey, keyLength: stripeKey.length });
 
     // Parse request body for plan
     const body = await req.json();
