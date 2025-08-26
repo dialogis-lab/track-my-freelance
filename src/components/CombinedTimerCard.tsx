@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTimerContext } from '@/contexts/TimerContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useDashboardTimers } from '@/hooks/useDashboardTimers';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +13,7 @@ import { Play, Square } from 'lucide-react';
 export function CombinedTimerCard() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { triggerTimerUpdate } = useTimerContext();
   const [loading, setLoading] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [notes, setNotes] = useState('');
@@ -188,6 +190,9 @@ export function CombinedTimerCard() {
       debugLog('Timer started successfully:', timeEntryData);
       toast({ title: "Timer started" });
       
+      // Trigger dashboard update
+      triggerTimerUpdate();
+      
       // Don't clear notes or reload - let the real-time updates handle the UI changes
       
     } catch (error) {
@@ -223,6 +228,9 @@ export function CombinedTimerCard() {
       }
 
       toast({ title: "Timer stopped" });
+      
+      // Trigger dashboard update
+      triggerTimerUpdate();
       
       // Clear notes after stopping
       setNotes('');
