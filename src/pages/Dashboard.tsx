@@ -334,46 +334,66 @@ export default function Dashboard() {
             
             {/* Recent Activity */}
             <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Recent Activity</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {recentEntries.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-4">
-                      No time entries yet. Start tracking your first project!
-                    </p>
-                  ) : (
-                    recentEntries.map((entry) => (
-                      <div key={entry.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                        <div className="flex-1">
-                          <p className="font-medium">
-                            {entry.projects.clients?.name ? `${entry.projects.clients.name} - ` : ''}
-                            {entry.projects.name}
-                          </p>
-                          {entry.notes && (
-                            <p className="text-sm text-muted-foreground">{entry.notes}</p>
-                          )}
-                          <p className="text-xs text-muted-foreground">
-                            {formatDate(entry.started_at)}
-                          </p>
-                        </div>
-                        <div className="text-sm font-mono">
-                          {(() => {
-                            const minutes = calculateDurationMinutes(new Date(entry.started_at), entry.stopped_at ? new Date(entry.stopped_at) : undefined);
-                            const duration = formatDuration(minutes);
-                            return (
-                              <>
-                                <div className="font-bold">{duration.normal}</div>
-                                <div className="text-xs text-muted-foreground">= {duration.industrial}h</div>
-                              </>
-                            );
-                          })()}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+              <CardContent className="p-4 sm:p-5">
+                {recentEntries.length === 0 ? (
+                  <div className="text-sm text-muted-foreground py-10 text-center">
+                    No time entries yet. Start tracking your first project!
+                  </div>
+                ) : (
+                  <>
+                    <ul className="divide-y divide-border">
+                      {recentEntries.map((entry) => (
+                        <li
+                          key={entry.id}
+                          className="group flex items-center justify-between gap-3 py-3.5 sm:py-4 min-h-[44px] hover:bg-muted/50 rounded-md px-2 -mx-2 transition-colors"
+                        >
+                          <div className="min-w-0">
+                            <div 
+                              className="text-[15px] sm:text-base font-medium truncate"
+                              title={`${entry.projects.clients?.name ? `${entry.projects.clients.name} — ` : ''}${entry.projects.name}`}
+                            >
+                              {entry.projects.clients?.name ? `${entry.projects.clients.name} — ` : ''}
+                              {entry.projects.name}
+                            </div>
+                            {entry.notes && (
+                              <div 
+                                className="text-xs sm:text-sm text-muted-foreground truncate"
+                                title={entry.notes}
+                              >
+                                {entry.notes}
+                              </div>
+                            )}
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              {formatDate(entry.started_at)}
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            {(() => {
+                              const minutes = calculateDurationMinutes(new Date(entry.started_at), entry.stopped_at ? new Date(entry.stopped_at) : undefined);
+                              const duration = formatDuration(minutes);
+                              return (
+                                <>
+                                  <div className="text-[15px] sm:text-base font-semibold tabular-nums">
+                                    {duration.normal}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground tabular-nums">
+                                    = {duration.industrial}h
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="pt-3">
+                      <a href="/reports" className="text-xs sm:text-sm text-primary hover:underline">View all</a>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
