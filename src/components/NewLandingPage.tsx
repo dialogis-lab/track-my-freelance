@@ -20,68 +20,64 @@ const NewLandingPage = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation Header */}
-      <header>
-        <nav className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between min-h-[3rem]">
-              <div className="ml-2">
-                <div onClick={handleLogoClick} className="cursor-pointer">
-                  <BrandLogo size="md" showWordmark />
-                </div>
-              </div>
-              
-              <div className="hidden md:flex items-center space-x-8">
-                <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
-                <a href="#security" className="text-muted-foreground hover:text-foreground transition-colors">Security</a>
-                <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
-                <a href="#early-access" className="text-muted-foreground hover:text-foreground transition-colors">Early Access</a>
-                
-                {/* Hidden login access - shows only after clicking logo 3 times */}
-                {logoClickCount >= 3 && (
-                  <div className="flex items-center space-x-4 ml-6">
-                    <Link to="/login">
-                      <Button size="sm" variant="outline">Access Login</Button>
-                    </Link>
-                  </div>
-                )}
-              </div>
-              
-              {/* Mobile menu - hidden login also for mobile */}
-              <div className="md:hidden flex items-center space-x-3">
-                {logoClickCount >= 3 && (
-                  <Link to="/login">
-                    <Button size="sm" variant="outline">Login</Button>
-                  </Link>
-                )}
-              </div>
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border/50">
+        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div onClick={handleLogoClick} className="cursor-pointer">
+              <BrandLogo size="md" showWordmark />
             </div>
           </div>
-        </nav>
+            
+          <div className="hidden md:flex items-center space-x-8">
+            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
+            <a href="#security" className="text-muted-foreground hover:text-foreground transition-colors">Security</a>
+            <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
+            <a href="#early-access" className="text-muted-foreground hover:text-foreground transition-colors">Early Access</a>
+            
+            {/* Hidden login access - shows only after clicking logo 3 times */}
+            {logoClickCount >= 3 && (
+              <div className="flex items-center space-x-4 ml-6">
+                <Link to="/login">
+                  <Button size="sm" variant="outline">Access Login</Button>
+                </Link>
+              </div>
+            )}
+          </div>
+            
+          {/* Mobile menu - hidden login also for mobile */}
+          <div className="md:hidden flex items-center space-x-3">
+            {logoClickCount >= 3 && (
+              <Link to="/login">
+                <Button size="sm" variant="outline">Login</Button>
+              </Link>
+            )}
+          </div>
+        </div>
       </header>
 
       {/* Main Content */}
       <main>
         {/* Hero Section */}
-        <section className="pt-20 pb-32 bg-gradient-to-br from-muted/30 to-background">
+        <section className="pt-12 sm:pt-14 md:pt-16 pb-10 sm:pb-12 md:pb-14 bg-gradient-to-br from-muted/30 to-background">
           <div className="container mx-auto px-4">
             <div className="text-center max-w-4xl mx-auto">
-              <div className="mb-6 flex justify-center">
+              <div className="mb-4 flex justify-center">
                 <div onClick={handleLogoClick} className="cursor-pointer">
-                  <BrandLogo size="xl" noLink />
+                  <BrandLogo size="xl" noLink className="!h-16 w-auto" />
                 </div>
               </div>
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-4 leading-tight">
                 Effortless Time Tracking &{" "}
                 <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                   Smart Invoicing
                 </span>
               </h1>
               
-              <p className="text-xl md:text-2xl text-muted-foreground mb-12 leading-relaxed max-w-3xl mx-auto">
+              <p className="text-xl md:text-2xl text-muted-foreground mt-4 mb-6 leading-relaxed max-w-3xl mx-auto">
                 TimeHatch combines a simple timer with client management, invoicing, and reports – all in one secure app.
               </p>
               
-              <div className="max-w-lg mx-auto mb-8">
+              <div className="max-w-lg mx-auto mt-6 sm:mt-7 mb-6">
                 <LeadForm variant="hero" className="space-y-6" />
               </div>
               

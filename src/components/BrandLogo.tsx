@@ -32,7 +32,7 @@ export function BrandLogo({ size = 'md', className, noLink = false, showWordmark
       height={512}
       className={cn(
         sizeClasses[size],
-        'shrink-0 transition-opacity hover:opacity-90 object-contain',
+        'block shrink-0 transition-opacity hover:opacity-90 object-contain',
         className
       )}
       loading={size === 'xl' || size === 'md' ? 'eager' : 'lazy'}
