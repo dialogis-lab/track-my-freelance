@@ -19,7 +19,8 @@ serve(async (req) => {
 
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } }
   );
 
   try {
@@ -47,7 +48,7 @@ serve(async (req) => {
 
     if (!stripeKey) {
       logStep("ERROR: STRIPE_SECRET_KEY missing");
-      return new Response(JSON.stringify({ error: "STRIPE_SECRET_KEY is not configured" }), {
+      return new Response(JSON.stringify({ error: "Stripe configuration missing. Please contact support." }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
       });
@@ -55,7 +56,7 @@ serve(async (req) => {
 
     if (!stripePriceSolo) {
       logStep("ERROR: STRIPE_PRICE_SOLO missing");
-      return new Response(JSON.stringify({ error: "STRIPE_PRICE_SOLO is not configured" }), {
+      return new Response(JSON.stringify({ error: "Pricing configuration missing. Please contact support." }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
       });
@@ -77,7 +78,7 @@ serve(async (req) => {
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError) {
       logStep("ERROR: Authentication failed", { error: userError.message });
-      throw new Error(`Authentication error: ${userError.message}`);
+      throw new Error(`Authentication failed: ${userError.message}`);
     }
     
     const user = userData.user;
