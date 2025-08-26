@@ -326,57 +326,58 @@ export default function Dashboard() {
           </div>
         )}
 
-          <div className="grid grid-cols-1 xl:grid-cols-[1fr_auto] gap-6 items-start">
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-6 items-start">
             {/* Combined Timer Card */}
             <div className="flex justify-center xl:justify-start">
               <CombinedTimerCard />
             </div>
+            
+            {/* Recent Activity */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentEntries.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-4">
+                      No time entries yet. Start tracking your first project!
+                    </p>
+                  ) : (
+                    recentEntries.map((entry) => (
+                      <div key={entry.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                        <div className="flex-1">
+                          <p className="font-medium">
+                            {entry.projects.clients?.name ? `${entry.projects.clients.name} - ` : ''}
+                            {entry.projects.name}
+                          </p>
+                          {entry.notes && (
+                            <p className="text-sm text-muted-foreground">{entry.notes}</p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            {formatDate(entry.started_at)}
+                          </p>
+                        </div>
+                        <div className="text-sm font-mono">
+                          {(() => {
+                            const minutes = calculateDurationMinutes(new Date(entry.started_at), entry.stopped_at ? new Date(entry.stopped_at) : undefined);
+                            const duration = formatDuration(minutes);
+                            return (
+                              <>
+                                <div className="font-bold">{duration.normal}</div>
+                                <div className="text-xs text-muted-foreground">= {duration.industrial}h</div>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Recent Activity */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recentEntries.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4">
-                    No time entries yet. Start tracking your first project!
-                  </p>
-                ) : (
-                  recentEntries.map((entry) => (
-                    <div key={entry.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                      <div className="flex-1">
-                        <p className="font-medium">
-                          {entry.projects.clients?.name ? `${entry.projects.clients.name} - ` : ''}
-                          {entry.projects.name}
-                        </p>
-                        {entry.notes && (
-                          <p className="text-sm text-muted-foreground">{entry.notes}</p>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          {formatDate(entry.started_at)}
-                        </p>
-                      </div>
-                      <div className="text-sm font-mono">
-                        {(() => {
-                          const minutes = calculateDurationMinutes(new Date(entry.started_at), entry.stopped_at ? new Date(entry.stopped_at) : undefined);
-                          const duration = formatDuration(minutes);
-                          return (
-                            <>
-                              <div className="font-bold">{duration.normal}</div>
-                              <div className="text-xs text-muted-foreground">= {duration.industrial}h</div>
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
       </div>
     </AppLayout>
   );
