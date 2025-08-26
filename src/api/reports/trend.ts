@@ -20,6 +20,7 @@ export interface TrendParams {
   bucket?: 'day' | 'week' | 'month';
   metric?: 'hours' | 'value';
   tz?: string;
+  skipPrevTotals?: boolean;
 }
 
 // Simple in-memory cache with TTL
@@ -32,7 +33,17 @@ const cache = new Map<string, CacheEntry>();
 const CACHE_TTL = 60 * 1000; // 60 seconds
 
 function getCacheKey(params: TrendParams): string {
-  return JSON.stringify(params);
+  // Create a clean params object to avoid serialization issues with undefined
+  const cleanParams = {
+    from: params.from,
+    to: params.to,
+    clientId: params.clientId || null,
+    projectId: params.projectId || null,
+    bucket: params.bucket,
+    metric: params.metric,
+    tz: params.tz,
+  };
+  return JSON.stringify(cleanParams);
 }
 
 function getFromCache(key: string): TrendResponse | null {
@@ -150,8 +161,8 @@ export async function fetchTrendData(params: TrendParams): Promise<TrendResponse
       totals: { hours: totalHours, value: totalValue },
     };
 
-    // Calculate previous period totals for comparison
-    if (params.from && params.to) {
+    // Calculate previous period totals for comparison (only for sparklines)
+    if (params.from && params.to && !params.skipPrevTotals) {
       try {
         result.prevTotals = await calculatePrevTotals(params);
       } catch (error) {
@@ -181,10 +192,11 @@ async function calculatePrevTotals(params: TrendParams): Promise<{ hours: number
   const prevFrom = new Date(fromDate.getTime() - duration);
   const prevTo = new Date(fromDate);
   
-  const prevParams = {
+  const prevParams: TrendParams = {
     ...params,
     from: prevFrom.toISOString(),
     to: prevTo.toISOString(),
+    skipPrevTotals: true, // Prevent infinite recursion
   };
   
   const prevData = await fetchTrendData(prevParams);
