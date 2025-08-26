@@ -334,25 +334,25 @@ export default function Dashboard() {
             
             {/* Recent Activity */}
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Recent Activity</CardTitle>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">Recent Activity</CardTitle>
               </CardHeader>
-              <CardContent className="p-4 sm:p-5">
+              <CardContent className="p-6 sm:p-8">
                 {recentEntries.length === 0 ? (
-                  <div className="text-sm text-muted-foreground py-10 text-center">
+                  <div className="text-base text-muted-foreground py-12 text-center">
                     No time entries yet. Start tracking your first project!
                   </div>
                 ) : (
                   <>
-                    <ul className="divide-y divide-border">
+                    <ul className="divide-y divide-border space-y-1">
                       {recentEntries.map((entry) => (
                         <li
                           key={entry.id}
-                          className="group flex items-center justify-between gap-3 py-3.5 sm:py-4 min-h-[44px] hover:bg-muted/50 rounded-md px-2 -mx-2 transition-colors"
+                          className="group flex items-center justify-between gap-4 py-5 sm:py-6 min-h-[60px] hover:bg-muted/50 rounded-lg px-3 -mx-3 transition-colors"
                         >
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <div 
-                              className="text-[15px] sm:text-base font-medium truncate"
+                              className="text-base sm:text-lg font-semibold truncate mb-1"
                               title={`${entry.projects.clients?.name ? `${entry.projects.clients.name} — ` : ''}${entry.projects.name}`}
                             >
                               {entry.projects.clients?.name ? `${entry.projects.clients.name} — ` : ''}
@@ -360,13 +360,13 @@ export default function Dashboard() {
                             </div>
                             {entry.notes && (
                               <div 
-                                className="text-xs sm:text-sm text-muted-foreground truncate"
+                                className="text-sm sm:text-base text-muted-foreground truncate mb-2"
                                 title={entry.notes}
                               >
                                 {entry.notes}
                               </div>
                             )}
-                            <div className="text-xs text-muted-foreground mt-0.5">
+                            <div className="text-sm text-muted-foreground">
                               {formatDate(entry.started_at)}
                             </div>
                           </div>
@@ -376,10 +376,10 @@ export default function Dashboard() {
                               const duration = formatDuration(minutes);
                               return (
                                 <>
-                                  <div className="text-[15px] sm:text-base font-semibold tabular-nums">
+                                  <div className="text-lg sm:text-xl font-bold tabular-nums text-primary">
                                     {duration.normal}
                                   </div>
-                                  <div className="text-xs text-muted-foreground tabular-nums">
+                                  <div className="text-sm text-muted-foreground tabular-nums">
                                     = {duration.industrial}h
                                   </div>
                                 </>
@@ -389,8 +389,8 @@ export default function Dashboard() {
                         </li>
                       ))}
                     </ul>
-                    <div className="pt-3">
-                      <a href="/reports" className="text-xs sm:text-sm text-primary hover:underline">View all</a>
+                    <div className="pt-6 border-t border-border mt-6">
+                      <a href="/reports" className="text-sm sm:text-base text-primary hover:underline font-medium">View all entries →</a>
                     </div>
                   </>
                 )}
