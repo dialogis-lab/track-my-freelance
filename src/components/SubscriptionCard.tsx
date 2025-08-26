@@ -284,7 +284,7 @@ export function SubscriptionCard() {
 
   if (loading) {
     return (
-      <div className="w-full px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-center p-8">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
@@ -411,8 +411,8 @@ export function SubscriptionCard() {
   };
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-2 gap-8 items-stretch">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8 items-stretch">
         {renderPlanCard('free')}
         {renderPlanCard('solo')}
         {renderPlanCard('team')}
