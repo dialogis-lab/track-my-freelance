@@ -50,14 +50,28 @@ export function useSubscription() {
     if (!user) return null;
 
     try {
+      // Get current session and refresh if needed
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !sessionData.session?.access_token) {
+        console.error('Session error:', sessionError);
+        throw new Error('Authentication required. Please log in again.');
+      }
+
+      console.log('Creating checkout with plan:', plan);
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { plan },
         headers: {
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          Authorization: `Bearer ${sessionData.session.access_token}`,
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Checkout function error details:', error);
+        throw error;
+      }
+      
+      console.log('Checkout response:', data);
       return data.url;
     } catch (error) {
       console.error('Error creating checkout:', error);
@@ -69,9 +83,17 @@ export function useSubscription() {
     if (!user || !subscription?.stripe_customer_id) return null;
 
     try {
+      // Get current session and refresh if needed
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !sessionData.session?.access_token) {
+        console.error('Session error:', sessionError);
+        throw new Error('Authentication required. Please log in again.');
+      }
+
       const { data, error } = await supabase.functions.invoke('customer-portal', {
         headers: {
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          Authorization: `Bearer ${sessionData.session.access_token}`,
         },
       });
 
