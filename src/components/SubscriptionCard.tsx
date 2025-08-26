@@ -35,29 +35,35 @@ function PlanCard({
   children
 }: PlanCardProps) {
   return (
-    <div className="relative group rounded-2xl border bg-card shadow-sm transition-shadow hover:shadow-md">
+    <div className="relative h-full rounded-2xl border bg-card shadow-sm transition-shadow hover:shadow-md">
       {isMostPopular && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-blue-600 text-white text-xs px-3 py-1 shadow-sm">
           Most popular
         </div>
       )}
-      <div className="p-6 space-y-5">
-        <div className="flex items-start justify-between">
-          <div className="text-lg font-semibold">{title}</div>
-          {isCurrent && (
-            <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-emerald-700 border-emerald-200 bg-emerald-50">
-              <Check className="h-3 w-3" />
-              Current
-            </span>
-          )}
+      
+      {/* FLEX COLUMN to control heights */}
+      <div className="flex h-full flex-col p-6">
+        {/* Header */}
+        <div className="space-y-2">
+          <div className="flex items-start justify-between">
+            <div className="text-lg font-semibold">{title}</div>
+            {isCurrent && (
+              <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-emerald-700 border-emerald-200 bg-emerald-50">
+                <Check className="h-3 w-3" />
+                Current
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-baseline gap-1">
+            <span className="text-3xl font-bold tabular-nums">{price}</span>
+            {cadence && <span className="text-sm text-muted-foreground">{cadence}</span>}
+          </div>
         </div>
 
-        <div className="flex items-baseline gap-1">
-          <span className="text-3xl font-bold tabular-nums">{price}</span>
-          {cadence && <span className="text-muted-foreground text-sm">{cadence}</span>}
-        </div>
-
-        <ul className="text-sm text-muted-foreground space-y-2">
+        {/* Features take remaining height */}
+        <ul className="mt-4 flex-1 space-y-2 text-sm text-muted-foreground">
           {features.map((feature) => (
             <li key={feature} className="flex items-start gap-2">
               <Check className="mt-0.5 h-4 w-4 text-emerald-600 shrink-0" />
@@ -66,18 +72,19 @@ function PlanCard({
           ))}
         </ul>
 
-        <div className="pt-1">
+        {/* CTA sits at the bottom across all cards */}
+        <div className="mt-6">
           <button
             onClick={onCta}
             disabled={ctaDisabled || ctaLoading}
             className={
               isCurrent
-                ? "w-full inline-flex h-10 items-center justify-center rounded-lg border px-4 text-sm text-muted-foreground bg-muted cursor-not-allowed"
-                : "w-full inline-flex h-10 items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 via-teal-500 to-green-500 px-4 text-white font-medium shadow-sm hover:opacity-95 active:opacity-90 transition"
+                ? "inline-flex h-10 w-full items-center justify-center rounded-lg border bg-muted text-sm text-muted-foreground"
+                : "inline-flex h-10 w-full items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 via-teal-500 to-green-500 px-4 text-white font-medium shadow-sm hover:opacity-95 active:opacity-90 transition"
             }
           >
             {ctaLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : isCurrent ? (
               <>
                 <Check className="mr-2 h-4 w-4" />
@@ -90,9 +97,14 @@ function PlanCard({
               </>
             )}
           </button>
-        </div>
 
-        {isCurrent && children}
+          {/* Secondary actions only on current paid plan */}
+          {children && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {children}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -272,7 +284,7 @@ export function SubscriptionCard() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-center p-8">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
@@ -302,9 +314,9 @@ export function SubscriptionCard() {
     const ctaLabel = isActive ? 'Change Plan' : planKey === 'free' ? 'Current Plan' : 'Get Started';
 
     const secondaryActions = shouldShowCurrent && planKey !== 'free' && (
-      <div className="pt-3 space-y-3">
+      <>
         {/* Subscription status */}
-        <div className="text-sm text-muted-foreground">
+        <div className="text-sm text-muted-foreground mb-2">
           {isCanceling ? (
             <p>Ends on {billingSummary?.cancelAt ? new Date(billingSummary.cancelAt).toLocaleDateString() : ''}</p>
           ) : billingSummary?.renewsAt ? (
@@ -312,73 +324,71 @@ export function SubscriptionCard() {
           ) : null}
         </div>
 
-        {/* Secondary actions */}
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={handleCustomerPortal}
-            disabled={portalLoading}
-            className="inline-flex h-9 items-center justify-center px-3 rounded-md border bg-background hover:bg-muted text-sm disabled:opacity-50"
-          >
-            {portalLoading ? (
-              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-            ) : (
-              <Settings className="mr-2 h-3 w-3" />
-            )}
-            {isPastDue ? 'Fix Payment' : 'Manage Billing'}
-          </button>
-          
-          {!isPastDue && (
-            <>
-              {isCanceling ? (
-                <button
-                  onClick={handleResumeSubscription}
-                  disabled={resumeLoading}
-                  className="inline-flex h-9 items-center justify-center px-3 rounded-md border bg-background hover:bg-muted text-sm disabled:opacity-50"
-                >
-                  {resumeLoading ? (
-                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                  ) : (
-                    <Check className="mr-2 h-3 w-3" />
-                  )}
-                  Resume
-                </button>
-              ) : (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <button className="inline-flex h-9 items-center justify-center px-3 rounded-md border bg-background hover:bg-muted text-sm">
-                      <X className="mr-2 h-3 w-3" />
-                      Cancel
-                    </button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Your subscription will remain active until the end of your billing period on{' '}
-                        {billingSummary?.renewsAt ? new Date(billingSummary.renewsAt).toLocaleDateString() : 'the end of the period'}.
-                        You can resume anytime before then.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
-                      <AlertDialogAction 
-                        onClick={handleCancelSubscription}
-                        disabled={cancelLoading}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        {cancelLoading ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : null}
-                        Cancel Subscription
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-            </>
+        {/* Secondary action buttons */}
+        <button
+          onClick={handleCustomerPortal}
+          disabled={portalLoading}
+          className="inline-flex h-9 items-center justify-center px-3 rounded-md border bg-background hover:bg-muted text-sm disabled:opacity-50"
+        >
+          {portalLoading ? (
+            <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+          ) : (
+            <Settings className="mr-2 h-3 w-3" />
           )}
-        </div>
-      </div>
+          {isPastDue ? 'Fix Payment' : 'Manage Billing'}
+        </button>
+        
+        {!isPastDue && (
+          <>
+            {isCanceling ? (
+              <button
+                onClick={handleResumeSubscription}
+                disabled={resumeLoading}
+                className="inline-flex h-9 items-center justify-center px-3 rounded-md border bg-background hover:bg-muted text-sm disabled:opacity-50"
+              >
+                {resumeLoading ? (
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                ) : (
+                  <Check className="mr-2 h-3 w-3" />
+                )}
+                Resume
+              </button>
+            ) : (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button className="inline-flex h-9 items-center justify-center px-3 rounded-md border bg-background hover:bg-muted text-sm">
+                    <X className="mr-2 h-3 w-3" />
+                    Cancel
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Your subscription will remain active until the end of your billing period on{' '}
+                      {billingSummary?.renewsAt ? new Date(billingSummary.renewsAt).toLocaleDateString() : 'the end of the period'}.
+                      You can resume anytime before then.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleCancelSubscription}
+                      disabled={cancelLoading}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {cancelLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : null}
+                      Cancel Subscription
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </>
+        )}
+      </>
     );
     
     return (
@@ -401,8 +411,8 @@ export function SubscriptionCard() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch">
         {renderPlanCard('free')}
         {renderPlanCard('solo')}
         {renderPlanCard('team')}
