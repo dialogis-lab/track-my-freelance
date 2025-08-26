@@ -451,8 +451,11 @@ export type Database = {
           created_at: string
           id: string
           logo_url: string | null
+          stripe_current_period_end: string | null
           stripe_customer_id: string | null
+          stripe_price_id: string | null
           stripe_subscription_id: string | null
+          stripe_subscription_status: string | null
           subscription_current_period_end: string | null
           subscription_plan: string | null
           subscription_status: string | null
@@ -469,8 +472,11 @@ export type Database = {
           created_at?: string
           id: string
           logo_url?: string | null
+          stripe_current_period_end?: string | null
           stripe_customer_id?: string | null
+          stripe_price_id?: string | null
           stripe_subscription_id?: string | null
+          stripe_subscription_status?: string | null
           subscription_current_period_end?: string | null
           subscription_plan?: string | null
           subscription_status?: string | null
@@ -487,8 +493,11 @@ export type Database = {
           created_at?: string
           id?: string
           logo_url?: string | null
+          stripe_current_period_end?: string | null
           stripe_customer_id?: string | null
+          stripe_price_id?: string | null
           stripe_subscription_id?: string | null
+          stripe_subscription_status?: string | null
           subscription_current_period_end?: string | null
           subscription_plan?: string | null
           subscription_status?: string | null
