@@ -169,11 +169,7 @@ export function SubscriptionCard() {
 
       if (error) {
         if (error.message?.includes('409') || error.status === 409) {
-          toast({
-            title: "Already on this plan",
-            description: "You're already subscribed to this plan.",
-            variant: "default",
-          });
+          // Silently handle duplicate plan requests
           return;
         }
         throw error;
@@ -316,7 +312,8 @@ export function SubscriptionCard() {
       ? plan.priceLabel.split('/')
       : [plan.priceLabel, undefined];
 
-    const ctaLabel = isActive ? 'Change Plan' : planKey === 'free' ? 'Current Plan' : 'Get Started';
+    const ctaLabel = shouldShowCurrent ? 'Current Plan' : 'Get Started';
+    const ctaDisabled = shouldShowCurrent;
 
     const secondaryActions = shouldShowCurrent && planKey !== 'free' && (
       <>
