@@ -253,7 +253,7 @@ export function CombinedTimerCard() {
         </Button>
 
         {/* Debug Info - only show if debug flag is set */}
-        {process.env.NEXT_PUBLIC_TIMER_DEBUG === '1' && (
+        {import.meta.env.VITE_TIMER_DEBUG === '1' && (
           <div className="mt-4 p-4 bg-gray-100 rounded text-xs">
             <div>Stopwatch Running: {isStopwatchRunning ? 'YES' : 'NO'}</div>
             <div>Stopwatch Time: {getStopwatchDisplayTime()}ms</div>
