@@ -1,65 +1,66 @@
 import { supabase } from '@/integrations/supabase/client';
 
 export type MfaState = { 
+  enabled: boolean;
   needsMfa: boolean; 
+  aal: "aal1" | "aal2" | "none";
   challengeId?: string; 
   factorId?: string; 
 };
 
 export interface AuthState {
-  session: any;
-  user: any;
+  user: any | null;
   mfa: MfaState;
 }
 
 export async function getAuthState(): Promise<AuthState> {
   try {
-    // Always fetch fresh
     const { data: { session } } = await supabase.auth.getSession();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // If no user/session → no MFA
-    if (!session || !user) {
-      return { session, user, mfa: { needsMfa: false } };
-    }
-
-    // If user has no factors enrolled → no MFA
-    const { data: factors } = await supabase.auth.mfa.listFactors();
-    const hasTotp = !!factors?.all?.find((f: any) => f.factor_type === 'totp' && f.status === 'verified');
-    if (!hasTotp) {
-      return { session, user, mfa: { needsMfa: false } };
-    }
-
-    // If session AMR already includes 'mfa' (AAL2), no challenge needed
-    const amr = ((session.user as any)?.amr ?? []).map((a: any) => a.method || a).flat();
-    const aal = (session.user as any)?.aal;
-    const hasMfaAmr = amr.includes('mfa') || aal === 'aal2';
     
-    if (hasMfaAmr) {
-      return { session, user, mfa: { needsMfa: false } };
+    if (!session) {
+      return { user: null, mfa: { enabled: false, needsMfa: false, aal: "none" } };
     }
 
-    // Check if device is trusted before requiring MFA
+    // 1) Is this user enrolled for TOTP?
+    const { data: factorsData } = await supabase.auth.mfa.listFactors();
+    const totpEnrolled = (factorsData?.all ?? []).some(
+      (f: any) => f.factor_type === "totp" && f.status === "verified"
+    );
+
+    // 2) Current AAL?
+    let aal: "aal1" | "aal2" = "aal1";
     try {
-      const { data: trustedDeviceResponse } = await supabase.functions.invoke('trusted-device', {
-        body: { action: 'check' },
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (trustedDeviceResponse?.is_trusted) {
-        return { session, user, mfa: { needsMfa: false } };
-      }
-    } catch (trustedDeviceError) {
-      console.error('Error checking trusted device:', trustedDeviceError);
-      // Continue to MFA if trusted device check fails
+      const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      aal = (data?.currentLevel ?? "aal1") as "aal1" | "aal2";
+    } catch {
+      // Default to aal1 if we can't get the level
     }
 
-    // User has MFA enrolled but hasn't completed challenge yet
-    return { session, user, mfa: { needsMfa: true } };
+    // 3) Trusted device for THIS user?
+    let trusted = false;
+    if (totpEnrolled && aal !== "aal2") {
+      try {
+        const { data: trustedDeviceResponse } = await supabase.functions.invoke('trusted-device', {
+          body: { action: 'check' },
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        });
+        trusted = !!trustedDeviceResponse?.is_trusted;
+      } catch (trustedDeviceError) {
+        console.error('Error checking trusted device:', trustedDeviceError);
+        // Continue to MFA if trusted device check fails
+      }
+    }
+
+    const needsMfa = totpEnrolled && aal !== "aal2" && !trusted;
+
+    return {
+      user: session.user,
+      mfa: { enabled: totpEnrolled, needsMfa, aal },
+    };
   } catch (error) {
     console.error('Error getting auth state:', error);
-    return { session: null, user: null, mfa: { needsMfa: false } };
+    return { user: null, mfa: { enabled: false, needsMfa: false, aal: "none" } };
   }
 }

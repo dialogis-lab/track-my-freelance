@@ -41,11 +41,16 @@ export default function Mfa() {
       // First check if MFA is already completed
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        const amr = ((session.user as any)?.amr ?? []).map((a: any) => a.method || a).flat();
-        const aal = (session.user as any)?.aal;
-        const hasMfaAmr = amr.includes('mfa') || aal === 'aal2';
+        // Check proper AAL using Supabase API
+        let aal: "aal1" | "aal2" = "aal1";
+        try {
+          const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+          aal = (data?.currentLevel ?? "aal1") as "aal1" | "aal2";
+        } catch {
+          // Default to aal1 if we can't get the level
+        }
         
-        if (hasMfaAmr) {
+        if (aal === "aal2") {
           navigate('/dashboard', { replace: true });
           return;
         }
