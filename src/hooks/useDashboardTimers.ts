@@ -6,6 +6,7 @@ import { subscribeToTimeEntries, type TimerPayload } from '@/lib/realtimeTimer';
 interface TimerState {
   id: string;
   started_at: string;
+  stopped_at?: string;
   status: string;
   elapsed_ms?: number;
   phase?: string;
@@ -17,6 +18,8 @@ interface DashboardTimersState {
   stopwatch: TimerState | null;
   serverOffsetMs: number;
   loading: boolean;
+  localRunning: boolean;
+  localStoppedAt: number | null;
 }
 
 // Debug logging only when enabled
@@ -30,11 +33,14 @@ export function useDashboardTimers() {
     stopwatch: null,
     serverOffsetMs: 0,
     loading: true,
+    localRunning: false,
+    localStoppedAt: null,
   });
   
   const { user } = useAuth();
   const subscriptionsRef = useRef<Array<{ unsubscribe: () => void }>>([]);
   const displayRafRef = useRef<number>();
+  const tickerRef = useRef<number>();
 
   // Calculate server offset and select active mode on mount
   useEffect(() => {
@@ -114,6 +120,7 @@ export function useDashboardTimers() {
       clearInterval(mobileBackupSync);
       subscriptionsRef.current.forEach(sub => sub.unsubscribe());
       subscriptionsRef.current = [];
+      stopTicker();
     };
   }, [user?.id]);
 
@@ -132,6 +139,7 @@ export function useDashboardTimers() {
       if (displayRafRef.current) {
         cancelAnimationFrame(displayRafRef.current);
       }
+      stopTicker();
     };
   }, []); // Remove dependency on timer status to always run
 
@@ -152,6 +160,51 @@ export function useDashboardTimers() {
     };
   }, [user]);
 
+  // Watch for timer state changes to manage ticker
+  useEffect(() => {
+    if (state.stopwatch?.started_at && !state.stopwatch.stopped_at && !state.localStoppedAt) {
+      debugLog('Starting ticker for running timer');
+      const startedMs = new Date(state.stopwatch.started_at).getTime();
+      startTicker(startedMs);
+      setState(prev => ({ ...prev, localRunning: true }));
+    } else {
+      debugLog('Stopping ticker - timer not running');
+      stopTicker();
+      setState(prev => ({ ...prev, localRunning: false }));
+    }
+  }, [state.stopwatch?.started_at, state.stopwatch?.stopped_at, state.localStoppedAt]);
+
+  // Ticker management helpers
+  const startTicker = (startedAtMs: number) => {
+    stopTicker(); // Ensure only one ticker exists
+    debugLog('Starting ticker with startedAtMs:', startedAtMs);
+    
+    const updateTicker = () => {
+      setState(prev => ({ ...prev })); // Force re-render for display updates
+      tickerRef.current = requestAnimationFrame(updateTicker);
+    };
+    
+    tickerRef.current = requestAnimationFrame(updateTicker);
+  };
+
+  const stopTicker = () => {
+    if (tickerRef.current) {
+      debugLog('Stopping ticker');
+      cancelAnimationFrame(tickerRef.current);
+      tickerRef.current = undefined;
+    }
+  };
+
+  // Immediate stop function for UI responsiveness
+  const immediateStop = () => {
+    debugLog('Immediate stop triggered');
+    setState(prev => ({ 
+      ...prev, 
+      localRunning: false,
+      localStoppedAt: Date.now()
+    }));
+    stopTicker();
+  };
 
   const calculateServerOffset = async () => {
     try {
@@ -219,6 +272,7 @@ export function useDashboardTimers() {
       setState(prev => ({
         ...prev,
         stopwatch: newStopwatch,
+        localStoppedAt: null, // Reset local stop state when new data arrives
       }));
     } catch (error) {
       debugLog('Failed to load current timer states:', error);
@@ -284,9 +338,16 @@ export function useDashboardTimers() {
   };
 
 
-  // Calculate display time with server offset (correct formula)
+  // Calculate display time with server offset and local stop handling
   const getDisplayTime = (timerState: TimerState | null): number => {
-    if (!timerState || timerState.status !== 'running' || !timerState.started_at) {
+    // If locally stopped, use the local stop time
+    if (state.localStoppedAt && timerState?.started_at) {
+      const startedMs = new Date(timerState.started_at).getTime();
+      const elapsed = state.localStoppedAt - startedMs;
+      return Math.max(0, (timerState.elapsed_ms || 0) + elapsed);
+    }
+
+    if (!timerState || !state.localRunning || !timerState.started_at) {
       return timerState?.elapsed_ms || 0;
     }
 
@@ -301,20 +362,13 @@ export function useDashboardTimers() {
     const currentTime = Date.now() + serverOffset;
     const displayMs = (timerState.elapsed_ms || 0) + (currentTime - startedMs);
     
-    debugLog('Display calculation:', {
-      elapsed_ms: timerState.elapsed_ms,
-      serverOffset,
-      startedMs,
-      currentTime,
-      displayMs: Math.max(0, displayMs)
-    });
-    
     return Math.max(0, displayMs);
   };
 
   return {
     ...state,
     getStopwatchDisplayTime: () => getDisplayTime(state.stopwatch),
-    isStopwatchRunning: state.stopwatch?.status === 'running',
+    isStopwatchRunning: state.localRunning && !state.localStoppedAt,
+    immediateStop,
   };
 }

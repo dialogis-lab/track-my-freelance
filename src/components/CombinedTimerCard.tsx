@@ -28,6 +28,7 @@ export function CombinedTimerCard() {
     stopwatch,
     getStopwatchDisplayTime,
     isStopwatchRunning,
+    immediateStop,
   } = useDashboardTimers();
 
   // Load projects on mount
@@ -222,7 +223,10 @@ export function CombinedTimerCard() {
       return;
     }
     
+    // Immediately stop the UI ticker and disable button
+    immediateStop();
     setLoading(true);
+    
     try {
       debugLog('Stopping timer:', stopwatch.id);
       
