@@ -11,6 +11,7 @@ import { Upload, Paperclip, X } from "lucide-react";
 import { upsertExpense, uploadReceipt, type Expense, type ExpenseFormData } from "@/lib/expenses";
 import { CURRENCIES, type Currency } from "@/lib/currencyUtils";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ExpenseFormProps {
   open: boolean;
@@ -99,6 +100,17 @@ export function ExpenseForm({ open, onOpenChange, projectId, clientId, expense }
         title: expense ? "Expense updated" : "Expense created",
         description: "The expense has been saved successfully.",
       });
+
+      // Update onboarding state for new expenses
+      if (!expense) {
+        try {
+          await supabase.functions.invoke('onboarding-state', {
+            body: { updates: { expense_added: true } }
+          });
+        } catch (error) {
+          console.error('Error updating onboarding state:', error);
+        }
+      }
 
       onOpenChange(false);
       resetForm();

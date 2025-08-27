@@ -244,6 +244,15 @@ export default function InvoiceNew() {
         description: "Invoice has been saved as draft.",
       });
 
+      // Update onboarding state for invoice draft creation
+      try {
+        await supabase.functions.invoke('onboarding-state', {
+          body: { updates: { invoice_draft_created: true } }
+        });
+      } catch (error) {
+        console.error('Error updating onboarding state:', error);
+      }
+
       navigate(`/invoices/${invoice.id}`);
     } catch (error: any) {
       toast({

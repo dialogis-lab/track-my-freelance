@@ -190,6 +190,15 @@ export function CombinedTimerCard() {
       debugLog('Timer started successfully:', timeEntryData);
       toast({ title: "Timer started" });
       
+      // Update onboarding state
+      try {
+        await supabase.functions.invoke('onboarding-state', {
+          body: { updates: { timer_started: true } }
+        });
+      } catch (error) {
+        console.error('Error updating onboarding state:', error);
+      }
+      
       // Trigger dashboard update
       triggerTimerUpdate();
       
@@ -228,6 +237,21 @@ export function CombinedTimerCard() {
       }
 
       toast({ title: "Timer stopped" });
+      
+      // Update onboarding state if notes were added
+      try {
+        const updates: any = {};
+        if (notes && notes.trim()) {
+          updates.timer_stopped_with_note = true;
+        }
+        if (Object.keys(updates).length > 0) {
+          await supabase.functions.invoke('onboarding-state', {
+            body: { updates }
+          });
+        }
+      } catch (error) {
+        console.error('Error updating onboarding state:', error);
+      }
       
       // Trigger dashboard update
       triggerTimerUpdate();

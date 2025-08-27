@@ -432,6 +432,7 @@ export type Database = {
           iban_fp: string | null
           id: string
           logo_url: string | null
+          onboarding_state: Json | null
           stripe_current_period_end: string | null
           stripe_customer_id: string | null
           stripe_price_id: string | null
@@ -456,6 +457,7 @@ export type Database = {
           iban_fp?: string | null
           id: string
           logo_url?: string | null
+          onboarding_state?: Json | null
           stripe_current_period_end?: string | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
@@ -480,6 +482,7 @@ export type Database = {
           iban_fp?: string | null
           id?: string
           logo_url?: string | null
+          onboarding_state?: Json | null
           stripe_current_period_end?: string | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null

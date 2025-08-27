@@ -190,6 +190,18 @@ export default function Projects() {
         title: editingProject ? "Project updated" : "Project created",
         description: editingProject ? "Project has been updated successfully." : "New project has been created successfully.",
       });
+      
+      // Update onboarding state for new projects
+      if (!editingProject) {
+        try {
+          await supabase.functions.invoke('onboarding-state', {
+            body: { updates: { project_created: true } }
+          });
+        } catch (error) {
+          console.error('Error updating onboarding state:', error);
+        }
+      }
+      
       resetForm();
       loadProjects();
     }

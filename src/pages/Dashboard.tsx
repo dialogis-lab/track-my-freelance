@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/AppLayout';
 import { CombinedTimerCard } from '@/components/CombinedTimerCard';
 import { PlanBadge } from '@/components/PlanBadge';
+import { GettingStartedCard } from '@/components/GettingStartedCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, FolderOpen, Users, TrendingUp, ExternalLink, Receipt } from 'lucide-react';
 import { formatTime, hoursToMinutes, calculateDurationMinutes, formatDuration } from '@/lib/timeUtils';
@@ -220,6 +221,9 @@ export default function Dashboard() {
               <PlanBadge />
             </div>
           </div>
+
+          {/* Getting Started Card */}
+          <GettingStartedCard />
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
