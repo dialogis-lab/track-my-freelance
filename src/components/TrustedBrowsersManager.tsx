@@ -9,13 +9,15 @@ import { Smartphone, Monitor, Trash2, AlertTriangle } from 'lucide-react';
 
 interface TrustedDevice {
   id: string;
-  device_name: string;
+  device_id: string;
+  ua_hash: string;
+  ip_prefix: any; // Use any to handle the INET type from PostgreSQL
   created_at: string;
-  last_used_at: string;
+  last_seen_at: string;
   expires_at: string;
 }
 
-export function TrustedDevicesManager() {
+export function TrustedBrowsersManager() {
   const [devices, setDevices] = useState<TrustedDevice[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -28,8 +30,9 @@ export function TrustedDevicesManager() {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('mfa_trusted_devices')
+        .from('trusted_devices')
         .select('*')
+        .is('revoked_at', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -38,7 +41,7 @@ export function TrustedDevicesManager() {
       console.error('Error loading trusted devices:', error);
       toast({
         title: "Error",
-        description: "Failed to load trusted devices.",
+        description: "Failed to load trusted browsers.",
         variant: "destructive",
       });
     } finally {
@@ -49,33 +52,31 @@ export function TrustedDevicesManager() {
   const revokeDevice = async (deviceId: string) => {
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('mfa_trusted_devices')
-        .delete()
-        .eq('id', deviceId);
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error('Not authenticated');
+      }
+
+      const { error } = await supabase.functions.invoke('trusted-device', {
+        body: { action: 'revoke', device_id: deviceId },
+        headers: {
+          'Authorization': `Bearer ${sessionData.session.access_token}`,
+        },
+      });
 
       if (error) throw error;
 
-      // Log the device revocation
-      await supabase
-        .from('audit_logs')
-        .insert({
-          user_id: (await supabase.auth.getUser()).data.user?.id,
-          event_type: 'trusted_device_revoked',
-          details: { device_id: deviceId }
-        });
-
-      setDevices(devices.filter(device => device.id !== deviceId));
+      setDevices(devices.filter(device => device.device_id !== deviceId));
       
       toast({
-        title: "Device Revoked",
-        description: "The trusted device has been removed.",
+        title: "Browser Revoked",
+        description: "The trusted browser has been removed.",
       });
     } catch (error: any) {
       console.error('Error revoking device:', error);
       toast({
         title: "Error",
-        description: "Failed to revoke device access.",
+        description: "Failed to revoke browser access.",
         variant: "destructive",
       });
     } finally {
@@ -86,33 +87,31 @@ export function TrustedDevicesManager() {
   const revokeAllDevices = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('mfa_trusted_devices')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error('Not authenticated');
+      }
+
+      const { error } = await supabase.functions.invoke('trusted-device', {
+        body: { action: 'revoke_all' },
+        headers: {
+          'Authorization': `Bearer ${sessionData.session.access_token}`,
+        },
+      });
 
       if (error) throw error;
-
-      // Log the action
-      await supabase
-        .from('audit_logs')
-        .insert({
-          user_id: (await supabase.auth.getUser()).data.user?.id,
-          event_type: 'all_trusted_devices_revoked',
-          details: { devices_count: devices.length }
-        });
 
       setDevices([]);
       
       toast({
-        title: "All Devices Revoked",
-        description: "All trusted devices have been removed.",
+        title: "All Browsers Revoked",
+        description: "All trusted browsers have been removed.",
       });
     } catch (error: any) {
       console.error('Error revoking all devices:', error);
       toast({
         title: "Error",
-        description: "Failed to revoke all devices.",
+        description: "Failed to revoke all browsers.",
         variant: "destructive",
       });
     } finally {
@@ -134,19 +133,24 @@ export function TrustedDevicesManager() {
     });
   };
 
-  const getDeviceIcon = (deviceName: string) => {
-    if (deviceName.toLowerCase().includes('mobile')) {
-      return <Smartphone className="w-4 h-4" />;
-    }
+  const getDeviceIcon = (uaHash: string) => {
+    // Simple heuristic based on user agent hash patterns
+    // In practice, you might store more device info
     return <Monitor className="w-4 h-4" />;
+  };
+
+  const getDeviceName = (uaHash: string, ipPrefix: any) => {
+    // Extract basic info from stored data
+    // In practice, you might want to store the original user agent string (encrypted)
+    return `Browser from ${String(ipPrefix)}`;
   };
 
   if (loading && devices.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Trusted Devices</CardTitle>
-          <CardDescription>Loading trusted devices...</CardDescription>
+          <CardTitle>Trusted Browsers</CardTitle>
+          <CardDescription>Loading trusted browsers...</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -155,9 +159,9 @@ export function TrustedDevicesManager() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Trusted Devices</CardTitle>
+        <CardTitle>Trusted Browsers</CardTitle>
         <CardDescription>
-          Manage devices that can skip two-factor authentication for 30 days.
+          Manage browsers that can skip two-factor authentication for 30 days.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -165,7 +169,7 @@ export function TrustedDevicesManager() {
           <Alert>
             <AlertTriangle className="w-4 h-4" />
             <AlertDescription>
-              No trusted devices found. Use the "Remember this device" option during MFA to add devices.
+              No trusted browsers found. Use the "Remember this browser" option during MFA to add browsers.
             </AlertDescription>
           </Alert>
         ) : (
@@ -174,13 +178,13 @@ export function TrustedDevicesManager() {
               {devices.map((device) => (
                 <div key={device.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex items-center space-x-3">
-                    {getDeviceIcon(device.device_name)}
+                    {getDeviceIcon(device.ua_hash)}
                     <div>
-                      <p className="font-medium">{device.device_name}</p>
+                      <p className="font-medium">{getDeviceName(device.ua_hash, device.ip_prefix)}</p>
                       <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                         <span>Added: {formatDate(device.created_at)}</span>
                         <span>•</span>
-                        <span>Last used: {formatDate(device.last_used_at)}</span>
+                        <span>Last used: {formatDate(device.last_seen_at)}</span>
                       </div>
                       <div className="flex items-center space-x-2 mt-1">
                         {isExpired(device.expires_at) ? (
@@ -196,7 +200,7 @@ export function TrustedDevicesManager() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => revokeDevice(device.id)}
+                    onClick={() => revokeDevice(device.device_id)}
                     disabled={loading}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -211,10 +215,10 @@ export function TrustedDevicesManager() {
                 onClick={revokeAllDevices}
                 disabled={loading || devices.length === 0}
               >
-                Revoke All Trusted Devices
+                Revoke All Trusted Browsers
               </Button>
               <p className="text-xs text-muted-foreground mt-2">
-                This will require MFA verification on all devices.
+                This will require MFA verification on all browsers.
               </p>
             </div>
           </>

@@ -39,6 +39,23 @@ export async function getAuthState(): Promise<AuthState> {
       return { session, user, mfa: { needsMfa: false } };
     }
 
+    // Check if device is trusted before requiring MFA
+    try {
+      const { data: trustedDeviceResponse } = await supabase.functions.invoke('trusted-device', {
+        body: { action: 'check' },
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (trustedDeviceResponse?.is_trusted) {
+        return { session, user, mfa: { needsMfa: false } };
+      }
+    } catch (trustedDeviceError) {
+      console.error('Error checking trusted device:', trustedDeviceError);
+      // Continue to MFA if trusted device check fails
+    }
+
     // User has MFA enrolled but hasn't completed challenge yet
     return { session, user, mfa: { needsMfa: true } };
   } catch (error) {

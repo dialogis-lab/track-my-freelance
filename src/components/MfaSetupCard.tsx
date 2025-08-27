@@ -175,7 +175,7 @@ export function MfaSetupCard() {
 
       // Clear trusted devices
       await supabase
-        .from('mfa_trusted_devices')
+        .from('trusted_devices')
         .delete()
         .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
 

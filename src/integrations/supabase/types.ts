@@ -421,36 +421,6 @@ export type Database = {
         }
         Relationships: []
       }
-      mfa_trusted_devices: {
-        Row: {
-          created_at: string
-          device_hash: string
-          device_name: string | null
-          expires_at: string
-          id: string
-          last_used_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          device_hash: string
-          device_name?: string | null
-          expires_at: string
-          id?: string
-          last_used_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          device_hash?: string
-          device_name?: string | null
-          expires_at?: string
-          id?: string
-          last_used_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           address: string | null
@@ -640,6 +610,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      trusted_devices: {
+        Row: {
+          created_at: string
+          device_id: string
+          expires_at: string
+          id: string
+          ip_prefix: unknown
+          last_seen_at: string | null
+          revoked_at: string | null
+          ua_hash: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          expires_at: string
+          id?: string
+          ip_prefix: unknown
+          last_seen_at?: string | null
+          revoked_at?: string | null
+          ua_hash: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          expires_at?: string
+          id?: string
+          ip_prefix?: unknown
+          last_seen_at?: string | null
+          revoked_at?: string | null
+          ua_hash?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

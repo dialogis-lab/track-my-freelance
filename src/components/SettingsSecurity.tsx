@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MfaSetupCard } from '@/components/MfaSetupCard';
-import { TrustedDevicesManager } from '@/components/TrustedDevicesManager';
+import { TrustedBrowsersManager } from '@/components/TrustedBrowsersManager';
 import { Shield } from 'lucide-react';
 
 export function SettingsSecurity() {
@@ -18,7 +18,7 @@ export function SettingsSecurity() {
       <CardContent>
         <div className="space-y-8">
           <MfaSetupCard />
-          <TrustedDevicesManager />
+          <TrustedBrowsersManager />
         </div>
       </CardContent>
     </Card>

@@ -89,7 +89,8 @@ export default function Mfa() {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) return false;
 
-      const response = await supabase.functions.invoke('check-trusted-device', {
+      const response = await supabase.functions.invoke('trusted-device', {
+        body: { action: 'check' },
         headers: {
           'Authorization': `Bearer ${sessionData.session.access_token}`,
         },
@@ -167,7 +168,7 @@ export default function Mfa() {
           const { data: sessionData } = await supabase.auth.getSession();
           if (sessionData.session) {
             console.log('Adding trusted device...');
-            await supabase.functions.invoke('check-trusted-device', {
+            await supabase.functions.invoke('trusted-device', {
               body: { action: 'add' },
               headers: {
                 'Authorization': `Bearer ${sessionData.session.access_token}`,
@@ -250,7 +251,7 @@ export default function Mfa() {
           const { data: sessionData } = await supabase.auth.getSession();
           if (sessionData.session) {
             console.log('Adding trusted device after recovery code...');
-            await supabase.functions.invoke('check-trusted-device', {
+            await supabase.functions.invoke('trusted-device', {
               body: { action: 'add' },
               headers: {
                 'Authorization': `Bearer ${sessionData.session.access_token}`,
@@ -396,11 +397,11 @@ export default function Mfa() {
                 htmlFor="remember-device" 
                 className="text-sm font-normal cursor-pointer"
               >
-                Remember this device for 30 days
+                Remember this browser for 30 days
               </Label>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Skip 2FA on this device until the trust expires.
+              We'll remember this browser for 30 days.
             </p>
           </CardContent>
             </Card>
