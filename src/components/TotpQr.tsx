@@ -99,20 +99,40 @@ export function TotpQr({ setupData, onVerified, onCancel }: TotpQrProps) {
 
     setLoading(true);
     try {
+      console.log('Starting MFA verification with factor ID:', setupData.id);
+      
       // During enrollment, we need to challenge first then verify
       const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
         factorId: setupData.id,
       });
 
-      if (challengeError) throw challengeError;
+      if (challengeError) {
+        console.error('Challenge creation error:', challengeError);
+        throw challengeError;
+      }
 
-      const { error } = await supabase.auth.mfa.verify({
+      if (!challenge?.id) {
+        console.error('No challenge ID returned:', challenge);
+        throw new Error('Failed to create MFA challenge');
+      }
+
+      console.log('Challenge created successfully:', challenge.id);
+
+      // Small delay to ensure challenge is processed
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const { error: verifyError } = await supabase.auth.mfa.verify({
         factorId: setupData.id,
         challengeId: challenge.id,
         code,
       });
 
-      if (error) throw error;
+      if (verifyError) {
+        console.error('Verification error:', verifyError);
+        throw verifyError;
+      }
+
+      console.log('MFA verification successful');
 
       // Generate and store recovery codes
       const recoveryCodes = generateRecoveryCodes();
@@ -121,9 +141,17 @@ export function TotpQr({ setupData, onVerified, onCancel }: TotpQrProps) {
       onVerified(recoveryCodes);
     } catch (error: any) {
       console.error('Error verifying MFA:', error);
+      
+      let errorMessage = "Invalid code. Please try again.";
+      if (error.message?.includes('challenge ID not found')) {
+        errorMessage = "Authentication challenge expired. Please try again.";
+      } else if (error.message?.includes('Invalid TOTP')) {
+        errorMessage = "Invalid code. Make sure your authenticator app time is synchronized.";
+      }
+      
       toast({
         title: "Verification Failed",
-        description: "Invalid code. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
