@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,7 +20,58 @@ interface TotpQrProps {
 export function TotpQr({ setupData, onVerified, onCancel }: TotpQrProps) {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [challengeId, setChallengeId] = useState<string | null>(null);
+  const [challengeLoading, setChallengeLoading] = useState(false);
   const { toast } = useToast();
+
+  // Create challenge immediately when component loads
+  useEffect(() => {
+    const createChallenge = async () => {
+      if (!setupData?.id) return;
+      
+      setChallengeLoading(true);
+      try {
+        console.log('Creating initial challenge for factor:', setupData.id);
+        const { data: challenge, error } = await supabase.auth.mfa.challenge({
+          factorId: setupData.id,
+        });
+
+        if (error) {
+          console.error('Error creating challenge:', error);
+          toast({
+            title: "Setup Error",
+            description: "Failed to prepare MFA verification. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (!challenge?.id) {
+          console.error('No challenge ID returned:', challenge);
+          toast({
+            title: "Setup Error", 
+            description: "Failed to prepare MFA verification. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        console.log('Challenge created successfully:', challenge.id);
+        setChallengeId(challenge.id);
+      } catch (error: any) {
+        console.error('Unexpected error creating challenge:', error);
+        toast({
+          title: "Setup Error",
+          description: "Failed to prepare MFA verification. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setChallengeLoading(false);
+      }
+    };
+
+    createChallenge();
+  }, [setupData?.id, toast]);
 
   // Add comprehensive null safety checks
   if (!setupData || !setupData.id || !setupData.secret) {
@@ -97,33 +148,22 @@ export function TotpQr({ setupData, onVerified, onCancel }: TotpQrProps) {
       return;
     }
 
+    if (!challengeId) {
+      toast({
+        title: "Setup Error",
+        description: "MFA challenge not ready. Please wait a moment and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      console.log('Starting MFA verification with factor ID:', setupData.id);
+      console.log('Starting MFA verification with factor ID:', setupData.id, 'and challenge ID:', challengeId);
       
-      // During enrollment, we need to challenge first then verify
-      const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
-        factorId: setupData.id,
-      });
-
-      if (challengeError) {
-        console.error('Challenge creation error:', challengeError);
-        throw challengeError;
-      }
-
-      if (!challenge?.id) {
-        console.error('No challenge ID returned:', challenge);
-        throw new Error('Failed to create MFA challenge');
-      }
-
-      console.log('Challenge created successfully:', challenge.id);
-
-      // Small delay to ensure challenge is processed
-      await new Promise(resolve => setTimeout(resolve, 100));
-
       const { error: verifyError } = await supabase.auth.mfa.verify({
         factorId: setupData.id,
-        challengeId: challenge.id,
+        challengeId: challengeId,
         code,
       });
 
@@ -144,7 +184,7 @@ export function TotpQr({ setupData, onVerified, onCancel }: TotpQrProps) {
       
       let errorMessage = "Invalid code. Please try again.";
       if (error.message?.includes('challenge ID not found')) {
-        errorMessage = "Authentication challenge expired. Please try again.";
+        errorMessage = "Authentication challenge expired. Please refresh and try again.";
       } else if (error.message?.includes('Invalid TOTP')) {
         errorMessage = "Invalid code. Make sure your authenticator app time is synchronized.";
       }
@@ -230,15 +270,15 @@ export function TotpQr({ setupData, onVerified, onCancel }: TotpQrProps) {
       <div className="flex gap-2">
         <Button
           onClick={handleVerify}
-          disabled={loading || code.length !== 6}
+          disabled={loading || challengeLoading || code.length !== 6 || !challengeId}
           className="flex-1"
         >
-          {loading ? "Verifying..." : "Verify & Enable"}
+          {challengeLoading ? "Preparing..." : loading ? "Verifying..." : "Verify & Enable"}
         </Button>
         <Button
           variant="outline"
           onClick={onCancel}
-          disabled={loading}
+          disabled={loading || challengeLoading}
         >
           Cancel
         </Button>
