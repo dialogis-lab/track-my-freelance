@@ -95,6 +95,13 @@ export default function Mfa() {
         return;
       }
       
+      // If user has no TOTP factors at all, they can skip MFA for now
+      if (!hasVerifiedTotp && factorsList.length === 0) {
+        console.debug('[MFA] User has no MFA factors, allowing access without MFA requirement');
+        // Don't force MFA setup, let them access the app
+        return;
+      }
+      
       // If user has verified TOTP but AAL is still 1, start challenge
       if (hasVerifiedTotp) {
         const verifiedFactor = factorsList.find(f => f.type === 'totp' && f.status === 'verified');
@@ -478,12 +485,12 @@ export default function Mfa() {
             </CardContent>
           </Card>
         ) : (
-          // User needs to enroll TOTP
+          // User hasn't enabled MFA yet - make it optional
           <Card>
             <CardHeader>
-              <CardTitle>Enable Two-Factor Authentication</CardTitle>
+              <CardTitle>Two-Factor Authentication</CardTitle>
               <CardDescription>
-                Secure your account by setting up TOTP authentication.
+                Enhance your account security with two-factor authentication (optional).
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -492,14 +499,26 @@ export default function Mfa() {
                   <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Shield className="w-8 h-8 text-primary" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">Setup Required</h3>
+                  <h3 className="text-lg font-semibold mb-2">Multi-Factor Authentication</h3>
                   <p className="text-muted-foreground mb-6">
-                    To continue using TimeHatch, you need to enable two-factor authentication.
-                    This adds an extra layer of security to your account.
+                    You haven't enabled MFA yet. You can either set it up now for extra security,
+                    or continue to the application and set it up later in Settings.
                   </p>
-                  <Button onClick={handleStartEnrollment} disabled={loading}>
-                    {loading ? "Setting up..." : "Enable TOTP"}
-                  </Button>
+                  <div className="flex gap-3 justify-center">
+                    <Button onClick={handleStartEnrollment} disabled={loading}>
+                      {loading ? "Setting up..." : "Enable MFA"}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => navigate(nextUrl)}
+                      disabled={loading}
+                    >
+                      Skip for Now
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-4">
+                    You can enable MFA later in Settings → Security
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-6">

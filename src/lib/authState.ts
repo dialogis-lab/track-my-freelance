@@ -1,82 +1,77 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { User, Session } from '@supabase/supabase-js';
 
-export type MfaState = { 
-  enabled: boolean;
-  needsMfa: boolean; 
-  aal: "aal1" | "aal2" | "none";
-  challengeId?: string; 
-  factorId?: string; 
+export type AuthState = {
+  user: User | null;
+  session: Session | null;
+  mfa: {
+    enabled: boolean;
+    needsMfa: boolean;
+    aal: 'aal1' | 'aal2' | null;
+    trustedDevice: boolean;
+  };
 };
-
-export interface AuthState {
-  user: any | null;
-  mfa: MfaState;
-}
-
-// Helper to verify trusted device cookie is scoped to user
-async function verifyTrustedDeviceCookie(userId: string): Promise<boolean> {
-  try {
-    const { data: trustedDeviceResponse } = await supabase.functions.invoke('trusted-device', {
-      body: { action: 'check' },
-      headers: {
-        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-      },
-    });
-    return !!trustedDeviceResponse?.is_trusted;
-  } catch (error) {
-    console.debug('Error checking trusted device:', error);
-    return false; // Fail-open for trusted device check
-  }
-}
 
 export async function getAuthState(): Promise<AuthState> {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      return { user: null, mfa: { enabled: false, needsMfa: false, aal: "none" } };
+    const [{ data: sessionRes }, { data: userRes }] = await Promise.all([
+      supabase.auth.getSession(),
+      supabase.auth.getUser(),
+    ]);
+    const session = sessionRes?.session ?? null;
+    const user = userRes?.user ?? null;
+
+    // Default "safe" values
+    let enabled = false;
+    let needsMfa = false;
+    let aal: 'aal1' | 'aal2' | null = null;
+    let trustedDevice = false;
+
+    if (session && user) {
+      // List factors for THIS user only
+      try {
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        const hasTotp = Array.isArray(factors?.totp) && factors.totp.length > 0;
+        enabled = hasTotp;
+      } catch (error) {
+        console.debug('Error checking MFA factors:', error);
+        enabled = false;
+      }
+
+      // AAL
+      try {
+        const { data: aalRes } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        aal = (aalRes?.currentLevel as 'aal1' | 'aal2' | null) ?? null;
+      } catch (error) {
+        console.debug('Error checking AAL:', error);
+        aal = null;
+      }
+
+      // Trusted device (edge fn already scopes to user)
+      // If call fails, assume false but DO NOT block
+      try {
+        const { data: trustedDeviceResponse } = await supabase.functions.invoke('trusted-device', {
+          body: { action: 'check' },
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        });
+        trustedDevice = !!trustedDeviceResponse?.is_trusted;
+      } catch (error) {
+        console.debug('Error checking trusted device:', error);
+        trustedDevice = false;
+      }
+
+      needsMfa = enabled && aal !== 'aal2' && !trustedDevice;
     }
 
-    const userId = session?.user?.id ?? null;
+    // Logging for debugging
+    console.debug('[auth] state:', { enabled, needsMfa, aal, trustedDevice });
 
-    // 1) Is this user enrolled for TOTP? (Fail-open pattern)
-    let totpEnrolled = false;
-    try {
-      const { data: factors } = await supabase.auth.mfa.listFactors();
-      totpEnrolled = 
-        !!factors?.totp?.some((f: any) => f.status === "verified") ||
-        (factors?.all ?? []).some((f: any) => f.factor_type === "totp" && f.status === "verified");
-    } catch (error) {
-      console.debug('Error checking MFA factors:', error);
-      // Fail-open: if we can't check factors, assume no MFA
-    }
-
-    // 2) Current AAL? (Fail-open pattern)
-    let aal: "aal1" | "aal2" = "aal1";
-    try {
-      const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      aal = (data?.currentLevel ?? "aal1") as "aal1" | "aal2";
-    } catch (error) {
-      console.debug('Error checking AAL:', error);
-      // Fail-open: default to aal1 if we can't get the level
-    }
-
-    // 3) Trusted device for THIS user? (Scoped by user_id)
-    const trusted = userId ? await verifyTrustedDeviceCookie(userId) : false;
-
-    // Final decision: fail-open approach
-    const needsMfa = !!userId && totpEnrolled && aal !== "aal2" && !trusted;
-
-    // Dev-only logging
-    console.debug("[MFA]", { userId, totpEnrolled, aal, trusted });
-
-    return {
-      user: session.user,
-      mfa: { enabled: totpEnrolled, needsMfa, aal },
-    };
+    return { user, session, mfa: { enabled, needsMfa, aal, trustedDevice } };
   } catch (error) {
-    console.error('Error getting auth state:', error);
-    // Fail-open: if anything goes wrong, don't force MFA
-    return { user: null, mfa: { enabled: false, needsMfa: false, aal: "none" } };
+    console.error('Error in getAuthState:', error);
+    // Hard default: signed-out/no-MFA so UI can continue
+    return { user: null, session: null, mfa: { enabled: false, needsMfa: false, aal: null, trustedDevice: false } };
   }
 }
