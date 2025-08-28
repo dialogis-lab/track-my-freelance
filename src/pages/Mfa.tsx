@@ -50,15 +50,18 @@ export default function Mfa() {
           // Default to aal1 if we can't get the level
         }
         
+        // If already AAL2, redirect to dashboard
         if (aal === "aal2") {
           navigate('/dashboard', { replace: true });
           return;
         }
       }
 
-      // Check if user has MFA factors enrolled
+      // Check if user has MFA factors enrolled using correct logic
       const { data: factors } = await supabase.auth.mfa.listFactors();
-      const verifiedFactor = factors?.all?.find((f: any) => f.factor_type === 'totp' && f.status === 'verified');
+      const verifiedFactor = 
+        factors?.totp?.find((f: any) => f.status === "verified") ||
+        factors?.all?.find((f: any) => f.factor_type === 'totp' && f.status === 'verified');
       
       if (!verifiedFactor) {
         navigate('/dashboard', { replace: true });
