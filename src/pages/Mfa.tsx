@@ -98,6 +98,13 @@ export default function Mfa() {
       const hasVerifiedTotp = factorsList.some(f => f.type === 'totp' && f.status === 'verified');
       setVerifiedTotpExists(hasVerifiedTotp);
       
+      // Clear any stale enrollment data if we have existing verified TOTP
+      if (hasVerifiedTotp && enrollment) {
+        console.debug('[MFA] User has verified TOTP but enrollment data exists, clearing stale enrollment');
+        setEnrollment(null);
+        setEnrollmentCode('');
+      }
+      
       // If user already has AAL2, redirect to next page
       if (aal === 'aal2') {
         console.debug('[MFA] User already has AAL2, redirecting');
@@ -174,7 +181,7 @@ export default function Mfa() {
     return () => {
       isMounted = false;
     };
-  }, [user, authLoading, aal, navigate, nextUrl, toast, supabase]);
+  }, [user, authLoading, aal, navigate, nextUrl, toast, enrollment]);
 
   // Start TOTP enrollment
   const handleStartEnrollment = async () => {
