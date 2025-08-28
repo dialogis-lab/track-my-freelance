@@ -2,7 +2,7 @@ import { Timer, Clock, Users, FileText, BarChart3, Zap, Bell, Shield, DollarSign
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import LeadForm from "./LeadForm";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useCookieContext } from "@/components/CookieProvider";
 import { BrandLogo } from "./BrandLogo";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,12 +10,29 @@ import { useState } from "react";
 
 const NewLandingPage = () => {
   const { openModal } = useCookieContext();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [logoClickCount, setLogoClickCount] = useState(0);
 
   const handleLogoClick = () => {
     setLogoClickCount(prev => prev + 1);
   };
+
+  // Redirect authenticated users to MFA page
+  if (!loading && user) {
+    return <Navigate to="/mfa" replace />;
+  }
+
+  // Show loading if auth is still loading
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <BrandLogo size="lg" />
+          <p className="text-muted-foreground mt-4">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

@@ -67,6 +67,7 @@ export function useAuthState() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
+        console.log('Auth state change:', event, 'User ID:', session?.user?.id);
 
         if (event === 'SIGNED_OUT') {
           setState({
@@ -77,6 +78,9 @@ export function useAuthState() {
             loading: false,
           });
         } else if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION')) {
+          console.log('Setting loading to false and calling refresh');
+          // Set loading to false immediately, then refresh in background
+          setState(prev => ({ ...prev, loading: false }));
           // Defer AAL and MFA checks to avoid callback deadlock
           setTimeout(() => {
             if (mounted) {

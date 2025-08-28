@@ -11,6 +11,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { TimerProvider } from "@/contexts/TimerContext";
 import { CookieProvider } from "@/components/CookieProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
@@ -42,81 +43,83 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <CookieProvider>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/auth/callback" element={<AuthCallback />} />
-              <Route path="/mfa" element={<Mfa />} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
-          <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
-              <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
-            <Route path="/clients/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
-            <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-            <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
-            <Route path="/invoices/new" element={<ProtectedRoute><InvoiceNew /></ProtectedRoute>} />
-            <Route path="/invoices/:id" element={<ProtectedRoute><InvoiceView /></ProtectedRoute>} />
-            <Route path="/settings/*" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            <Route path="/focus" element={<ProtectedRoute><Focus /></ProtectedRoute>} />
-            
-            {/* Admin Routes */}
-            <Route path="/admin" element={
-              <ProtectedRoute>
-                <AdminLayout>
-                  <AdminOverview />
-                </AdminLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/users" element={
-              <ProtectedRoute>
-                <AdminLayout>
-                  <AdminUsers />
-                </AdminLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/invoices" element={
-              <ProtectedRoute>
-                <AdminLayout>
-                  <AdminInvoices />
-                </AdminLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/waitlist" element={
-              <ProtectedRoute>
-                <AdminLayout>
-                  <AdminWaitlist />
-                </AdminLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/system" element={
-              <ProtectedRoute>
-                <AdminLayout>
-                  <AdminSystem />
-                </AdminLayout>
-              </ProtectedRoute>
-            } />
-            
-              <Route path="/system-check" element={<ProtectedRoute><SystemCheck /></ProtectedRoute>} />
-              <Route path="/security-check" element={<ProtectedRoute><SecurityCheck /></ProtectedRoute>} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/imprint" element={<Imprint />} />
-              <Route path="/success" element={<Success />} />
-              <Route path="/subscription-success" element={<SubscriptionSuccess />} />
-              <Route path="/error" element={<Error />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </CookieProvider>
+    <AuthProvider>
+      <TimerProvider>
+        <CookieProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route path="/mfa" element={<Mfa />} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+                <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
+                <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
+                <Route path="/clients/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
+                <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+                <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
+                <Route path="/invoices/new" element={<ProtectedRoute><InvoiceNew /></ProtectedRoute>} />
+                <Route path="/invoices/:id" element={<ProtectedRoute><InvoiceView /></ProtectedRoute>} />
+                <Route path="/settings/*" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/focus" element={<ProtectedRoute><Focus /></ProtectedRoute>} />
+                
+                {/* Admin Routes */}
+                <Route path="/admin" element={
+                  <ProtectedRoute>
+                    <AdminLayout>
+                      <AdminOverview />
+                    </AdminLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/users" element={
+                  <ProtectedRoute>
+                    <AdminLayout>
+                      <AdminUsers />
+                    </AdminLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/invoices" element={
+                  <ProtectedRoute>
+                    <AdminLayout>
+                      <AdminInvoices />
+                    </AdminLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/waitlist" element={
+                  <ProtectedRoute>
+                    <AdminLayout>
+                      <AdminWaitlist />
+                    </AdminLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/system" element={
+                  <ProtectedRoute>
+                    <AdminLayout>
+                      <AdminSystem />
+                    </AdminLayout>
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/system-check" element={<ProtectedRoute><SystemCheck /></ProtectedRoute>} />
+                <Route path="/security-check" element={<ProtectedRoute><SecurityCheck /></ProtectedRoute>} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/imprint" element={<Imprint />} />
+                <Route path="/success" element={<Success />} />
+                <Route path="/subscription-success" element={<SubscriptionSuccess />} />
+                <Route path="/error" element={<Error />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </CookieProvider>
+      </TimerProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
