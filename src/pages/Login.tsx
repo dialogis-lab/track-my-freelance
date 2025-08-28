@@ -71,18 +71,13 @@ export default function Login() {
         return;
       }
 
-      // Check auth state after successful login
-      const { mfa } = await getAuthState();
-      if (mfa.needsMfa) {
-        navigate('/mfa', { replace: true });
-        return;
-      }
-
       toast({
         title: "Welcome back!",
         description: "You have been signed in successfully.",
       });
-      navigate('/dashboard', { replace: true });
+      
+      // Navigate to MFA (all users need MFA now)
+      navigate('/mfa', { replace: true });
     } catch (error: any) {
       toast({
         title: "Sign in failed",

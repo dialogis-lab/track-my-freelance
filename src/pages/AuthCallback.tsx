@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { getAuthState } from '@/lib/authState';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -27,15 +26,13 @@ export default function AuthCallback() {
         }
 
         if (data.session) {
-          // Check auth state after successful OAuth
-          const { mfa } = await getAuthState();
-          
           toast({
             title: "Welcome!",
             description: "You have been signed in successfully.",
           });
           
-          navigate(mfa.needsMfa ? '/mfa' : '/dashboard', { replace: true });
+          // Navigate to MFA (all users need MFA now)
+          navigate('/mfa', { replace: true });
         } else {
           throw new Error('No session created');
         }
