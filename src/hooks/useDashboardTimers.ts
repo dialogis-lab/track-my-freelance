@@ -65,66 +65,81 @@ export function useDashboardTimers() {
     initializeDashboard();
   }, [user?.id]);
 
-  // Enhanced realtime subscriptions with better recovery and mobile fallback
+  // Real-time subscriptions with improved resilience
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
 
-    debugLog('Setting up realtime subscriptions with enhanced recovery and mobile support');
-    
-    // Clean up existing subscriptions
-    subscriptionsRef.current.forEach(sub => sub.unsubscribe());
-    subscriptionsRef.current = [];
+    debugLog('Setting up realtime subscription for user:', user.id);
 
-    // Mobile fallback: less aggressive periodic sync
-    let lastUpdateTime = Date.now();
-    const mobileBackupSync = setInterval(() => {
-      const timeSinceLastUpdate = Date.now() - lastUpdateTime;
-      if (timeSinceLastUpdate > 30000) { // 30 seconds without updates (was 10)
-        debugLog('Mobile backup sync triggered - no updates for', timeSinceLastUpdate, 'ms');
-        loadCurrentTimerStates();
-        lastUpdateTime = Date.now();
-      }
-    }, 15000); // Check every 15 seconds (was 5)
+    let subscription: { unsubscribe: () => void } | null = null;
+    let mobileInterval: NodeJS.Timeout | null = null;
+    let recoveryTimeout: NodeJS.Timeout | null = null;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 3;
 
-    // Subscribe to stopwatch (time_entries)
-    const stopwatchSub = subscribeToTimeEntries(user.id, {
-      onUpdate: (payload: TimerPayload) => {
-        lastUpdateTime = Date.now(); // Reset backup sync timer
-        debugLog('Stopwatch realtime event received:', {
-          eventType: payload.eventType,
-          id: payload.new?.id,
-          stopped_at: payload.new?.stopped_at,
-          started_at: payload.new?.started_at,
-          device: 'cross-device-sync'
+    const setupSubscription = () => {
+      try {
+        subscription = subscribeToTimeEntries(user.id, {
+          onUpdate: (payload) => {
+            debugLog('Realtime update received:', payload.eventType, payload.new?.id || payload.old?.id);
+            handleStopwatchUpdate(payload);
+            reconnectAttempts = 0; // Reset on successful update
+          },
+          onSubscribed: () => {
+            debugLog('Stopwatch subscription ready');
+            reconnectAttempts = 0;
+            // Clear any existing recovery timeout
+            if (recoveryTimeout) {
+              clearTimeout(recoveryTimeout);
+              recoveryTimeout = null;
+            }
+            // Clear mobile fallback when realtime works
+            if (mobileInterval) {
+              clearInterval(mobileInterval);
+              mobileInterval = null;
+            }
+          },
+          onError: (error) => {
+            debugLog('Stopwatch subscription error:', error);
+            
+            // Don't spam recovery attempts
+            if (recoveryTimeout || reconnectAttempts >= maxReconnectAttempts) return;
+            
+            reconnectAttempts++;
+            const backoffDelay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
+            
+            recoveryTimeout = setTimeout(() => {
+              debugLog('Attempting to recover subscription, attempt:', reconnectAttempts);
+              loadCurrentTimerStates();
+              recoveryTimeout = null;
+              
+              // Set up mobile fallback for unreliable connections
+              if (!mobileInterval && reconnectAttempts >= 2) {
+                debugLog('Setting up mobile fallback sync');
+                mobileInterval = setInterval(() => {
+                  loadCurrentTimerStates();
+                }, 10000); // Less frequent polling
+              }
+            }, backoffDelay);
+          }
         });
-        handleStopwatchUpdate(payload);
-      },
-      onSubscribed: () => {
-        debugLog('Stopwatch channel subscribed');
-        lastUpdateTime = Date.now(); // Just mark as updated, no extra sync
-      },
-      onError: (error) => {
-        debugLog('Stopwatch subscription error - attempting recovery:', error);
-        // Implement exponential backoff for error recovery
-        const retryDelay = subscriptionsRef.current.length > 0 ? 1000 : 2000;
-        setTimeout(() => {
-          debugLog('Attempting to recover stopwatch subscription');
-          loadCurrentTimerStates();
-          lastUpdateTime = Date.now();
-        }, retryDelay);
+      } catch (error) {
+        debugLog('Error setting up subscription:', error);
       }
-    });
+    };
 
-    subscriptionsRef.current = [stopwatchSub];
+    setupSubscription();
 
     return () => {
-      debugLog('Cleaning up dashboard timer subscriptions and mobile backup');
-      clearInterval(mobileBackupSync);
-      subscriptionsRef.current.forEach(sub => sub.unsubscribe());
-      subscriptionsRef.current = [];
-      stopTicker();
-      if (displayRafRef.current) {
-        cancelAnimationFrame(displayRafRef.current);
+      debugLog('Cleaning up timer subscriptions');
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+      if (mobileInterval) {
+        clearInterval(mobileInterval);
+      }
+      if (recoveryTimeout) {
+        clearTimeout(recoveryTimeout);
       }
     };
   }, [user?.id]);
@@ -146,52 +161,55 @@ export function useDashboardTimers() {
     };
   }, [user]);
 
-  // Watch for timer state changes to manage ticker
+  // Ticker management effect - starts ticker when stopwatch is running
   useEffect(() => {
-    if (state.stopwatch?.started_at && !state.stopwatch.stopped_at && !state.localStoppedAt) {
-      debugLog('Starting ticker for running timer');
-      const startedMs = new Date(state.stopwatch.started_at).getTime();
-      startTicker(startedMs);
-      setState(prev => ({ ...prev, localRunning: true }));
+    if (state.localRunning && state.localStoppedAt === null) {
+      debugLog('Starting ticker - timer is running');
+      startTicker();
     } else {
       debugLog('Stopping ticker - timer not running');
       stopTicker();
-      setState(prev => ({ ...prev, localRunning: false }));
     }
-  }, [state.stopwatch?.started_at, state.stopwatch?.stopped_at, state.localStoppedAt]);
-
-  // Ticker management helpers
-  const startTicker = (startedAtMs: number) => {
-    stopTicker(); // Ensure only one ticker exists
-    debugLog('Starting ticker with startedAtMs:', startedAtMs);
     
-    const updateTicker = () => {
-      // Update display tick to force time recalculation
+    return () => {
+      stopTicker();
+    };
+  }, [state.localRunning, state.localStoppedAt]);
+
+  // Helper functions for ticker
+  const startTicker = () => {
+    if (tickerRef.current) return;
+    
+    const tick = () => {
       setState(prev => ({ ...prev, displayTick: prev.displayTick + 1 }));
-      tickerRef.current = requestAnimationFrame(updateTicker);
+      tickerRef.current = requestAnimationFrame(tick);
     };
     
-    tickerRef.current = requestAnimationFrame(updateTicker);
+    tickerRef.current = requestAnimationFrame(tick);
   };
 
   const stopTicker = () => {
     if (tickerRef.current) {
-      debugLog('Stopping ticker');
       cancelAnimationFrame(tickerRef.current);
       tickerRef.current = undefined;
     }
   };
 
-  // Immediate stop function for UI responsiveness
-  const immediateStop = () => {
+  const immediateStop = (timestamp?: string) => {
     debugLog('Immediate stop triggered');
-    const now = Date.now();
-    setState(prev => ({ 
-      ...prev, 
-      localRunning: false,
-      localStoppedAt: now,
-      displayTick: prev.displayTick + 1 // Force final update
-    }));
+    // Only stop if we're actually running
+    setState(prev => {
+      if (!prev.localRunning) {
+        debugLog('Immediate stop called but timer not running');
+        return prev;
+      }
+      return {
+        ...prev,
+        localRunning: false,
+        localStoppedAt: timestamp ? new Date(timestamp).getTime() : Date.now(),
+        displayTick: prev.displayTick + 1
+      };
+    });
     stopTicker();
   };
 
@@ -261,6 +279,7 @@ export function useDashboardTimers() {
       setState(prev => ({
         ...prev,
         stopwatch: newStopwatch,
+        localRunning: !!newStopwatch,
         localStoppedAt: null, // Reset local stop state when new data arrives
         displayTick: prev.displayTick + 1, // Force update on state change
       }));
@@ -286,7 +305,13 @@ export function useDashboardTimers() {
             new Date(newState.revised_at || newState.started_at) >= 
             new Date(current.revised_at || current.started_at)) {
           debugLog('Applied stopwatch update - version check passed', newState);
-          return { ...prev, stopwatch: newState, displayTick: prev.displayTick + 1 };
+          return { 
+            ...prev, 
+            stopwatch: newState,
+            localRunning: !!newState,
+            localStoppedAt: null, // Clear local stop when getting real update
+            displayTick: prev.displayTick + 1 
+          };
         } else {
           debugLog('Ignored stopwatch update - stale version');
           return prev;
@@ -328,36 +353,36 @@ export function useDashboardTimers() {
   };
 
 
-  // Calculate display time with server offset and local stop handling
-  const getDisplayTime = (timerState: TimerState | null): number => {
-    // If locally stopped, use the local stop time
-    if (state.localStoppedAt && timerState?.started_at) {
-      const startedMs = new Date(timerState.started_at).getTime();
-      const elapsed = state.localStoppedAt - startedMs;
-      return Math.max(0, (timerState.elapsed_ms || 0) + elapsed);
-    }
-
-    if (!timerState || !state.localRunning || !timerState.started_at) {
-      return timerState?.elapsed_ms || 0;
-    }
-
-    const startedMs = new Date(timerState.started_at).getTime();
-    if (!Number.isFinite(startedMs)) {
-      debugLog('Invalid started_at date:', timerState.started_at);
-      return timerState.elapsed_ms || 0;
-    }
-
-    // Use server-corrected time for accuracy, but fallback to local time if offset is not ready
-    const serverOffset = state.serverOffsetMs || 0;
-    const currentTime = Date.now() + serverOffset;
-    const displayMs = (timerState.elapsed_ms || 0) + (currentTime - startedMs);
+  const getDisplayTime = () => {
+    const { stopwatch, serverOffsetMs, localRunning, localStoppedAt } = state;
     
-    return Math.max(0, displayMs);
+    if (!stopwatch) {
+      return 0;
+    }
+
+    const startTime = new Date(stopwatch.started_at).getTime();
+    let endTime: number;
+    
+    // Use local calculation when running for smooth updates
+    if (localRunning && !localStoppedAt && !stopwatch.stopped_at) {
+      // Use local time for running timers for smooth display
+      endTime = Date.now();
+    } else if (localStoppedAt) {
+      endTime = localStoppedAt;
+    } else if (stopwatch.stopped_at) {
+      endTime = new Date(stopwatch.stopped_at).getTime();
+    } else {
+      // Fallback to server time
+      endTime = Date.now() + serverOffsetMs;
+    }
+    
+    const elapsed = Math.max(0, endTime - startTime);
+    return elapsed;
   };
 
   return {
     ...state,
-    getStopwatchDisplayTime: () => getDisplayTime(state.stopwatch),
+    getStopwatchDisplayTime: getDisplayTime,
     isStopwatchRunning: state.localRunning && !state.localStoppedAt,
     immediateStop,
   };

@@ -223,12 +223,13 @@ export function CombinedTimerCard() {
       return;
     }
     
-    // Immediately stop the UI ticker and disable button
-    immediateStop();
     setLoading(true);
     
     try {
       debugLog('Stopping timer:', stopwatch.id);
+      
+      // Immediately stop the UI ticker for responsive feel
+      immediateStop();
       
       const { error } = await supabase
         .from('time_entries')
