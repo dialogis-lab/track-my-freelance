@@ -54,9 +54,11 @@ export async function getAuthState(): Promise<AuthState> {
           body: { action: 'check' },
           headers: {
             'Authorization': `Bearer ${session.access_token}`,
+            'Cookie': document.cookie, // Include cookies manually
           },
         });
         trustedDevice = !!trustedDeviceResponse?.is_trusted;
+        console.debug('[auth] Trusted device check:', trustedDeviceResponse);
       } catch (error) {
         console.debug('Error checking trusted device:', error);
         trustedDevice = false;

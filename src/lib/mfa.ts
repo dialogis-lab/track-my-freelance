@@ -301,12 +301,15 @@ export async function addTrustedDevice(): Promise<void> {
       body: { action: 'add' },
       headers: {
         'Authorization': `Bearer ${sessionData.session.access_token}`,
+        'Cookie': document.cookie, // Include existing cookies
       },
     });
 
     if (response.error) {
       throw new Error(response.error.message);
     }
+    
+    console.debug('[MFA] Trusted device added successfully:', response.data);
   } catch (error) {
     console.error('Error adding trusted device:', error);
     throw error;
