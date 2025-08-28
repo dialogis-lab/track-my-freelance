@@ -83,11 +83,20 @@ export async function enrollTotp(): Promise<TotpEnrollment | null> {
 // Verify TOTP code during enrollment or challenge
 export async function verifyTotp(factorId: string, code: string, challengeId?: string): Promise<boolean> {
   try {
-    const { error } = await supabase.auth.mfa.verify({
+    console.debug('[MFA] verifyTotp called with:', { factorId, code: '***', challengeId });
+    
+    const verifyParams: any = {
       factorId,
-      challengeId,
       code,
-    });
+    };
+    
+    // Only include challengeId if it's provided (for existing factors)
+    // During enrollment, challengeId should be undefined
+    if (challengeId) {
+      verifyParams.challengeId = challengeId;
+    }
+    
+    const { error } = await supabase.auth.mfa.verify(verifyParams);
 
     if (error) {
       throw error;

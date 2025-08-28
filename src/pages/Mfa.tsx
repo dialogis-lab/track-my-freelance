@@ -217,6 +217,8 @@ export default function Mfa() {
 
     try {
       setLoading(true);
+      // For enrollment verification, don't pass challengeId (it's undefined for new enrollments)
+      console.debug('[MFA] Verifying enrollment with factorId:', enrollment.factorId);
       await verifyTotp(enrollment.factorId, enrollmentCode);
       
       toast({
@@ -255,6 +257,7 @@ export default function Mfa() {
 
     try {
       setLoading(true);
+      console.debug('[MFA] Verifying challenge with factorId:', factorId, 'challengeId:', challengeId);
       await verifyTotp(factorId, totpCode, challengeId);
       
       // Add trusted device if selected
