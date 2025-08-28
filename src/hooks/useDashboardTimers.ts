@@ -380,10 +380,31 @@ export function useDashboardTimers() {
     return elapsed;
   };
 
+  // Force immediate timer start for responsive UI
+  const forceTimerStart = (timerData: any) => {
+    debugLog('Force timer start with data:', timerData);
+    const newTimer = {
+      id: timerData.id,
+      started_at: timerData.started_at,
+      status: 'running',
+      elapsed_ms: 0,
+      revised_at: timerData.created_at || timerData.started_at
+    };
+    
+    setState(prev => ({
+      ...prev,
+      stopwatch: newTimer,
+      localRunning: true,
+      localStoppedAt: null,
+      displayTick: prev.displayTick + 1
+    }));
+  };
+
   return {
     ...state,
     getStopwatchDisplayTime: getDisplayTime,
     isStopwatchRunning: state.localRunning && !state.localStoppedAt,
     immediateStop,
+    forceTimerStart,
   };
 }

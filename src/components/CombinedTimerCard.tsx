@@ -29,6 +29,7 @@ export function CombinedTimerCard() {
     getStopwatchDisplayTime,
     isStopwatchRunning,
     immediateStop,
+    forceTimerStart,
   } = useDashboardTimers();
 
   // Load projects on mount
@@ -191,6 +192,12 @@ export function CombinedTimerCard() {
       debugLog('Timer started successfully:', timeEntryData);
       toast({ title: "Timer started" });
       
+      // Immediately start local timer for responsive UI - force instant start
+      forceTimerStart(timeEntryData);
+      
+      // Also trigger realtime updates for cross-device sync
+      triggerTimerUpdate();
+      
       // Update onboarding state
       try {
         await supabase.functions.invoke('onboarding-state', {
@@ -199,9 +206,6 @@ export function CombinedTimerCard() {
       } catch (error) {
         console.error('Error updating onboarding state:', error);
       }
-      
-      // Trigger dashboard update
-      triggerTimerUpdate();
       
       // Don't clear notes or reload - let the real-time updates handle the UI changes
       
