@@ -494,13 +494,23 @@ export default function Mfa() {
                       Open your authenticator app and enter the 6-digit code.
                     </p>
                   </div>
-                  <Button 
-                    onClick={handleVerifyTotp}
-                    className="w-full" 
-                    disabled={loading || totpCode.length !== 6}
-                  >
-                    {loading ? "Verifying..." : "Verify"}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate(nextUrl, { replace: true })}
+                      disabled={loading}
+                      className="flex-1"
+                    >
+                      Skip for now
+                    </Button>
+                    <Button 
+                      onClick={handleVerifyTotp}
+                      disabled={loading || totpCode.length !== 6}
+                      className="flex-1"
+                    >
+                      {loading ? "Verifying..." : "Verify"}
+                    </Button>
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="recovery" className="space-y-4">
@@ -524,13 +534,23 @@ export default function Mfa() {
                       autoComplete="off"
                     />
                   </div>
-                  <Button 
-                    onClick={handleVerifyRecovery}
-                    className="w-full" 
-                    disabled={loading || !recoveryCode}
-                  >
-                    {loading ? "Verifying..." : "Use Recovery Code"}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate(nextUrl, { replace: true })}
+                      disabled={loading}
+                      className="flex-1"
+                    >
+                      Skip for now
+                    </Button>
+                    <Button 
+                      onClick={handleVerifyRecovery}
+                      disabled={loading || !recoveryCode}
+                      className="flex-1"
+                    >
+                      {loading ? "Verifying..." : "Use Recovery Code"}
+                    </Button>
+                  </div>
                 </TabsContent>
               </Tabs>
               
