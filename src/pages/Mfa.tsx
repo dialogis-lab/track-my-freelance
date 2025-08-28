@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,36 +10,21 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { BrandLogo } from '@/components/BrandLogo';
+import { MfaManager } from '@/components/MfaManager';
 import { 
   Shield, 
   Key, 
-  QrCode, 
-  Copy, 
-  Download, 
-  Printer, 
-  RefreshCw,
-  Eye,
-  EyeOff,
   CheckCircle,
   AlertTriangle 
 } from 'lucide-react';
-import { 
-  listFactors, 
-  enrollTotp, 
-  verifyTotp, 
-  createChallenge, 
-  unenrollFactor,
-  generateRecoveryCodes,
-  downloadRecoveryCodes,
-  copyRecoveryCodes,
-  printRecoveryCodes,
-  addTrustedDevice,
-  verifyRecoveryCode,
-  type MfaFactor,
-  type TotpEnrollment
-} from '@/lib/mfa';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthState } from '@/hooks/useAuthState';
+import { 
+  verifyTotp, 
+  createChallenge,
+  addTrustedDevice,
+  verifyRecoveryCode,
+} from '@/lib/mfa';
 
 export default function Mfa() {
   const navigate = useNavigate();
@@ -51,79 +36,50 @@ export default function Mfa() {
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   
-  // MFA factors
-  const [factors, setFactors] = useState<MfaFactor[]>([]);
-  const [verifiedTotpExists, setVerifiedTotpExists] = useState(false);
-  
-  // TOTP enrollment
-  const [enrollment, setEnrollment] = useState<TotpEnrollment | null>(null);
-  const [enrollmentCode, setEnrollmentCode] = useState('');
-  
   // TOTP verification (for existing factors)
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [factorId, setFactorId] = useState<string | null>(null);
   const [totpCode, setTotpCode] = useState('');
-  
-  // Recovery codes
-  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
-  const [recoveryCodesVisible, setRecoveryCodesVisible] = useState(false);
   const [recoveryCode, setRecoveryCode] = useState('');
-  
-  // Options
   const [rememberDevice, setRememberDevice] = useState(false);
+  
+  // MFA factors - single source of truth
+  const [verifiedTotpExists, setVerifiedTotpExists] = useState(false);
+  const [showMfaSetup, setShowMfaSetup] = useState(false);
 
   const nextUrl = searchParams.get('next') || '/dashboard';
 
   // Load initial data
   useEffect(() => {
-    // Only load factors when auth state is stable
     if (!authLoading && user) {
-      loadFactorsAndState();
+      loadMfaState();
     }
   }, [authLoading, user, aal]);
 
-  const loadFactorsAndState = useCallback(async () => {
+  const loadMfaState = async () => {
     if (!user || authLoading) return;
     
-    let isMounted = true;
-    
     try {
-      if (isMounted) setPageLoading(true);
+      setPageLoading(true);
       
-      const factorsList = await listFactors();
-      if (!isMounted) return;
+      // Check MFA factors - single source of truth
+      const { data, error } = await supabase.auth.mfa.listFactors();
+      if (error) throw error;
       
-      setFactors(factorsList);
-      
-      const hasVerifiedTotp = factorsList.some(f => f.type === 'totp' && f.status === 'verified');
+      const hasVerifiedTotp = data?.totp?.some(f => f.status === 'verified') || false;
       setVerifiedTotpExists(hasVerifiedTotp);
-      
-      // Clear any stale enrollment data if we have existing verified TOTP
-      if (hasVerifiedTotp && enrollment) {
-        console.debug('[MFA] User has verified TOTP but enrollment data exists, clearing stale enrollment');
-        setEnrollment(null);
-        setEnrollmentCode('');
-      }
       
       // If user already has AAL2, redirect to next page
       if (aal === 'aal2') {
         console.debug('[MFA] User already has AAL2, redirecting');
-        // Use setTimeout to prevent navigation during render
         setTimeout(() => {
           navigate(nextUrl, { replace: true });
         }, 0);
         return;
       }
       
-      // If user has no TOTP factors at all, they can skip MFA for now
-      if (!hasVerifiedTotp && factorsList.length === 0) {
-        console.debug('[MFA] User has no MFA factors, allowing skip');
-        // Don't force MFA setup, let them access the app
-        return;
-      }
-      
       // If user has verified TOTP, check if we need MFA challenge
-      if (hasVerifiedTotp && isMounted) {
+      if (hasVerifiedTotp) {
         console.debug('[MFA] User has TOTP, checking if challenge needed');
         
         // Check if device is trusted first
@@ -138,8 +94,6 @@ export default function Mfa() {
               },
             });
             
-            console.debug('[MFA] Trusted device check result:', trustedCheck.data);
-            
             if (trustedCheck.data?.is_trusted) {
               console.debug('[MFA] Device is trusted, redirecting to app');
               setTimeout(() => {
@@ -153,94 +107,29 @@ export default function Mfa() {
         }
         
         // If not trusted, start challenge
-        const verifiedFactor = factorsList.find(f => f.type === 'totp' && f.status === 'verified');
+        const verifiedFactor = data?.totp?.find(f => f.status === 'verified');
         if (verifiedFactor) {
           setFactorId(verifiedFactor.id);
           try {
             const challengeId = await createChallenge(verifiedFactor.id);
-            if (isMounted) setChallengeId(challengeId);
+            setChallengeId(challengeId);
           } catch (challengeError) {
             console.error('Error creating challenge:', challengeError);
-            // Continue without challenge, user can still try to verify
           }
         }
+      } else {
+        // No verified TOTP - show setup option
+        setShowMfaSetup(true);
       }
     } catch (error: any) {
-      console.error('Error loading factors:', error);
-      if (isMounted) {
-        toast({
-          title: "Error",
-          description: "Failed to load MFA configuration.",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      if (isMounted) setPageLoading(false);
-    }
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [user, authLoading, aal, navigate, nextUrl, toast, enrollment]);
-
-  // Start TOTP enrollment
-  const handleStartEnrollment = async () => {
-    try {
-      setLoading(true);
-      const enrollmentData = await enrollTotp();
-      setEnrollment(enrollmentData);
+      console.error('Error loading MFA state:', error);
       toast({
-        title: "TOTP Enrollment Started",
-        description: "Scan the QR code with your authenticator app.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Enrollment Failed",
-        description: error.message,
+        title: "Error",
+        description: "Failed to load MFA configuration.",
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
-    }
-  };
-
-  // Verify enrollment code
-  const handleVerifyEnrollment = async () => {
-    if (!enrollment || enrollmentCode.length !== 6) {
-      toast({
-        title: "Invalid Code",
-        description: "Please enter a 6-digit code from your authenticator app.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setLoading(true);
-      // For enrollment verification, don't pass challengeId (it's undefined for new enrollments)
-      console.debug('[MFA] Verifying enrollment with factorId:', enrollment.factorId);
-      await verifyTotp(enrollment.factorId, enrollmentCode);
-      
-      toast({
-        title: "TOTP Enabled Successfully!",
-        description: "Your two-factor authentication is now active.",
-      });
-      
-      // Refresh auth state and reload factors
-      await refresh();
-      await loadFactorsAndState();
-      
-      // Clear enrollment state
-      setEnrollment(null);
-      setEnrollmentCode('');
-    } catch (error: any) {
-      toast({
-        title: "Verification Failed",
-        description: error.message || "Invalid code. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      setPageLoading(false);
     }
   };
 
@@ -320,47 +209,15 @@ export default function Mfa() {
     }
   };
 
-  // Generate recovery codes
-  const handleGenerateRecoveryCodes = async () => {
-    try {
-      setLoading(true);
-      const codes = await generateRecoveryCodes();
-      setRecoveryCodes(codes);
-      setRecoveryCodesVisible(true);
-      toast({
-        title: "Recovery Codes Generated",
-        description: "Store these codes in a safe place. Each can only be used once.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Generation Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Unenroll factor
-  const handleUnenrollFactor = async (factorIdToRemove: string) => {
-    try {
-      setLoading(true);
-      await unenrollFactor(factorIdToRemove);
-      toast({
-        title: "Factor Removed",
-        description: "Two-factor authentication has been disabled.",
-      });
-      await loadFactorsAndState();
-    } catch (error: any) {
-      toast({
-        title: "Removal Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+  // Handle MFA setup completion
+  const handleMfaVerified = () => {
+    toast({
+      title: "Two-Factor Authentication Enabled",
+      description: "Your account is now secured with 2FA.",
+    });
+    
+    // Reload MFA state
+    loadMfaState();
   };
 
   if (authLoading || pageLoading) {
@@ -395,55 +252,6 @@ export default function Mfa() {
             </p>
           </div>
         </div>
-
-        {/* Current Factors */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5" />
-              Your Authentication Factors
-            </CardTitle>
-            <CardDescription>
-              Manage your two-factor authentication methods.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {factors.length > 0 ? (
-              <div className="space-y-3">
-                {factors.map((factor) => (
-                  <div key={factor.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Key className="w-4 h-4" />
-                      <div>
-                        <p className="font-medium capitalize">{factor.type.toUpperCase()} Authenticator</p>
-                        <p className="text-sm text-muted-foreground">
-                          Status: <span className={factor.status === 'verified' ? 'text-green-600' : 'text-yellow-600'}>
-                            {factor.status === 'verified' ? 'Verified' : 'Unverified'}
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                    {factor.status === 'verified' && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleUnenrollFactor(factor.id)}
-                        disabled={loading}
-                      >
-                        Disable
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground">No authentication factors configured.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
         {/* Main Content */}
         {aal === 'aal2' ? (
@@ -567,217 +375,33 @@ export default function Mfa() {
               </div>
             </CardContent>
           </Card>
-        ) : (
-          // User hasn't enabled MFA yet - make it optional
-          <Card>
-            <CardHeader>
-              <CardTitle>Two-Factor Authentication</CardTitle>
-              <CardDescription>
-                Enhance your account security with two-factor authentication (optional).
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {!enrollment ? (
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Shield className="w-8 h-8 text-primary" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">Multi-Factor Authentication</h3>
-                  <p className="text-muted-foreground mb-6">
-                    You haven't enabled MFA yet. You can either set it up now for extra security,
-                    or continue to the application and set it up later in Settings.
-                  </p>
-                  <div className="flex gap-3 justify-center">
-                    <Button onClick={handleStartEnrollment} disabled={loading}>
-                      {loading ? "Setting up..." : "Enable MFA"}
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => navigate(nextUrl)}
-                      disabled={loading}
-                    >
-                      Skip for Now
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-4">
-                    You can enable MFA later in Settings → Security
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {/* QR Code and Secret */}
-                  <div className="text-center space-y-4">
-                    <div className="bg-white p-4 rounded-lg inline-block">
-                      <img 
-                        src={enrollment.qr_code} 
-                        alt="QR Code for TOTP setup"
-                        className="w-48 h-48 mx-auto"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Manual Setup Key:</p>
-                      <div className="bg-muted p-3 rounded font-mono text-sm break-all">
-                        {enrollment.secret}
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          navigator.clipboard.writeText(enrollment.secret);
-                          toast({ title: "Copied to clipboard" });
-                        }}
-                      >
-                        <Copy className="w-4 h-4 mr-2" />
-                        Copy Key
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Verification */}
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="enrollment-code">Verification Code</Label>
-                      <Input
-                        id="enrollment-code"
-                        type="text"
-                        placeholder="Enter 6-digit code"
-                        value={enrollmentCode}
-                        onChange={(e) => setEnrollmentCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        maxLength={6}
-                        className="text-center text-lg tracking-widest font-mono"
-                        disabled={loading}
-                        autoComplete="off"
-                      />
-                      <p className="text-xs text-muted-foreground text-center">
-                        Enter the code from your authenticator app to verify setup.
-                      </p>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline"
-                        onClick={() => {
-                          setEnrollment(null);
-                          setEnrollmentCode('');
-                        }}
-                        disabled={loading}
-                        className="flex-1"
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        onClick={handleVerifyEnrollment}
-                        disabled={loading || enrollmentCode.length !== 6}
-                        className="flex-1"
-                      >
-                        {loading ? "Verifying..." : "Verify & Enable"}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Recovery Codes */}
-        {verifiedTotpExists && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Recovery Codes</CardTitle>
-              <CardDescription>
-                Use these codes to access your account if you lose your authenticator device.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {recoveryCodes.length === 0 ? (
-                <div className="text-center py-4">
-                  <p className="text-muted-foreground mb-4">No recovery codes generated yet.</p>
-                  <Button onClick={handleGenerateRecoveryCodes} disabled={loading}>
-                    {loading ? "Generating..." : "Generate Recovery Codes"}
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-2 p-4 bg-muted rounded-lg font-mono text-sm">
-                    {recoveryCodes.map((code, index) => (
-                      <div 
-                        key={index} 
-                        className="p-2 bg-background rounded border text-center"
-                      >
-                        {recoveryCodesVisible ? code : '••••••••'}
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setRecoveryCodesVisible(!recoveryCodesVisible)}
-                    >
-                      {recoveryCodesVisible ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                      {recoveryCodesVisible ? 'Hide' : 'Show'}
-                    </Button>
-                    
-                    {recoveryCodesVisible && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            copyRecoveryCodes(recoveryCodes);
-                            toast({ title: "Codes copied to clipboard" });
-                          }}
-                        >
-                          <Copy className="w-4 h-4 mr-2" />
-                          Copy
-                        </Button>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => downloadRecoveryCodes(recoveryCodes)}
-                        >
-                          <Download className="w-4 h-4 mr-2" />
-                          Download
-                        </Button>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => printRecoveryCodes(recoveryCodes)}
-                        >
-                          <Printer className="w-4 h-4 mr-2" />
-                          Print
-                        </Button>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleGenerateRecoveryCodes}
-                          disabled={loading}
-                        >
-                          <RefreshCw className="w-4 h-4 mr-2" />
-                          Regenerate
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                  
-                  <Alert>
-                    <AlertTriangle className="w-4 h-4" />
-                    <AlertDescription>
-                      Store these codes safely offline. Each code can only be used once. 
-                      Regenerating codes will invalidate all previous codes.
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        ) : showMfaSetup ? (
+          // Show MFA setup using the new reliable component
+          <div className="space-y-6">
+            <MfaManager 
+              onMfaVerified={handleMfaVerified}
+              showContinueButton={false}
+              nextUrl={nextUrl}
+            />
+            
+            {/* Skip option */}
+            <Card>
+              <CardContent className="text-center py-6">
+                <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold mb-2">Skip MFA Setup?</h3>
+                <p className="text-muted-foreground mb-4">
+                  You can enable two-factor authentication later in Settings for enhanced security.
+                </p>
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate(nextUrl, { replace: true })}
+                >
+                  Continue Without MFA
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : null}
       </div>
     </div>
   );
