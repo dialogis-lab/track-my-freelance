@@ -75,15 +75,23 @@ export default function Mfa() {
 
   // Load initial data
   useEffect(() => {
-    loadFactorsAndState();
-  }, []);
+    // Only load factors when auth state is stable
+    if (!authLoading && user) {
+      loadFactorsAndState();
+    }
+  }, [authLoading, user, aal]);
 
-  const loadFactorsAndState = async () => {
-    if (!user) return;
+  const loadFactorsAndState = useCallback(async () => {
+    if (!user || authLoading) return;
+    
+    let isMounted = true;
     
     try {
-      setPageLoading(true);
+      if (isMounted) setPageLoading(true);
+      
       const factorsList = await listFactors();
+      if (!isMounted) return;
+      
       setFactors(factorsList);
       
       const hasVerifiedTotp = factorsList.some(f => f.type === 'totp' && f.status === 'verified');
@@ -91,7 +99,10 @@ export default function Mfa() {
       
       // If user already has AAL2, redirect to next page
       if (aal === 'aal2') {
-        navigate(nextUrl, { replace: true });
+        // Use setTimeout to prevent navigation during render
+        setTimeout(() => {
+          navigate(nextUrl, { replace: true });
+        }, 0);
         return;
       }
       
@@ -103,25 +114,36 @@ export default function Mfa() {
       }
       
       // If user has verified TOTP but AAL is still 1, start challenge
-      if (hasVerifiedTotp) {
+      if (hasVerifiedTotp && isMounted) {
         const verifiedFactor = factorsList.find(f => f.type === 'totp' && f.status === 'verified');
         if (verifiedFactor) {
           setFactorId(verifiedFactor.id);
-          const challengeId = await createChallenge(verifiedFactor.id);
-          setChallengeId(challengeId);
+          try {
+            const challengeId = await createChallenge(verifiedFactor.id);
+            if (isMounted) setChallengeId(challengeId);
+          } catch (challengeError) {
+            console.error('Error creating challenge:', challengeError);
+            // Continue without challenge, user can still try to verify
+          }
         }
       }
     } catch (error: any) {
       console.error('Error loading factors:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load MFA configuration.",
-        variant: "destructive",
-      });
+      if (isMounted) {
+        toast({
+          title: "Error",
+          description: "Failed to load MFA configuration.",
+          variant: "destructive",
+        });
+      }
     } finally {
-      setPageLoading(false);
+      if (isMounted) setPageLoading(false);
     }
-  };
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [user, authLoading, aal, navigate, nextUrl, toast]);
 
   // Start TOTP enrollment
   const handleStartEnrollment = async () => {
