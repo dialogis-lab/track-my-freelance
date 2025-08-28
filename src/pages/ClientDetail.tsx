@@ -16,6 +16,7 @@ import { ArrowLeft, Plus, FolderOpen, Clock, TrendingUp, Play, Square, FileText,
 import { InvoiceWizard } from '@/components/InvoiceWizard';
 import { TrendSparkline } from '@/components/TrendSparkline';
 import { formatDuration, calculateDurationMinutes } from '@/lib/timeUtils';
+import { normalizeWebsite, isValidWebsite, getWebsiteValidationError } from '@/lib/urlUtils';
 
 interface Client {
   id: string;
@@ -72,6 +73,7 @@ export default function ClientDetail() {
   const [invoiceWizardOpen, setInvoiceWizardOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
+  const [websiteError, setWebsiteError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     company_name: '',
@@ -324,6 +326,14 @@ export default function ClientDetail() {
     if (!client) return;
     
     setEditLoading(true);
+    setWebsiteError(null);
+
+    // Validate website URL
+    if (formData.website && !isValidWebsite(formData.website)) {
+      setWebsiteError(getWebsiteValidationError());
+      setEditLoading(false);
+      return;
+    }
 
     const clientData = {
       name: formData.name,
@@ -337,7 +347,7 @@ export default function ClientDetail() {
       address_country: formData.address_country || null,
       vat_id: formData.vat_id || null,
       tax_number: formData.tax_number || null,
-      website: formData.website || null,
+      website: normalizeWebsite(formData.website),
       notes: formData.notes || null,
     };
 
@@ -347,9 +357,15 @@ export default function ClientDetail() {
       .eq('id', client.id);
 
     if (error) {
+      // Handle specific website constraint errors
+      let errorMessage = error.message;
+      if (error.code === '23514' && error.message.includes('clients_website_format')) {
+        errorMessage = getWebsiteValidationError();
+      }
+      
       toast({
         title: "Error updating client",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } else {
@@ -366,6 +382,7 @@ export default function ClientDetail() {
 
   const resetEditForm = () => {
     setIsEditDialogOpen(false);
+    setWebsiteError(null);
     setFormData({
       name: '',
       company_name: '',
@@ -788,14 +805,23 @@ export default function ClientDetail() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-website">Website (Optional)</Label>
+                  <Label htmlFor="edit-website">Website</Label>
                   <Input
                     id="edit-website"
-                    type="url"
                     value={formData.website}
-                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                    placeholder="https://example.com"
+                    onChange={(e) => {
+                      setFormData({ ...formData, website: e.target.value });
+                      setWebsiteError(null);
+                    }}
+                    placeholder="firma.de oder https://company.com"
+                    className={websiteError ? "border-destructive" : ""}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Optional. Beispiel: <strong>https://company.com</strong>
+                  </p>
+                  {websiteError && (
+                    <p className="text-xs text-destructive">{websiteError}</p>
+                  )}
                 </div>
               </div>
 

@@ -16,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { Plus, Archive, Edit2, ArchiveRestore, FolderOpen, Clock, ExternalLink, Trash2, Crown } from 'lucide-react';
 import { formatDuration, calculateDurationMinutes } from '@/lib/timeUtils';
+import { normalizeWebsite, isValidWebsite, getWebsiteValidationError } from '@/lib/urlUtils';
 import { usePlan } from '@/hooks/usePlan';
 import { UpgradeModal } from '@/components/UpgradeModal';
 
@@ -62,6 +63,7 @@ export default function Clients() {
     notes: ''
   });
   const [loading, setLoading] = useState(false);
+  const [websiteError, setWebsiteError] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -128,6 +130,14 @@ export default function Clients() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setWebsiteError(null);
+
+    // Validate website URL
+    if (formData.website && !isValidWebsite(formData.website)) {
+      setWebsiteError(getWebsiteValidationError());
+      setLoading(false);
+      return;
+    }
 
     // Check for Free plan limit only when creating new clients
     if (!editingClient && isFree && activeClients.length >= 1) {
@@ -148,7 +158,7 @@ export default function Clients() {
       address_country: formData.address_country || null,
       vat_id: formData.vat_id || null,
       tax_number: formData.tax_number || null,
-      website: formData.website || null,
+      website: normalizeWebsite(formData.website),
       notes: formData.notes || null,
       user_id: user!.id,
     };
@@ -168,9 +178,15 @@ export default function Clients() {
     }
 
     if (error) {
+      // Handle specific website constraint errors
+      let errorMessage = error.message;
+      if (error.code === '23514' && error.message.includes('clients_website_format')) {
+        errorMessage = getWebsiteValidationError();
+      }
+      
       toast({
         title: editingClient ? "Error updating client" : "Error creating client",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } else {
@@ -292,6 +308,7 @@ export default function Clients() {
     });
     setEditingClient(null);
     setIsDialogOpen(false);
+    setWebsiteError(null);
   };
 
   const startEdit = (client: Client) => {
@@ -439,14 +456,23 @@ export default function Clients() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="website">Website (Optional)</Label>
+                    <Label htmlFor="website">Website</Label>
                     <Input
                       id="website"
-                      type="url"
                       value={formData.website}
-                      onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                      placeholder="https://example.com"
+                      onChange={(e) => {
+                        setFormData({ ...formData, website: e.target.value });
+                        setWebsiteError(null);
+                      }}
+                      placeholder="firma.de oder https://company.com"
+                      className={websiteError ? "border-destructive" : ""}
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Optional. Beispiel: <strong>https://company.com</strong>
+                    </p>
+                    {websiteError && (
+                      <p className="text-xs text-destructive">{websiteError}</p>
+                    )}
                   </div>
                 </div>
 
