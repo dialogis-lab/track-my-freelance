@@ -21,14 +21,38 @@ export function MfaSetupCard() {
     checkMfaStatus();
   }, []);
 
+  // Re-check MFA status when component becomes visible (Settings page navigation)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkMfaStatus();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', checkMfaStatus);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', checkMfaStatus);
+    };
+  }, []);
+
   const checkMfaStatus = async () => {
     try {
+      console.log('[MFA] Checking MFA status...');
       const { data, error } = await supabase.auth.mfa.listFactors();
       
       if (error) throw error;
       
-      setFactors(data.totp || []);
-      setMfaEnabled(data.totp?.some(factor => factor.status === 'verified') || false);
+      const totpFactors = data.totp || [];
+      const hasVerifiedTOTP = totpFactors.some(factor => factor.status === 'verified');
+      
+      console.log('[MFA] Found TOTP factors:', totpFactors);
+      console.log('[MFA] Has verified TOTP:', hasVerifiedTOTP);
+      
+      setFactors(totpFactors);
+      setMfaEnabled(hasVerifiedTOTP);
     } catch (error: any) {
       console.error('Error checking MFA status:', error);
     }
@@ -128,9 +152,9 @@ export function MfaSetupCard() {
 
   const handleMfaVerified = async (codes: string[]) => {
     setRecoveryCodes(codes);
-    setMfaEnabled(true);
     setShowSetup(false);
-    checkMfaStatus();
+    // Force immediate refresh of MFA status from Supabase
+    await checkMfaStatus();
     
       // Send email notification for MFA enabled
       try {
@@ -179,9 +203,10 @@ export function MfaSetupCard() {
         .delete()
         .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
 
-      setMfaEnabled(false);
       setFactors([]);
       setRecoveryCodes([]);
+      // Force immediate refresh to ensure UI reflects disabled state
+      await checkMfaStatus();
       
       // Send email notification for MFA disabled
       try {
