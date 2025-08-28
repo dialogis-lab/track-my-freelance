@@ -18,6 +18,7 @@ export default function AuthCallback() {
           throw new Error('No authorization code found');
         }
 
+        console.log('Processing OAuth callback with code');
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
         
         if (error) {
@@ -25,14 +26,19 @@ export default function AuthCallback() {
           throw error;
         }
 
-        if (data.session) {
+        if (data.session && data.user) {
+          console.log('OAuth session created successfully for user:', data.user.id);
+          
           toast({
             title: "Welcome!",
             description: "You have been signed in successfully.",
           });
           
-          // Navigate to MFA (all users need MFA now)
-          navigate('/mfa', { replace: true });
+          // Small delay to ensure auth state is fully updated
+          setTimeout(() => {
+            // Navigate to MFA - the ProtectedRoute will handle the redirect logic
+            navigate('/mfa', { replace: true });
+          }, 100);
         } else {
           throw new Error('No session created');
         }
