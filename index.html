@@ -70,18 +70,21 @@
     }
     </script>
     
-    <!-- Google tag (gtag.js) - Only loads with consent -->
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-FR7BLPXQRQ"></script>
     <script>
-      // Initialize gtag consent mode before any scripts load
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
       
-      // Set default consent state (denied by default)
+      // Set default consent state (denied by default for GDPR compliance)
       gtag('consent', 'default', {
         'analytics_storage': 'denied',
         'ad_storage': 'denied',
         'functionality_storage': 'granted'
       });
+      
+      gtag('config', 'G-FR7BLPXQRQ');
     </script>
   </head>
 
