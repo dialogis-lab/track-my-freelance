@@ -38,6 +38,7 @@ import {
   type MfaFactor,
   type TotpEnrollment
 } from '@/lib/mfa';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuthState } from '@/hooks/useAuthState';
 
 export default function Mfa() {
@@ -99,6 +100,7 @@ export default function Mfa() {
       
       // If user already has AAL2, redirect to next page
       if (aal === 'aal2') {
+        console.debug('[MFA] User already has AAL2, redirecting');
         // Use setTimeout to prevent navigation during render
         setTimeout(() => {
           navigate(nextUrl, { replace: true });
@@ -108,13 +110,42 @@ export default function Mfa() {
       
       // If user has no TOTP factors at all, they can skip MFA for now
       if (!hasVerifiedTotp && factorsList.length === 0) {
-        console.debug('[MFA] User has no MFA factors, allowing access without MFA requirement');
+        console.debug('[MFA] User has no MFA factors, allowing skip');
         // Don't force MFA setup, let them access the app
         return;
       }
       
-      // If user has verified TOTP but AAL is still 1, start challenge
+      // If user has verified TOTP, check if we need MFA challenge
       if (hasVerifiedTotp && isMounted) {
+        console.debug('[MFA] User has TOTP, checking if challenge needed');
+        
+        // Check if device is trusted first
+        try {
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData?.session) {
+            const trustedCheck = await supabase.functions.invoke('trusted-device', {
+              body: { action: 'check' },
+              headers: {
+                'Authorization': `Bearer ${sessionData.session.access_token}`,
+                'Cookie': document.cookie,
+              },
+            });
+            
+            console.debug('[MFA] Trusted device check result:', trustedCheck.data);
+            
+            if (trustedCheck.data?.is_trusted) {
+              console.debug('[MFA] Device is trusted, redirecting to app');
+              setTimeout(() => {
+                navigate(nextUrl, { replace: true });
+              }, 0);
+              return;
+            }
+          }
+        } catch (error) {
+          console.debug('[MFA] Trusted device check failed:', error);
+        }
+        
+        // If not trusted, start challenge
         const verifiedFactor = factorsList.find(f => f.type === 'totp' && f.status === 'verified');
         if (verifiedFactor) {
           setFactorId(verifiedFactor.id);
@@ -143,7 +174,7 @@ export default function Mfa() {
     return () => {
       isMounted = false;
     };
-  }, [user, authLoading, aal, navigate, nextUrl, toast]);
+  }, [user, authLoading, aal, navigate, nextUrl, toast, supabase]);
 
   // Start TOTP enrollment
   const handleStartEnrollment = async () => {
