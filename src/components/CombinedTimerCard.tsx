@@ -281,6 +281,13 @@ export function CombinedTimerCard() {
 
   const mainDisplayTime = getStopwatchDisplayTime();
 
+  // Debug logging for timer display
+  useEffect(() => {
+    if (isStopwatchRunning) {
+      debugLog('Timer running - display time:', mainDisplayTime, 'formatted:', formatMainTime(mainDisplayTime));
+    }
+  }, [isStopwatchRunning, mainDisplayTime]);
+
   return (
     <div className="w-full max-w-3xl">
       <Card className="rounded-xl border bg-card shadow-sm">

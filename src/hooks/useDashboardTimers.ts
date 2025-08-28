@@ -20,6 +20,7 @@ interface DashboardTimersState {
   loading: boolean;
   localRunning: boolean;
   localStoppedAt: number | null;
+  displayTick: number; // Force re-renders for time display
 }
 
 // Debug logging only when enabled
@@ -35,6 +36,7 @@ export function useDashboardTimers() {
     loading: true,
     localRunning: false,
     localStoppedAt: null,
+    displayTick: 0,
   });
   
   const { user } = useAuth();
@@ -73,16 +75,16 @@ export function useDashboardTimers() {
     subscriptionsRef.current.forEach(sub => sub.unsubscribe());
     subscriptionsRef.current = [];
 
-  // Mobile fallback: less aggressive periodic sync
-  let lastUpdateTime = Date.now();
-  const mobileBackupSync = setInterval(() => {
-    const timeSinceLastUpdate = Date.now() - lastUpdateTime;
-    if (timeSinceLastUpdate > 30000) { // 30 seconds without updates (was 10)
-      debugLog('Mobile backup sync triggered - no updates for', timeSinceLastUpdate, 'ms');
-      loadCurrentTimerStates();
-      lastUpdateTime = Date.now();
-    }
-  }, 15000); // Check every 15 seconds (was 5)
+    // Mobile fallback: less aggressive periodic sync
+    let lastUpdateTime = Date.now();
+    const mobileBackupSync = setInterval(() => {
+      const timeSinceLastUpdate = Date.now() - lastUpdateTime;
+      if (timeSinceLastUpdate > 30000) { // 30 seconds without updates (was 10)
+        debugLog('Mobile backup sync triggered - no updates for', timeSinceLastUpdate, 'ms');
+        loadCurrentTimerStates();
+        lastUpdateTime = Date.now();
+      }
+    }, 15000); // Check every 15 seconds (was 5)
 
     // Subscribe to stopwatch (time_entries)
     const stopwatchSub = subscribeToTimeEntries(user.id, {
@@ -121,27 +123,11 @@ export function useDashboardTimers() {
       subscriptionsRef.current.forEach(sub => sub.unsubscribe());
       subscriptionsRef.current = [];
       stopTicker();
-    };
-  }, [user?.id]);
-
-  // Optimized display updates - always run when component is mounted
-  useEffect(() => {
-    const updateDisplay = () => {
-      // Force re-render to update displayed time
-      setState(prev => ({ ...prev }));
-      displayRafRef.current = requestAnimationFrame(updateDisplay);
-    };
-
-    // Always start the animation frame loop when component mounts
-    displayRafRef.current = requestAnimationFrame(updateDisplay);
-
-    return () => {
       if (displayRafRef.current) {
         cancelAnimationFrame(displayRafRef.current);
       }
-      stopTicker();
     };
-  }, []); // Remove dependency on timer status to always run
+  }, [user?.id]);
 
   // Tab visibility handler for timer recovery with mobile support
   useEffect(() => {
@@ -180,7 +166,8 @@ export function useDashboardTimers() {
     debugLog('Starting ticker with startedAtMs:', startedAtMs);
     
     const updateTicker = () => {
-      setState(prev => ({ ...prev })); // Force re-render for display updates
+      // Update display tick to force time recalculation
+      setState(prev => ({ ...prev, displayTick: prev.displayTick + 1 }));
       tickerRef.current = requestAnimationFrame(updateTicker);
     };
     
@@ -198,10 +185,12 @@ export function useDashboardTimers() {
   // Immediate stop function for UI responsiveness
   const immediateStop = () => {
     debugLog('Immediate stop triggered');
+    const now = Date.now();
     setState(prev => ({ 
       ...prev, 
       localRunning: false,
-      localStoppedAt: Date.now()
+      localStoppedAt: now,
+      displayTick: prev.displayTick + 1 // Force final update
     }));
     stopTicker();
   };
@@ -273,6 +262,7 @@ export function useDashboardTimers() {
         ...prev,
         stopwatch: newStopwatch,
         localStoppedAt: null, // Reset local stop state when new data arrives
+        displayTick: prev.displayTick + 1, // Force update on state change
       }));
     } catch (error) {
       debugLog('Failed to load current timer states:', error);
@@ -296,7 +286,7 @@ export function useDashboardTimers() {
             new Date(newState.revised_at || newState.started_at) >= 
             new Date(current.revised_at || current.started_at)) {
           debugLog('Applied stopwatch update - version check passed', newState);
-          return { ...prev, stopwatch: newState };
+          return { ...prev, stopwatch: newState, displayTick: prev.displayTick + 1 };
         } else {
           debugLog('Ignored stopwatch update - stale version');
           return prev;
