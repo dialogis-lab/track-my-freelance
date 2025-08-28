@@ -5,22 +5,17 @@ import LeadForm from "./LeadForm";
 import { Link, Navigate } from "react-router-dom";
 import { useCookieContext } from "@/components/CookieProvider";
 import { BrandLogo } from "./BrandLogo";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthState } from "@/hooks/useAuthState";
 import { useState } from "react";
 
 const NewLandingPage = () => {
   const { openModal } = useCookieContext();
-  const { user, loading } = useAuth();
+  const { user, loading } = useAuthState();
   const [logoClickCount, setLogoClickCount] = useState(0);
 
   const handleLogoClick = () => {
     setLogoClickCount(prev => prev + 1);
   };
-
-  // Redirect authenticated users to MFA page
-  if (!loading && user) {
-    return <Navigate to="/mfa" replace />;
-  }
 
   // Show loading if auth is still loading
   if (loading) {
@@ -32,6 +27,11 @@ const NewLandingPage = () => {
         </div>
       </div>
     );
+  }
+
+  // Redirect authenticated users to dashboard (MFA logic is handled by ProtectedRoute)
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (
