@@ -706,7 +706,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_client_access_rate_limit: {
+        Args: { user_id_param: string }
+        Returns: boolean
+      }
       cleanup_expired_trusted_devices: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_old_client_audit_logs: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
@@ -786,6 +794,28 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      get_client_with_masked_sensitive_data: {
+        Args: { client_id_param: string }
+        Returns: {
+          address_city: string
+          address_country: string
+          address_postal_code: string
+          address_street: string
+          archived: boolean
+          company_name: string
+          contact_person: string
+          created_at: string
+          email_masked: string
+          id: string
+          name: string
+          notes: string
+          phone_masked: string
+          tax_number_masked: string
+          updated_at: string
+          vat_id_masked: string
+          website: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -799,6 +829,10 @@ export type Database = {
       }
       is_free_user: {
         Args: { p_user?: string }
+        Returns: boolean
+      }
+      secure_delete_client_data: {
+        Args: { client_id_param: string }
         Returns: boolean
       }
       server_time: {
