@@ -34,6 +34,17 @@ export function useAuthState() {
         return;
       }
 
+      // Check if user has TOTP enrolled
+      let totpEnrolled = false;
+      try {
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        totpEnrolled = 
+          !!factors?.totp?.some((f: any) => f.status === "verified") ||
+          (factors?.all ?? []).some((f: any) => f.factor_type === "totp" && f.status === "verified");
+      } catch (error) {
+        console.debug('Error checking MFA factors:', error);
+      }
+
       // Get current AAL level
       let aal: "aal1" | "aal2" = "aal1";
       try {
@@ -44,8 +55,22 @@ export function useAuthState() {
         // Fail-open: default to aal1
       }
 
-      // For the new MFA enforcement: ALL users need AAL2
-      const needsMfa = aal !== "aal2";
+      // Check trusted device
+      let trusted = false;
+      try {
+        const { data: trustedDeviceResponse } = await supabase.functions.invoke('trusted-device', {
+          body: { action: 'check' },
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        });
+        trusted = !!trustedDeviceResponse?.is_trusted;
+      } catch (error) {
+        console.debug('Error checking trusted device:', error);
+      }
+
+      // Only require MFA if user has TOTP enrolled, isn't at AAL2, and isn't on trusted device
+      const needsMfa = totpEnrolled && aal !== "aal2" && !trusted;
 
       setState({
         session,
