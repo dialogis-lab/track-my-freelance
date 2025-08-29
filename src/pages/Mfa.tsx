@@ -407,6 +407,9 @@ export default function Mfa() {
                   Remember this browser for 30 days
                 </Label>
               </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                You won't need to verify with MFA on this browser for 30 days.
+              </p>
             </CardContent>
           </Card>
         ) : showMfaSetup ? (

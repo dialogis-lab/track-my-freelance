@@ -103,6 +103,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
+      // Clear trusted device cookie first
+      try {
+        // Clear the trusted device cookie manually since we might not have access to edge functions after logout
+        const isProduction = window.location.hostname.includes('timehatch.app');
+        const cookieOptions = isProduction 
+          ? '; Path=/; Domain=.timehatch.app; SameSite=Lax'
+          : '; Path=/; SameSite=Lax';
+        
+        document.cookie = `td=; Max-Age=0${cookieOptions}`;
+        console.debug('[auth] Cleared trusted device cookie on logout');
+      } catch (error) {
+        console.debug('Error clearing trusted device cookie:', error);
+      }
+      
       // Clear state immediately to show user as logged out
       setUser(null);
       setSession(null);
