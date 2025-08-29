@@ -222,13 +222,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_expenses_client"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_clients_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "fk_expenses_project"
             columns: ["project_id"]
             isOneToOne: false
@@ -316,13 +309,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "invoice_items_invoice_id_fkey"
-            columns: ["invoice_id"]
-            isOneToOne: false
-            referencedRelation: "v_invoices_summary"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "invoice_items_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -407,13 +393,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invoices_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_clients_public"
             referencedColumns: ["id"]
           },
           {
@@ -689,13 +668,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "projects_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_clients_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "projects_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
@@ -886,194 +858,7 @@ export type Database = {
       }
     }
     Views: {
-      v_clients_public: {
-        Row: {
-          address_city: string | null
-          address_country: string | null
-          archived: boolean | null
-          company_name: string | null
-          created_at: string | null
-          id: string | null
-          name: string | null
-          org_id: string | null
-          updated_at: string | null
-          website: string | null
-        }
-        Insert: {
-          address_city?: string | null
-          address_country?: string | null
-          archived?: boolean | null
-          company_name?: string | null
-          created_at?: string | null
-          id?: string | null
-          name?: string | null
-          org_id?: string | null
-          updated_at?: string | null
-          website?: string | null
-        }
-        Update: {
-          address_city?: string | null
-          address_country?: string | null
-          archived?: boolean | null
-          company_name?: string | null
-          created_at?: string | null
-          id?: string | null
-          name?: string | null
-          org_id?: string | null
-          updated_at?: string | null
-          website?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "clients_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      v_expenses_summary: {
-        Row: {
-          billable: boolean | null
-          category: string | null
-          client_id: string | null
-          created_at: string | null
-          currency: string | null
-          description: string | null
-          id: string | null
-          org_id: string | null
-          project_id: string | null
-          reimbursable: boolean | null
-          spent_on: string | null
-          updated_at: string | null
-          vendor: string | null
-        }
-        Insert: {
-          billable?: boolean | null
-          category?: string | null
-          client_id?: string | null
-          created_at?: string | null
-          currency?: string | null
-          description?: string | null
-          id?: string | null
-          org_id?: string | null
-          project_id?: string | null
-          reimbursable?: boolean | null
-          spent_on?: string | null
-          updated_at?: string | null
-          vendor?: string | null
-        }
-        Update: {
-          billable?: boolean | null
-          category?: string | null
-          client_id?: string | null
-          created_at?: string | null
-          currency?: string | null
-          description?: string | null
-          id?: string | null
-          org_id?: string | null
-          project_id?: string | null
-          reimbursable?: boolean | null
-          spent_on?: string | null
-          updated_at?: string | null
-          vendor?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "expenses_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_expenses_client"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_expenses_client"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_clients_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_expenses_project"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      v_invoices_summary: {
-        Row: {
-          client_id: string | null
-          created_at: string | null
-          currency: string | null
-          due_date: string | null
-          id: string | null
-          issue_date: string | null
-          number: string | null
-          org_id: string | null
-          project_count: number | null
-          status: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          client_id?: string | null
-          created_at?: string | null
-          currency?: string | null
-          due_date?: string | null
-          id?: string | null
-          issue_date?: string | null
-          number?: string | null
-          org_id?: string | null
-          project_count?: never
-          status?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          client_id?: string | null
-          created_at?: string | null
-          currency?: string | null
-          due_date?: string | null
-          id?: string | null
-          issue_date?: string | null
-          number?: string | null
-          org_id?: string | null
-          project_count?: never
-          status?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "invoices_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invoices_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_clients_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invoices_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       check_client_access_rate_limit: {
@@ -1217,15 +1002,11 @@ export type Database = {
         Returns: {
           address_city: string
           address_country: string
-          address_postal_code: string
-          address_street: string
           archived: boolean
           company_name: string
-          contact_person: string
           created_at: string
           id: string
           name: string
-          notes: string
           org_id: string
           updated_at: string
           website: string
@@ -1247,12 +1028,46 @@ export type Database = {
           vat_rate: number
         }[]
       }
+      get_expenses_safe: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          billable: boolean
+          category: string
+          client_id: string
+          created_at: string
+          currency: string
+          description: string
+          id: string
+          org_id: string
+          project_id: string
+          reimbursable: boolean
+          spent_on: string
+          updated_at: string
+          vendor: string
+        }[]
+      }
       get_invoice_financial_data: {
         Args: { invoice_id_param: string }
         Returns: {
           id: string
           project_ids: string[]
           total_minor: number
+        }[]
+      }
+      get_invoices_safe: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          client_id: string
+          created_at: string
+          currency: string
+          due_date: string
+          id: string
+          issue_date: string
+          number: string
+          org_id: string
+          project_count: number
+          status: string
+          updated_at: string
         }[]
       }
       get_profile_sensitive: {
