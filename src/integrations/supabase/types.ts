@@ -222,13 +222,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_expenses_client"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_clients_safe"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "fk_expenses_project"
             columns: ["project_id"]
             isOneToOne: false
@@ -400,13 +393,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invoices_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_clients_safe"
             referencedColumns: ["id"]
           },
           {
@@ -670,13 +656,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "projects_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_clients_safe"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "projects_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
@@ -867,65 +846,7 @@ export type Database = {
       }
     }
     Views: {
-      v_clients_safe: {
-        Row: {
-          address_city: string | null
-          address_country: string | null
-          address_postal_code: string | null
-          address_street: string | null
-          archived: boolean | null
-          company_name: string | null
-          contact_person: string | null
-          created_at: string | null
-          id: string | null
-          name: string | null
-          notes: string | null
-          org_id: string | null
-          updated_at: string | null
-          website: string | null
-        }
-        Insert: {
-          address_city?: string | null
-          address_country?: string | null
-          address_postal_code?: string | null
-          address_street?: string | null
-          archived?: boolean | null
-          company_name?: string | null
-          contact_person?: string | null
-          created_at?: string | null
-          id?: string | null
-          name?: string | null
-          notes?: string | null
-          org_id?: string | null
-          updated_at?: string | null
-          website?: string | null
-        }
-        Update: {
-          address_city?: string | null
-          address_country?: string | null
-          address_postal_code?: string | null
-          address_street?: string | null
-          archived?: boolean | null
-          company_name?: string | null
-          contact_person?: string | null
-          created_at?: string | null
-          id?: string | null
-          name?: string | null
-          notes?: string | null
-          org_id?: string | null
-          updated_at?: string | null
-          website?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "clients_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       check_client_access_rate_limit: {
@@ -1047,6 +968,25 @@ export type Database = {
           tax_number_masked: string
           updated_at: string
           vat_id_masked: string
+          website: string
+        }[]
+      }
+      get_clients_safe: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          address_city: string
+          address_country: string
+          address_postal_code: string
+          address_street: string
+          archived: boolean
+          company_name: string
+          contact_person: string
+          created_at: string
+          id: string
+          name: string
+          notes: string
+          org_id: string
+          updated_at: string
           website: string
         }[]
       }
