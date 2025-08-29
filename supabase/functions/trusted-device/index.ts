@@ -356,22 +356,36 @@ async function addTrustedDevice(req: Request, supabase: any, user: any, clientIP
       user_agent: userAgent
     })
 
-  // Determine if we're in development or production for cookie settings
-  const isProduction = Deno.env.get('SUPABASE_URL')?.includes('supabase.co') ?? false
+  // Determine domain and cookie settings based on request host
+  const requestHost = req.headers.get('origin') || req.headers.get('referer') || ''
+  const isLovableDev = requestHost.includes('lovable.dev')
+  const isTimehatchApp = requestHost.includes('timehatch.app') 
+  const isLocalhost = requestHost.includes('localhost')
   
-  // Development-friendly cookie settings (no Secure flag for localhost)
-  const cookieSettings = isProduction 
-    ? `th_td=${cookieValue}; HttpOnly; Secure; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}; Path=/; Domain=.timehatch.app`
-    : `th_td=${cookieValue}; HttpOnly; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}; Path=/`
+  // Set appropriate cookie settings based on host
+  let cookieSettings: string
+  let debugCookieSettings: string
   
-  // Add debug cookie (non-HttpOnly) so we can verify in browser
-  const debugCookieSettings = isProduction 
-    ? `th_td_debug=${deviceId.substring(0, 8)}; Secure; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}; Path=/; Domain=.timehatch.app`
-    : `th_td_debug=${deviceId.substring(0, 8)}; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}; Path=/`
+  if (isLovableDev) {
+    // For Lovable development environment - no domain restriction, secure over HTTPS
+    cookieSettings = `th_td=${cookieValue}; HttpOnly; Secure; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}; Path=/`
+    debugCookieSettings = `th_td_debug=${deviceId.substring(0, 8)}; Secure; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}; Path=/`
+  } else if (isTimehatchApp) {
+    // For production timehatch.app
+    cookieSettings = `th_td=${cookieValue}; HttpOnly; Secure; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}; Path=/; Domain=.timehatch.app`
+    debugCookieSettings = `th_td_debug=${deviceId.substring(0, 8)}; Secure; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}; Path=/; Domain=.timehatch.app`
+  } else {
+    // For localhost or other development
+    cookieSettings = `th_td=${cookieValue}; HttpOnly; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}; Path=/`
+    debugCookieSettings = `th_td_debug=${deviceId.substring(0, 8)}; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}; Path=/`
+  }
 
   if (Deno.env.get('NEXT_PUBLIC_DEBUG_AUTH') === 'true') {
     console.error('[trusted-device] === SETTING COOKIES ===', {
-      mode: isProduction ? 'production' : 'development',
+      requestHost,
+      isLovableDev,
+      isTimehatchApp,
+      isLocalhost,
       cookieValue: deviceId.substring(0, 8) + '...',
       httpOnlyCookie: cookieSettings,
       debugCookie: debugCookieSettings
@@ -419,11 +433,8 @@ async function revokeTrustedDevice(supabase: any, user: any, deviceId: string) {
       details: { device_id: deviceId }
     })
 
-  // Clear cookie with proper domain settings
-  const isProduction = Deno.env.get('SUPABASE_URL')?.includes('supabase.co') ?? false
-  const clearCookieSettings = isProduction 
-    ? `th_td=; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Path=/; Domain=.timehatch.app`
-    : `th_td=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/`
+  // Clear cookie with proper domain settings (same logic as add)
+  const clearCookieSettings = `th_td=; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Path=/`
 
   return new Response(
     JSON.stringify({ success: true }),
@@ -457,11 +468,8 @@ async function revokeAllTrustedDevices(supabase: any, user: any) {
       details: {}
     })
 
-  // Clear cookie with proper domain settings
-  const isProduction = Deno.env.get('SUPABASE_URL')?.includes('supabase.co') ?? false
-  const clearCookieSettings = isProduction 
-    ? `th_td=; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Path=/; Domain=.timehatch.app`
-    : `th_td=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/`
+  // Clear cookie with proper domain settings (same logic as add)
+  const clearCookieSettings = `th_td=; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Path=/`
 
   return new Response(
     JSON.stringify({ success: true }),
