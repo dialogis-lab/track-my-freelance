@@ -858,36 +858,7 @@ export type Database = {
       }
     }
     Views: {
-      v_profiles_public: {
-        Row: {
-          company_name: string | null
-          created_at: string | null
-          id: string | null
-          logo_url: string | null
-          onboarding_state: Json | null
-          timer_skin: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          company_name?: string | null
-          created_at?: string | null
-          id?: string | null
-          logo_url?: string | null
-          onboarding_state?: Json | null
-          timer_skin?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          company_name?: string | null
-          created_at?: string | null
-          id?: string | null
-          logo_url?: string | null
-          onboarding_state?: Json | null
-          timer_skin?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       check_client_access_rate_limit: {
@@ -1048,6 +1019,18 @@ export type Database = {
           stripe_subscription_id: string
           stripe_subscription_id_enc: Json
           vat_id_enc: Json
+        }[]
+      }
+      get_profiles_safe: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          company_name: string
+          created_at: string
+          id: string
+          logo_url: string
+          onboarding_state: Json
+          timer_skin: string
+          updated_at: string
         }[]
       }
       get_user_role: {
