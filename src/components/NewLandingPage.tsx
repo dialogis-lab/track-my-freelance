@@ -5,17 +5,14 @@ import LeadForm from "./LeadForm";
 import { Link, Navigate } from "react-router-dom";
 import { useCookieContext } from "@/components/CookieProvider";
 import { BrandLogo } from "./BrandLogo";
+import { VersionBadge } from "./VersionBadge";
 import { useAuthState } from "@/hooks/useAuthState";
-import { useState } from "react";
+import { useAdminReveal } from "@/components/AdminRevealProvider";
 
 const NewLandingPage = () => {
   const { openModal } = useCookieContext();
   const { user, loading } = useAuthState();
-  const [logoClickCount, setLogoClickCount] = useState(0);
-
-  const handleLogoClick = () => {
-    setLogoClickCount(prev => prev + 1);
-  };
+  const { isRevealed } = useAdminReveal();
 
   // Show loading if auth is still loading
   if (loading) {
@@ -40,9 +37,7 @@ const NewLandingPage = () => {
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border/50">
         <div className="container mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div onClick={handleLogoClick} className="cursor-pointer">
-              <BrandLogo size="md" showWordmark />
-            </div>
+            <BrandLogo size="md" showWordmark />
           </div>
             
           <div className="hidden md:flex items-center space-x-8">
@@ -51,22 +46,26 @@ const NewLandingPage = () => {
             <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
             <a href="#early-access" className="text-muted-foreground hover:text-foreground transition-colors">Early Access</a>
             
-            {/* Hidden login access - shows only after clicking logo 3 times */}
-            {logoClickCount >= 3 && (
-              <div className="flex items-center space-x-4 ml-6">
+            {/* Hidden admin access - shows after admin reveal */}
+            {isRevealed && (
+              <div className="flex items-center gap-2 ml-6 animate-in fade-in-0 duration-150">
                 <Link to="/login">
                   <Button size="sm" variant="outline">Access Login</Button>
                 </Link>
+                <VersionBadge />
               </div>
             )}
           </div>
             
-          {/* Mobile menu - hidden login also for mobile */}
-          <div className="md:hidden flex items-center space-x-3">
-            {logoClickCount >= 3 && (
-              <Link to="/login">
-                <Button size="sm" variant="outline">Login</Button>
-              </Link>
+          {/* Mobile menu - hidden admin access for mobile */}
+          <div className="md:hidden flex items-center gap-2">
+            {isRevealed && (
+              <>
+                <Link to="/login">
+                  <Button size="sm" variant="outline">Login</Button>
+                </Link>
+                <VersionBadge />
+              </>
             )}
           </div>
         </div>
@@ -79,13 +78,7 @@ const NewLandingPage = () => {
           <div className="container mx-auto px-4">
             <div className="text-center max-w-4xl mx-auto">
               <div className="mb-4 flex justify-center hero-logo">
-                <div onClick={handleLogoClick} className="cursor-pointer">
-                  <img
-                    src="/lovable-uploads/60738053-891e-492a-8cbc-2ed116a458a9.png"
-                    alt="TimeHatch - Effortless Time Tracking & Smart Invoicing"
-                    className="block mx-auto h-48 sm:h-[13.5rem] lg:h-72 w-auto object-contain"
-                  />
-                </div>
+                <BrandLogo size="xl" className="!h-48 sm:!h-[13.5rem] lg:!h-72" />
               </div>
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-4 leading-tight">
                 Effortless Time Tracking &{" "}
