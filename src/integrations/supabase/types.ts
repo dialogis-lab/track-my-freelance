@@ -535,6 +535,7 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          address_enc: Json | null
           bank_details: string | null
           bank_details_enc: Json | null
           billing_email_fp: string | null
@@ -546,8 +547,11 @@ export type Database = {
           onboarding_state: Json | null
           stripe_current_period_end: string | null
           stripe_customer_id: string | null
+          stripe_customer_id_enc: Json | null
           stripe_price_id: string | null
+          stripe_price_id_enc: Json | null
           stripe_subscription_id: string | null
+          stripe_subscription_id_enc: Json | null
           stripe_subscription_status: string | null
           subscription_current_period_end: string | null
           subscription_plan: string | null
@@ -560,6 +564,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          address_enc?: Json | null
           bank_details?: string | null
           bank_details_enc?: Json | null
           billing_email_fp?: string | null
@@ -571,8 +576,11 @@ export type Database = {
           onboarding_state?: Json | null
           stripe_current_period_end?: string | null
           stripe_customer_id?: string | null
+          stripe_customer_id_enc?: Json | null
           stripe_price_id?: string | null
+          stripe_price_id_enc?: Json | null
           stripe_subscription_id?: string | null
+          stripe_subscription_id_enc?: Json | null
           stripe_subscription_status?: string | null
           subscription_current_period_end?: string | null
           subscription_plan?: string | null
@@ -585,6 +593,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          address_enc?: Json | null
           bank_details?: string | null
           bank_details_enc?: Json | null
           billing_email_fp?: string | null
@@ -596,8 +605,11 @@ export type Database = {
           onboarding_state?: Json | null
           stripe_current_period_end?: string | null
           stripe_customer_id?: string | null
+          stripe_customer_id_enc?: Json | null
           stripe_price_id?: string | null
+          stripe_price_id_enc?: Json | null
           stripe_subscription_id?: string | null
+          stripe_subscription_id_enc?: Json | null
           stripe_subscription_status?: string | null
           subscription_current_period_end?: string | null
           subscription_plan?: string | null
@@ -846,7 +858,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_profiles_public: {
+        Row: {
+          company_name: string | null
+          created_at: string | null
+          id: string | null
+          logo_url: string | null
+          onboarding_state: Json | null
+          timer_skin: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string | null
+          id?: string | null
+          logo_url?: string | null
+          onboarding_state?: Json | null
+          timer_skin?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string | null
+          id?: string | null
+          logo_url?: string | null
+          onboarding_state?: Json | null
+          timer_skin?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_client_access_rate_limit: {
@@ -993,6 +1034,21 @@ export type Database = {
       get_current_org_id: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_profile_sensitive: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          address: string
+          address_enc: Json
+          bank_details_enc: Json
+          stripe_customer_id: string
+          stripe_customer_id_enc: Json
+          stripe_price_id: string
+          stripe_price_id_enc: Json
+          stripe_subscription_id: string
+          stripe_subscription_id_enc: Json
+          vat_id_enc: Json
+        }[]
       }
       get_user_role: {
         Args: { _user_id: string }
