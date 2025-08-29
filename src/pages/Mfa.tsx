@@ -275,13 +275,20 @@ export default function Mfa() {
             <div className="flex items-center justify-center gap-2">
               <h1 className="text-2xl font-semibold">Multi-Factor Authentication</h1>
               <Badge variant={aal === 'aal2' ? 'default' : 'secondary'} className="ml-2">
-                {aal === 'aal2' ? 'AAL2 - Secured' : 'AAL1 - Setup Required'}
+                {aal === 'aal2' 
+                  ? 'AAL2 - Secured' 
+                  : verifiedTotpExists 
+                    ? 'AAL1 - Verification Required'
+                    : 'AAL1 - Setup Required'
+                }
               </Badge>
             </div>
             <p className="text-muted-foreground">
               {aal === 'aal2' 
                 ? 'Your account is fully secured with multi-factor authentication.' 
-                : 'Complete MFA setup to secure your account and access the application.'
+                : verifiedTotpExists
+                  ? 'Enter your authenticator code to verify your identity and access the application.'
+                  : 'Complete MFA setup to secure your account and access the application.'
               }
             </p>
           </div>

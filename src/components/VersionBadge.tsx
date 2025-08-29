@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -9,6 +9,30 @@ export function VersionBadge() {
   const [isOpen, setIsOpen] = useState(false);
   const versionMeta = getVersionMeta();
   const displayText = formatVersionDisplay();
+  
+  // Triple-click to open modal
+  const clickCountRef = useRef(0);
+  const clickTimerRef = useRef<NodeJS.Timeout>();
+  
+  const handleClick = () => {
+    clickCountRef.current += 1;
+    
+    if (clickCountRef.current === 3) {
+      setIsOpen(true);
+      clickCountRef.current = 0;
+      if (clickTimerRef.current) {
+        clearTimeout(clickTimerRef.current);
+      }
+    } else {
+      // Reset counter after 500ms if not triple-clicked
+      if (clickTimerRef.current) {
+        clearTimeout(clickTimerRef.current);
+      }
+      clickTimerRef.current = setTimeout(() => {
+        clickCountRef.current = 0;
+      }, 500);
+    }
+  };
 
   const buildDate = new Date(versionMeta.buildTime);
   const formattedBuildTime = buildDate.toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ' UTC');
@@ -20,6 +44,7 @@ export function VersionBadge() {
           variant="secondary" 
           className="text-xs px-2 py-1 opacity-80 hover:opacity-100 transition-opacity cursor-pointer font-mono"
           style={{ fontSize: '11px' }}
+          onClick={handleClick}
         >
           {displayText}
         </Badge>
