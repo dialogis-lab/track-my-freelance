@@ -33,16 +33,18 @@ serve(async (req) => {
       )
     }
 
-    const { action } = await req.json()
+    const body = await req.json()
+    const { action, device_id } = body
     const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
     const userAgent = req.headers.get('user-agent') || 'unknown'
+
+    console.log(`Trusted device action: ${action} for user: ${user.id}`)
 
     if (action === 'check') {
       return await checkTrustedDevice(req, supabase, user, clientIP, userAgent)
     } else if (action === 'add') {
       return await addTrustedDevice(req, supabase, user, clientIP, userAgent)
     } else if (action === 'revoke') {
-      const { device_id } = await req.json()
       return await revokeTrustedDevice(supabase, user, device_id)
     } else if (action === 'revoke_all') {
       return await revokeAllTrustedDevices(supabase, user)
@@ -112,26 +114,16 @@ async function checkTrustedDevice(req: Request, supabase: any, user: any, client
     )
   }
 
-  // Check if user agent family changed significantly
+  // Optional: Check if user agent family changed significantly (more lenient)
   const currentUAHash = await sha256(userAgent)
   if (device.ua_hash !== currentUAHash) {
-    // Allow some variation but reject if completely different
-    const similarity = calculateUASimilarity(userAgent, device.ua_hash)
-    if (similarity < 0.7) { // 70% similarity threshold
-      return new Response(
-        JSON.stringify({ is_trusted: false, reason: 'user_agent_changed' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    console.log(`User agent changed for device ${deviceId}, but allowing (trusting user choice)`)
   }
 
-  // Check IP prefix
+  // Optional: Check IP prefix (more lenient - only log, don't block)
   const currentIPPrefix = getIPPrefix(clientIP)
-  if (device.ip_prefix.toString() !== currentIPPrefix) {
-    return new Response(
-      JSON.stringify({ is_trusted: false, reason: 'ip_changed' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+  if (device.ip_prefix && device.ip_prefix.toString() !== currentIPPrefix) {
+    console.log(`IP prefix changed for device ${deviceId}: ${device.ip_prefix} -> ${currentIPPrefix}`)
   }
 
   // Update last seen
@@ -327,9 +319,8 @@ function calculateUASimilarity(ua1: string, ua2Hash: string): number {
     return 'Unknown'
   }
 
-  // This is a simplified check - in practice you'd want to hash the second UA and compare
-  // For now, assume 80% similarity if we can't properly compare
-  return 0.8
+  // This is a simplified check - for now, be more lenient
+  return 0.9
 }
 
 function parseCookie(cookieString: string, name: string): string | null {
