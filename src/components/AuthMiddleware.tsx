@@ -38,7 +38,7 @@ export function AuthMiddleware({ children }: AuthMiddlewareProps) {
         location.pathname === route || location.pathname.startsWith(route + '/')
       );
 
-      const debugAuth = import.meta.env.NEXT_PUBLIC_DEBUG_AUTH === 'true';
+      const debugAuth = true; // Force debug logging to understand the issue
       
       if (debugAuth) {
         console.info('[auth-middleware] Route check:', {

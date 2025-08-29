@@ -16,6 +16,13 @@ export default function AuthCallback() {
         const code = searchParams.get('code');
         const error = searchParams.get('error');
         
+        // Only process if we actually have OAuth callback parameters
+        if (!code && !error) {
+          console.log('No OAuth callback parameters found, likely navigation error');
+          navigate('/', { replace: true });
+          return;
+        }
+        
         // Check for OAuth errors first
         if (error) {
           console.error('OAuth error from provider:', error);
