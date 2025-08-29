@@ -926,26 +926,6 @@ export type Database = {
           },
         ]
       }
-      v_my_orgs: {
-        Row: {
-          org_id: string | null
-        }
-        Insert: {
-          org_id?: string | null
-        }
-        Update: {
-          org_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "org_members_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Functions: {
       check_client_access_rate_limit: {
@@ -1104,6 +1084,10 @@ export type Database = {
       user_can_access_client: {
         Args: { client_id: string }
         Returns: boolean
+      }
+      user_org_ids: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
       }
     }
     Enums: {
