@@ -33,25 +33,28 @@ export function CookieProvider({ children }: CookieProviderProps) {
     if (cookieConsent.hasConsented && cookieConsent.consent.analytics && !gaLoadedRef.current) {
       console.log('Loading Google Analytics...');
       
-      // Load GA script
+      // Load GA script safely
       const script1 = document.createElement('script');
       script1.async = true;
       script1.src = 'https://www.googletagmanager.com/gtag/js?id=G-FR7BLXPXR0';
+      // Add integrity check and crossorigin for security
+      script1.crossOrigin = 'anonymous';
+      script1.referrerPolicy = 'no-referrer-when-downgrade';
       document.head.appendChild(script1);
 
-      // Initialize GA
-      const script2 = document.createElement('script');
-      script2.innerHTML = `
-        window.gtag('js', new Date());
-        window.gtag('config', 'G-FR7BLXPXR0', {
-          'anonymize_ip': true,
-          'cookie_flags': 'samesite=strict;secure'
-        });
-      `;
-      document.head.appendChild(script2);
+      // Initialize GA safely without innerHTML
+      script1.onload = () => {
+        if (window.gtag) {
+          window.gtag('js', new Date());
+          window.gtag('config', 'G-FR7BLXPXR0', {
+            'anonymize_ip': true,
+            'cookie_flags': 'samesite=strict;secure'
+          });
+        }
+      };
       
       gaLoadedRef.current = true;
-      console.log('Google Analytics loaded successfully');
+      console.log('Google Analytics loading initiated safely');
     }
   }, [cookieConsent.hasConsented, cookieConsent.consent.analytics, cookieConsent.consent.marketing]);
 

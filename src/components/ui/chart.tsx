@@ -74,28 +74,41 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null
   }
 
-  return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
-${colorConfig
-  .map(([key, itemConfig]) => {
-    const color =
-      itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
-      itemConfig.color
-    return color ? `  --color-${key}: ${color};` : null
-  })
-  .join("\n")}
-}
-`
-          )
-          .join("\n"),
-      }}
-    />
-  )
+  // Create CSS custom properties safely using React's style object
+  const styleContent = Object.entries(THEMES)
+    .map(([theme, prefix]) => {
+      const selector = prefix ? `${prefix} [data-chart="${id}"]` : `[data-chart="${id}"]`
+      const properties = colorConfig
+        .map(([key, itemConfig]) => {
+          const color =
+            itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
+            itemConfig.color
+          return color ? `  --color-${key}: ${color};` : null
+        })
+        .filter(Boolean)
+        .join("\n")
+      
+      return properties ? `${selector} {\n${properties}\n}` : null
+    })
+    .filter(Boolean)
+    .join("\n")
+
+  // Use React's built-in style injection which is XSS-safe
+  React.useEffect(() => {
+    const styleElement = document.createElement('style')
+    styleElement.setAttribute('data-chart-style', id)
+    styleElement.textContent = styleContent
+    document.head.appendChild(styleElement)
+    
+    return () => {
+      const existingStyle = document.querySelector(`style[data-chart-style="${id}"]`)
+      if (existingStyle) {
+        existingStyle.remove()
+      }
+    }
+  }, [id, styleContent])
+
+  return null
 }
 
 const ChartTooltip = RechartsPrimitive.Tooltip

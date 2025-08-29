@@ -26,12 +26,9 @@ export function SecurityHeadersMiddleware() {
       document.head.appendChild(metaReferrer);
     }
 
-    // Set secure cookie attributes for future cookies
-    if (document.cookie) {
-      document.cookie = document.cookie.replace(/(?:^|; )([^=]+)=([^;]*)/g, 
-        '$1=$2; Secure; HttpOnly; SameSite=Lax'
-      );
-    }
+    // Note: Cookie security attributes are handled by the server/browser
+    // Client-side cookie manipulation can be limited and is not always effective
+    // for HttpOnly attributes. This is handled by server configuration.
 
     return () => {
       // Cleanup meta tags on unmount
