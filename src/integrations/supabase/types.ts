@@ -222,6 +222,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fk_expenses_client"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_expenses_project"
             columns: ["project_id"]
             isOneToOne: false
@@ -393,6 +400,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe_view"
             referencedColumns: ["id"]
           },
           {
@@ -668,6 +682,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "projects_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
@@ -858,10 +879,84 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      clients_safe_view: {
+        Row: {
+          address_city: string | null
+          address_country: string | null
+          address_postal_code: string | null
+          address_street: string | null
+          archived: boolean | null
+          company_name: string | null
+          contact_person: string | null
+          created_at: string | null
+          email_status: string | null
+          id: string | null
+          name: string | null
+          notes_status: string | null
+          org_id: string | null
+          phone_status: string | null
+          tax_number_status: string | null
+          updated_at: string | null
+          vat_id_status: string | null
+          website: string | null
+        }
+        Insert: {
+          address_city?: string | null
+          address_country?: string | null
+          address_postal_code?: string | null
+          address_street?: string | null
+          archived?: boolean | null
+          company_name?: string | null
+          contact_person?: string | null
+          created_at?: string | null
+          email_status?: never
+          id?: string | null
+          name?: string | null
+          notes_status?: never
+          org_id?: string | null
+          phone_status?: never
+          tax_number_status?: never
+          updated_at?: string | null
+          vat_id_status?: never
+          website?: string | null
+        }
+        Update: {
+          address_city?: string | null
+          address_country?: string | null
+          address_postal_code?: string | null
+          address_street?: string | null
+          archived?: boolean | null
+          company_name?: string | null
+          contact_person?: string | null
+          created_at?: string | null
+          email_status?: never
+          id?: string | null
+          name?: string | null
+          notes_status?: never
+          org_id?: string | null
+          phone_status?: never
+          tax_number_status?: never
+          updated_at?: string | null
+          vat_id_status?: never
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       check_client_access_rate_limit: {
+        Args: { user_id_param: string }
+        Returns: boolean
+      }
+      check_client_access_rate_limit_enhanced: {
         Args: { user_id_param: string }
         Returns: boolean
       }
@@ -874,6 +969,10 @@ export type Database = {
         Returns: undefined
       }
       cleanup_old_rate_limits: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_old_sensitive_audit_logs: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
@@ -932,6 +1031,14 @@ export type Database = {
           vendor: string | null
         }
       }
+      export_client_data_secure: {
+        Args: { client_ids?: string[]; include_sensitive?: boolean }
+        Returns: {
+          client_data: Json
+          export_timestamp: string
+          security_level: string
+        }[]
+      }
       generate_invoice_number: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -951,6 +1058,29 @@ export type Database = {
       get_admin_users: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      get_client_data_with_security_level: {
+        Args: { client_id_param: string; security_level?: string }
+        Returns: {
+          address_city: string
+          address_country: string
+          address_postal_code: string
+          address_street: string
+          archived: boolean
+          company_name: string
+          contact_person: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          notes: string
+          phone: string
+          security_level_applied: string
+          tax_number: string
+          updated_at: string
+          vat_id: string
+          website: string
+        }[]
       }
       get_client_sensitive: {
         Args: { p_id: string }
