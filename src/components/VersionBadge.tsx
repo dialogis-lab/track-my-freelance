@@ -27,7 +27,7 @@ export function VersionBadge() {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            Version Information
+            Build Info
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
