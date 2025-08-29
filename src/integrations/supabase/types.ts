@@ -222,13 +222,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_expenses_client"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_safe_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "fk_expenses_project"
             columns: ["project_id"]
             isOneToOne: false
@@ -400,13 +393,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invoices_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_safe_view"
             referencedColumns: ["id"]
           },
           {
@@ -682,13 +668,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "projects_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_safe_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "projects_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
@@ -879,77 +858,7 @@ export type Database = {
       }
     }
     Views: {
-      clients_safe_view: {
-        Row: {
-          address_city: string | null
-          address_country: string | null
-          address_postal_code: string | null
-          address_street: string | null
-          archived: boolean | null
-          company_name: string | null
-          contact_person: string | null
-          created_at: string | null
-          email_status: string | null
-          id: string | null
-          name: string | null
-          notes_status: string | null
-          org_id: string | null
-          phone_status: string | null
-          tax_number_status: string | null
-          updated_at: string | null
-          vat_id_status: string | null
-          website: string | null
-        }
-        Insert: {
-          address_city?: string | null
-          address_country?: string | null
-          address_postal_code?: string | null
-          address_street?: string | null
-          archived?: boolean | null
-          company_name?: string | null
-          contact_person?: string | null
-          created_at?: string | null
-          email_status?: never
-          id?: string | null
-          name?: string | null
-          notes_status?: never
-          org_id?: string | null
-          phone_status?: never
-          tax_number_status?: never
-          updated_at?: string | null
-          vat_id_status?: never
-          website?: string | null
-        }
-        Update: {
-          address_city?: string | null
-          address_country?: string | null
-          address_postal_code?: string | null
-          address_street?: string | null
-          archived?: boolean | null
-          company_name?: string | null
-          contact_person?: string | null
-          created_at?: string | null
-          email_status?: never
-          id?: string | null
-          name?: string | null
-          notes_status?: never
-          org_id?: string | null
-          phone_status?: never
-          tax_number_status?: never
-          updated_at?: string | null
-          vat_id_status?: never
-          website?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "clients_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       check_client_access_rate_limit: {
@@ -1135,6 +1044,23 @@ export type Database = {
           archived: boolean
           company_name: string
           created_at: string
+          id: string
+          name: string
+          org_id: string
+          updated_at: string
+          website: string
+        }[]
+      }
+      get_clients_safe_list: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          address_city: string
+          address_country: string
+          archived: boolean
+          company_name: string
+          contact_person: string
+          created_at: string
+          has_sensitive_data: boolean
           id: string
           name: string
           org_id: string
