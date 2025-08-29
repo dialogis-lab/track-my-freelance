@@ -53,6 +53,9 @@ export function AuthMiddleware({ children }: AuthMiddlewareProps) {
 
       // a) Allow PUBLIC routes
       if (isPublicRoute) {
+        if (debugAuth) {
+          console.info('[auth-middleware] Public route, allowing access regardless of auth state');
+        }
         return;
       }
 

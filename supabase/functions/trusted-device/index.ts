@@ -378,20 +378,24 @@ async function addTrustedDevice(req: Request, supabase: any, user: any, clientIP
     })
   }
 
+  // Create headers with multiple Set-Cookie entries
+  const headers = new Headers();
+  Object.entries(corsHeaders).forEach(([key, value]) => {
+    headers.set(key, value);
+  });
+  headers.set('Content-Type', 'application/json');
+  
+  // Set both cookies separately (required for multiple cookies)
+  headers.append('Set-Cookie', cookieSettings);
+  headers.append('Set-Cookie', debugCookieSettings);
+
   return new Response(
     JSON.stringify({ 
       success: true, 
       device_id: deviceId,
       expires_at: expiresAt.toISOString()
     }),
-    { 
-      headers: { 
-        ...corsHeaders, 
-        'Content-Type': 'application/json',
-        // Set both HttpOnly and debug cookies
-        'Set-Cookie': [cookieSettings, debugCookieSettings]
-      } 
-    }
+    { headers }
   )
 }
 
