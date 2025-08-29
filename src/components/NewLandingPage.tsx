@@ -26,10 +26,8 @@ const NewLandingPage = () => {
     );
   }
 
-  // Redirect authenticated users to dashboard (MFA logic is handled by ProtectedRoute)
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  // Allow both authenticated and unauthenticated users to view landing page
+  // Users can manually navigate to dashboard when ready
 
   return (
     <div className="min-h-screen bg-background">
