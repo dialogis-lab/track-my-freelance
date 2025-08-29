@@ -23,16 +23,23 @@ export function useSubscription() {
 
     try {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('subscription_status, subscription_plan, subscription_current_period_end, stripe_customer_id')
-        .eq('id', user.id)
-        .single();
+        .rpc('get_profile_masked_financial');
 
       if (error) {
         console.error('Error fetching subscription:', error);
         setSubscription(null);
       } else {
-        setSubscription(data);
+        const profileData = data && data.length > 0 ? data[0] : null;
+        if (profileData) {
+          setSubscription({
+            subscription_status: profileData.subscription_status || 'free',
+            subscription_plan: profileData.subscription_plan || null,
+            subscription_current_period_end: null, // Don't expose sensitive period end date
+            stripe_customer_id: profileData.has_stripe_customer ? 'MASKED' : null
+          });
+        } else {
+          setSubscription(null);
+        }
       }
     } catch (error) {
       console.error('Error fetching subscription:', error);

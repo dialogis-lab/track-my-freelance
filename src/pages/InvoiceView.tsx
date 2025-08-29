@@ -51,12 +51,9 @@ export default function InvoiceView() {
         throw error;
       }
 
-      // Get profile data separately to avoid relation issues
+      // Use safe profile access for basic company data
       const { data: profileData } = await supabase
-        .from('profiles')
-        .select('company_name, address, logo_url')
-        .eq('id', user!.id)
-        .single();
+        .rpc('get_profiles_safe');
 
       // Get invoice items separately
       const { data: itemsData } = await supabase
@@ -71,9 +68,9 @@ export default function InvoiceView() {
         ...data,
         status: data.status as 'draft' | 'sent' | 'paid',
         client_name: (data.clients as any).name,
-        company_name: profileData?.company_name || undefined,
-        company_address: profileData?.address || undefined,
-        logo_url: profileData?.logo_url || undefined,
+        company_name: profileData && profileData.length > 0 ? profileData[0].company_name : undefined,
+        company_address: '', // Don't expose address without proper security
+        logo_url: profileData && profileData.length > 0 ? profileData[0].logo_url : undefined,
         invoice_items: (itemsData || []).map((item: any) => ({
           ...item,
           project_name: item.projects?.name || 'Unknown Project',

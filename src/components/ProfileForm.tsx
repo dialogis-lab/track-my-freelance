@@ -118,26 +118,26 @@ export function ProfileForm() {
     } catch (error: any) {
       console.error('Error loading profile:', error);
       
-      // Fallback to direct database access for non-encrypted fields only
+      // Use safe profile access for non-sensitive data only
       try {
         const { data, error: dbError } = await supabase
-          .from('profiles')
-          .select('id, company_name, address, logo_url')
-          .eq('id', user!.id)
-          .single();
+          .rpc('get_profiles_safe');
 
-        if (!dbError && data) {
+        if (!dbError && data && data.length > 0) {
           const fallbackProfile = {
-            ...data,
+            id: data[0].id,
+            company_name: data[0].company_name,
+            logo_url: data[0].logo_url,
+            address: null, // Don't expose address without proper security
             vat_id: null,
             bank_details: null,
           };
           setProfile(fallbackProfile);
           setOriginalProfile(fallbackProfile);
           
-          if (data.logo_url) {
+          if (data[0].logo_url) {
             try {
-              const urlParts = data.logo_url.split('/');
+              const urlParts = data[0].logo_url.split('/');
               const fileName = urlParts[urlParts.length - 1];
               const filePath = `${user!.id}/${fileName}`;
               

@@ -49,12 +49,9 @@ export function usePlan(): PlanData & { refetchPlan: () => Promise<void> } {
         return;
       }
 
-      // Fallback to direct profile query if endpoint fails
+      // Use secure function for subscription data access
       const { data, error } = await supabase
-        .from('profiles')
-        .select('stripe_subscription_status, stripe_price_id')
-        .eq('id', user.id)
-        .single();
+        .rpc('get_profile_masked_financial');
 
       if (error) {
         console.error('Error fetching plan:', error);
@@ -66,7 +63,26 @@ export function usePlan(): PlanData & { refetchPlan: () => Promise<void> } {
         return;
       }
 
-      const plan = planFromProfile(data);
+      const profileData = data && data.length > 0 ? data[0] : null;
+      if (!profileData) {
+        setPlanData({
+          plan: 'free',
+          isFree: true,
+          isLoading: false,
+        });
+        return;
+      }
+
+      // Determine plan based on masked subscription data
+      let plan: 'free' | 'solo' | 'team' = 'free';
+      if (profileData.has_subscription && profileData.subscription_status === 'active') {
+        if (profileData.subscription_plan?.includes('team')) {
+          plan = 'team';
+        } else {
+          plan = 'solo';
+        }
+      }
+
       setPlanData({
         plan,
         isFree: plan === 'free',

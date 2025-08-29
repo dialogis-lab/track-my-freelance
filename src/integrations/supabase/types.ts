@@ -869,11 +869,19 @@ export type Database = {
         Args: { user_id_param: string }
         Returns: boolean
       }
+      check_profile_access_rate_limit: {
+        Args: { user_id_param: string }
+        Returns: boolean
+      }
       cleanup_expired_trusted_devices: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
       cleanup_old_client_audit_logs: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_old_profile_audit_logs: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
@@ -1124,6 +1132,37 @@ export type Database = {
           project_count: number
           status: string
           updated_at: string
+        }[]
+      }
+      get_profile_financial_data: {
+        Args: { profile_id_param?: string }
+        Returns: {
+          address: string
+          address_enc: Json
+          bank_details: string
+          bank_details_enc: Json
+          stripe_customer_id: string
+          stripe_customer_id_enc: Json
+          stripe_price_id: string
+          stripe_price_id_enc: Json
+          stripe_subscription_id: string
+          stripe_subscription_id_enc: Json
+          vat_id: string
+          vat_id_enc: Json
+        }[]
+      }
+      get_profile_masked_financial: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          company_name: string
+          has_address: boolean
+          has_bank_details: boolean
+          has_stripe_customer: boolean
+          has_subscription: boolean
+          has_vat_id: boolean
+          id: string
+          subscription_plan: string
+          subscription_status: string
         }[]
       }
       get_profile_sensitive: {

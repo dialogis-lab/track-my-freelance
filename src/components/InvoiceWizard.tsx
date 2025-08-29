@@ -110,16 +110,15 @@ export function InvoiceWizard({ open, onOpenChange, clientId, clientName }: Invo
       
       if (!response.ok) {
         console.error('Error loading encrypted profile:', result.message);
-        // Fallback to basic profile data without sensitive fields
+        // Use safe profile access for basic data only
         const { data, error } = await supabase
-          .from('profiles')
-          .select('company_name, address, logo_url')
-          .eq('id', user!.id)
-          .single();
+          .rpc('get_profiles_safe');
 
-        if (!error && data) {
+        if (!error && data && data.length > 0) {
           setProfile({
-            ...data,
+            company_name: data[0].company_name,
+            logo_url: data[0].logo_url,
+            address: null, // Don't expose address without proper security
             vat_id: null,
             bank_details: null,
           });
@@ -130,17 +129,16 @@ export function InvoiceWizard({ open, onOpenChange, clientId, clientName }: Invo
       setProfile(result.profile);
     } catch (error) {
       console.error('Error loading profile:', error);
-      // Fallback to basic profile data without sensitive fields
+      // Use safe profile access for basic data only
       try {
         const { data, error } = await supabase
-          .from('profiles')
-          .select('company_name, address, logo_url')
-          .eq('id', user!.id)
-          .single();
+          .rpc('get_profiles_safe');
 
-        if (!error && data) {
+        if (!error && data && data.length > 0) {
           setProfile({
-            ...data,
+            company_name: data[0].company_name,
+            logo_url: data[0].logo_url,
+            address: null, // Don't expose address without proper security
             vat_id: null,
             bank_details: null,
           });
