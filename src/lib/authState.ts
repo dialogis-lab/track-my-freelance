@@ -93,13 +93,27 @@ export async function getAuthState(): Promise<AuthState> {
 
         console.error('[authState] About to call trusted-device function...');
         
-        const { data: trustedDeviceResponse, error: trustedDeviceError } = await supabase.functions.invoke('trusted-device', {
-          body: { action: 'check' },
+        // Use direct fetch call to ensure body is sent properly
+        const response = await fetch('https://ollbuhgghkporvzmrzau.supabase.co/functions/v1/trusted-device', {
+          method: 'POST',
           headers: {
             'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sbGJ1aGdnaGtwb3J2em1yemF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5MjU5MjksImV4cCI6MjA3MTUwMTkyOX0.6IRGOQDfUgnZgK6idaFYH_rueGFhY7-KFG5ZwvDfsdw',
+            'Cookie': document.cookie,
           },
+          body: JSON.stringify({ action: 'check' })
         });
+
+        let trustedDeviceResponse: any = null;
+        let trustedDeviceError: any = null;
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          trustedDeviceError = new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        } else {
+          trustedDeviceResponse = await response.json();
+        }
 
         console.error('[authState] Trusted device function called. Response:', {
           hasData: !!trustedDeviceResponse,
