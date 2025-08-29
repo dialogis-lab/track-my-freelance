@@ -54,11 +54,14 @@ export type Database = {
           company_name: string | null
           contact_person: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           email: string | null
           email_fp: string | null
           id: string
           name: string
           notes: string | null
+          org_id: string | null
           phone: string | null
           tax_id_fp: string | null
           tax_number: string | null
@@ -76,11 +79,14 @@ export type Database = {
           company_name?: string | null
           contact_person?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           email?: string | null
           email_fp?: string | null
           id?: string
           name: string
           notes?: string | null
+          org_id?: string | null
           phone?: string | null
           tax_id_fp?: string | null
           tax_number?: string | null
@@ -98,11 +104,14 @@ export type Database = {
           company_name?: string | null
           contact_person?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           email?: string | null
           email_fp?: string | null
           id?: string
           name?: string
           notes?: string | null
+          org_id?: string | null
           phone?: string | null
           tax_id_fp?: string | null
           tax_number?: string | null
@@ -111,7 +120,15 @@ export type Database = {
           vat_id?: string | null
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expenses: {
         Row: {
@@ -119,11 +136,14 @@ export type Database = {
           category: string | null
           client_id: string | null
           created_at: string
+          created_by: string | null
           currency: string
+          deleted_at: string | null
           description: string | null
           gross_amount_cents: number
           id: string
           net_amount_cents: number
+          org_id: string | null
           project_id: string
           quantity: number
           receipt_url: string | null
@@ -141,11 +161,14 @@ export type Database = {
           category?: string | null
           client_id?: string | null
           created_at?: string
+          created_by?: string | null
           currency?: string
+          deleted_at?: string | null
           description?: string | null
           gross_amount_cents?: number
           id?: string
           net_amount_cents?: number
+          org_id?: string | null
           project_id: string
           quantity?: number
           receipt_url?: string | null
@@ -163,11 +186,14 @@ export type Database = {
           category?: string | null
           client_id?: string | null
           created_at?: string
+          created_by?: string | null
           currency?: string
+          deleted_at?: string | null
           description?: string | null
           gross_amount_cents?: number
           id?: string
           net_amount_cents?: number
+          org_id?: string | null
           project_id?: string
           quantity?: number
           receipt_url?: string | null
@@ -182,10 +208,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "expenses_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_expenses_client"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_expenses_client"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_clients_safe"
             referencedColumns: ["id"]
           },
           {
@@ -304,11 +344,14 @@ export type Database = {
           bill_to_email_fp: string | null
           client_id: string
           created_at: string
+          created_by: string | null
           currency: string
+          deleted_at: string | null
           due_date: string | null
           id: string
           issue_date: string | null
           number: string | null
+          org_id: string | null
           project_ids: string[]
           status: string
           total_minor: number
@@ -319,11 +362,14 @@ export type Database = {
           bill_to_email_fp?: string | null
           client_id: string
           created_at?: string
+          created_by?: string | null
           currency?: string
+          deleted_at?: string | null
           due_date?: string | null
           id?: string
           issue_date?: string | null
           number?: string | null
+          org_id?: string | null
           project_ids?: string[]
           status?: string
           total_minor?: number
@@ -334,11 +380,14 @@ export type Database = {
           bill_to_email_fp?: string | null
           client_id?: string
           created_at?: string
+          created_by?: string | null
           currency?: string
+          deleted_at?: string | null
           due_date?: string | null
           id?: string
           issue_date?: string | null
           number?: string | null
+          org_id?: string | null
           project_ids?: string[]
           status?: string
           total_minor?: number
@@ -351,6 +400,20 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_clients_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -418,6 +481,68 @@ export type Database = {
           id?: string
           used?: boolean
           user_id?: string
+        }
+        Relationships: []
+      }
+      org_members: {
+        Row: {
+          created_at: string | null
+          deleted_at: string | null
+          id: string
+          org_id: string
+          role: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          deleted_at?: string | null
+          id?: string
+          org_id: string
+          role?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          deleted_at?: string | null
+          id?: string
+          org_id?: string
+          role?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_members_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string | null
+          deleted_at: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          deleted_at?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          deleted_at?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -504,8 +629,11 @@ export type Database = {
           archived: boolean
           client_id: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           id: string
           name: string
+          org_id: string | null
           rate_hour: number | null
           user_id: string
         }
@@ -513,8 +641,11 @@ export type Database = {
           archived?: boolean
           client_id?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           name: string
+          org_id?: string | null
           rate_hour?: number | null
           user_id: string
         }
@@ -522,8 +653,11 @@ export type Database = {
           archived?: boolean
           client_id?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           name?: string
+          org_id?: string | null
           rate_hour?: number | null
           user_id?: string
         }
@@ -533,6 +667,20 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_clients_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -567,10 +715,13 @@ export type Database = {
       time_entries: {
         Row: {
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           id: string
           is_private: boolean | null
           minutes_manual: number | null
           notes: string | null
+          org_id: string | null
           private_notes_enc: Json | null
           project_id: string
           started_at: string
@@ -580,10 +731,13 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           is_private?: boolean | null
           minutes_manual?: number | null
           notes?: string | null
+          org_id?: string | null
           private_notes_enc?: Json | null
           project_id: string
           started_at: string
@@ -593,10 +747,13 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           is_private?: boolean | null
           minutes_manual?: number | null
           notes?: string | null
+          org_id?: string | null
           private_notes_enc?: Json | null
           project_id?: string
           started_at?: string
@@ -605,6 +762,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "time_entries_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "time_entries_project_id_fkey"
             columns: ["project_id"]
@@ -703,7 +867,85 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_clients_safe: {
+        Row: {
+          address_city: string | null
+          address_country: string | null
+          address_postal_code: string | null
+          address_street: string | null
+          archived: boolean | null
+          company_name: string | null
+          contact_person: string | null
+          created_at: string | null
+          id: string | null
+          name: string | null
+          notes: string | null
+          org_id: string | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          address_city?: string | null
+          address_country?: string | null
+          address_postal_code?: string | null
+          address_street?: string | null
+          archived?: boolean | null
+          company_name?: string | null
+          contact_person?: string | null
+          created_at?: string | null
+          id?: string | null
+          name?: string | null
+          notes?: string | null
+          org_id?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          address_city?: string | null
+          address_country?: string | null
+          address_postal_code?: string | null
+          address_street?: string | null
+          archived?: boolean | null
+          company_name?: string | null
+          contact_person?: string | null
+          created_at?: string | null
+          id?: string | null
+          name?: string | null
+          notes?: string | null
+          org_id?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_my_orgs: {
+        Row: {
+          org_id: string | null
+        }
+        Insert: {
+          org_id?: string | null
+        }
+        Update: {
+          org_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_members_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       check_client_access_rate_limit: {
@@ -756,11 +998,14 @@ export type Database = {
           category: string | null
           client_id: string | null
           created_at: string
+          created_by: string | null
           currency: string
+          deleted_at: string | null
           description: string | null
           gross_amount_cents: number
           id: string
           net_amount_cents: number
+          org_id: string | null
           project_id: string
           quantity: number
           receipt_url: string | null
@@ -794,6 +1039,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      get_client_sensitive: {
+        Args: { p_id: string }
+        Returns: {
+          email: string
+          phone: string
+          tax_number: string
+          vat_id: string
+        }[]
+      }
       get_client_with_masked_sensitive_data: {
         Args: { client_id_param: string }
         Returns: {
@@ -816,6 +1070,10 @@ export type Database = {
           website: string
         }[]
       }
+      get_current_org_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -825,6 +1083,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_editor: {
+        Args: { p_org: string }
         Returns: boolean
       }
       is_free_user: {
