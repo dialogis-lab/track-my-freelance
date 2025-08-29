@@ -2,11 +2,13 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { usePlan } from '@/hooks/usePlan';
+import { useAdminReveal } from '@/components/AdminRevealProvider';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Clock, Users, FolderOpen, BarChart3, Receipt, Settings, LogOut, Timer, ShieldCheck, User, Crown } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
+import { VersionBadge } from './VersionBadge';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -16,6 +18,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { signOut, user } = useAuth();
   const { isAdmin, loading: roleLoading } = useUserRole();
   const { isFree } = usePlan();
+  const { isRevealed } = useAdminReveal();
   const location = useLocation();
 
   const navigation = [
@@ -69,17 +72,42 @@ export function AppLayout({ children }: AppLayoutProps) {
 
             {/* Right: Actions - Fixed width */}
             <div className="flex items-center gap-2 justify-end min-w-[200px]">
-              {roleLoading ? (
-                <div className="h-8 w-[70px] rounded-md bg-muted animate-pulse" />
-              ) : isAdmin ? (
-                <Button variant="outline" size="sm" asChild>
+              {/* Admin button - shown when revealed */}
+              {isRevealed && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  asChild 
+                  className="animate-in fade-in-0 duration-150"
+                >
                   <Link to="/admin">
                     <ShieldCheck className="w-4 h-4 mr-2" />
                     Admin
                   </Link>
                 </Button>
-              ) : (
-                <div className="w-[70px]" />
+              )}
+              
+              {/* Version badge - shown when revealed */}
+              {isRevealed && (
+                <div className="animate-in fade-in-0 duration-150">
+                  <VersionBadge />
+                </div>
+              )}
+              
+              {/* Legacy admin button - only show if not revealed but user is admin */}
+              {!isRevealed && (
+                roleLoading ? (
+                  <div className="h-8 w-[70px] rounded-md bg-muted animate-pulse" />
+                ) : isAdmin ? (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/admin">
+                      <ShieldCheck className="w-4 h-4 mr-2" />
+                      Admin
+                    </Link>
+                  </Button>
+                ) : (
+                  <div className="w-[70px]" />
+                )
               )}
               
               <DropdownMenu>
@@ -144,7 +172,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             })}
             
             {/* Mobile admin shortcut */}
-            {isAdmin && (
+            {(isRevealed || isAdmin) && (
               <Button
                 variant="outline"
                 size="sm"
