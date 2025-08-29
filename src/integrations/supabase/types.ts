@@ -534,9 +534,7 @@ export type Database = {
       }
       profiles: {
         Row: {
-          address: string | null
           address_enc: Json | null
-          bank_details: string | null
           bank_details_enc: Json | null
           billing_email_fp: string | null
           company_name: string | null
@@ -546,11 +544,8 @@ export type Database = {
           logo_url: string | null
           onboarding_state: Json | null
           stripe_current_period_end: string | null
-          stripe_customer_id: string | null
           stripe_customer_id_enc: Json | null
-          stripe_price_id: string | null
           stripe_price_id_enc: Json | null
-          stripe_subscription_id: string | null
           stripe_subscription_id_enc: Json | null
           stripe_subscription_status: string | null
           subscription_current_period_end: string | null
@@ -559,13 +554,10 @@ export type Database = {
           timer_skin: string
           updated_at: string
           vat_fp: string | null
-          vat_id: string | null
           vat_id_enc: Json | null
         }
         Insert: {
-          address?: string | null
           address_enc?: Json | null
-          bank_details?: string | null
           bank_details_enc?: Json | null
           billing_email_fp?: string | null
           company_name?: string | null
@@ -575,11 +567,8 @@ export type Database = {
           logo_url?: string | null
           onboarding_state?: Json | null
           stripe_current_period_end?: string | null
-          stripe_customer_id?: string | null
           stripe_customer_id_enc?: Json | null
-          stripe_price_id?: string | null
           stripe_price_id_enc?: Json | null
-          stripe_subscription_id?: string | null
           stripe_subscription_id_enc?: Json | null
           stripe_subscription_status?: string | null
           subscription_current_period_end?: string | null
@@ -588,13 +577,10 @@ export type Database = {
           timer_skin?: string
           updated_at?: string
           vat_fp?: string | null
-          vat_id?: string | null
           vat_id_enc?: Json | null
         }
         Update: {
-          address?: string | null
           address_enc?: Json | null
-          bank_details?: string | null
           bank_details_enc?: Json | null
           billing_email_fp?: string | null
           company_name?: string | null
@@ -604,11 +590,8 @@ export type Database = {
           logo_url?: string | null
           onboarding_state?: Json | null
           stripe_current_period_end?: string | null
-          stripe_customer_id?: string | null
           stripe_customer_id_enc?: Json | null
-          stripe_price_id?: string | null
           stripe_price_id_enc?: Json | null
-          stripe_subscription_id?: string | null
           stripe_subscription_id_enc?: Json | null
           stripe_subscription_status?: string | null
           subscription_current_period_end?: string | null
@@ -617,7 +600,6 @@ export type Database = {
           timer_skin?: string
           updated_at?: string
           vat_fp?: string | null
-          vat_id?: string | null
           vat_id_enc?: Json | null
         }
         Relationships: []
@@ -1137,17 +1119,11 @@ export type Database = {
       get_profile_financial_data: {
         Args: { profile_id_param?: string }
         Returns: {
-          address: string
           address_enc: Json
-          bank_details: string
           bank_details_enc: Json
-          stripe_customer_id: string
           stripe_customer_id_enc: Json
-          stripe_price_id: string
           stripe_price_id_enc: Json
-          stripe_subscription_id: string
           stripe_subscription_id_enc: Json
-          vat_id: string
           vat_id_enc: Json
         }[]
       }

@@ -14,9 +14,10 @@ import { Upload, X, Building2, Lock, AlertTriangle, Shield } from 'lucide-react'
 interface Profile {
   id: string;
   company_name: string | null;
-  address: string | null;
-  vat_id: string | null;
-  bank_details: string | null;
+  // Sensitive fields are now only available via encrypted endpoints
+  address?: string | null;
+  vat_id?: string | null;
+  bank_details?: string | null;
   logo_url: string | null;
   encryption_status?: {
     enabled: boolean;

@@ -33,9 +33,10 @@ interface TimeEntry {
 
 interface Profile {
   company_name: string | null;
-  address: string | null;
-  vat_id: string | null;
-  bank_details: string | null;
+  // Sensitive fields now only available via encrypted endpoints
+  address?: string | null;
+  vat_id?: string | null;
+  bank_details?: string | null;
   logo_url: string | null;
 }
 
