@@ -70,28 +70,8 @@ export async function getAuthState(): Promise<AuthState> {
         aal = null;
       }
 
-      // FORCE CHECK: Always call trusted device function for debugging
+      // Check trusted device status
       try {
-        console.error('[authState] === FORCE TRUSTED DEVICE CHECK ===');
-        console.error('[authState] User:', user.id);
-        console.error('[authState] Session details:', {
-          hasAccessToken: !!session.access_token,
-          aal: aal,
-          tokenLength: session.access_token?.length
-        });
-        
-        // Check ALL cookies (for debugging)
-        const allCookies = document.cookie;
-        console.error('[authState] All browser cookies:', allCookies);
-        
-        const debugCookie = document.cookie.split(';').find(c => c.trim().startsWith('th_td_debug='));
-        console.error('[authState] Debug cookie check:', {
-          hasTdDebugCookie: !!debugCookie,
-          debugCookieValue: debugCookie?.split('=')[1] || 'none',
-          allVisibleCookies: document.cookie.split(';').map(c => c.trim().split('=')[0])
-        });
-
-        console.error('[authState] About to call trusted-device function...');
         
         // Use direct fetch call to ensure body is sent properly
         const response = await fetch('https://ollbuhgghkporvzmrzau.supabase.co/functions/v1/trusted-device', {
@@ -115,39 +95,18 @@ export async function getAuthState(): Promise<AuthState> {
           trustedDeviceResponse = await response.json();
         }
 
-        console.error('[authState] Trusted device function called. Response:', {
-          hasData: !!trustedDeviceResponse,
-          hasError: !!trustedDeviceError,
-          error: trustedDeviceError,
-          data: trustedDeviceResponse
-        });
-
         if (trustedDeviceError) {
-          console.error('[authState] === TRUSTED DEVICE API ERROR ===', {
-            error: trustedDeviceError,
-            errorMessage: trustedDeviceError.message,
-            errorDetails: trustedDeviceError.details
-          });
+          if (import.meta.env.NEXT_PUBLIC_DEBUG_AUTH === 'true') {
+            console.debug('[authState] Trusted device API error:', trustedDeviceError);
+          }
           trustedDevice = false;
         } else {
           trustedDevice = !!trustedDeviceResponse?.is_trusted;
-          
-          console.error('[authState] === TRUSTED DEVICE CHECK RESULT ===', {
-            fullResponse: trustedDeviceResponse,
-            isTrusted: trustedDevice,
-            reason: trustedDeviceResponse?.reason,
-            expiresAt: trustedDeviceResponse?.expires_at,
-            debugInfo: trustedDeviceResponse?.debug_info
-          });
         }
       } catch (error) {
-        console.error('[authState] === TRUSTED DEVICE CHECK FAILED ===', {
-          error: error instanceof Error ? error.message : error,
-          errorStack: error instanceof Error ? error.stack : undefined,
-          userId: user.id,
-          sessionValid: !!session,
-          hasAccessToken: !!session.access_token
-        });
+        if (import.meta.env.NEXT_PUBLIC_DEBUG_AUTH === 'true') {
+          console.debug('[authState] Trusted device check failed:', error);
+        }
         trustedDevice = false;
       }
 
