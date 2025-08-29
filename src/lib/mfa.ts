@@ -306,19 +306,26 @@ export async function addTrustedDevice(): Promise<void> {
       throw new Error('No active session');
     }
 
-    const response = await supabase.functions.invoke('trusted-device', {
-      body: { action: 'add' },
+    // Make direct HTTP call to ensure body is sent properly
+    const supabaseUrl = 'https://ollbuhgghkporvzmrzau.supabase.co';
+    const response = await fetch(`${supabaseUrl}/functions/v1/trusted-device`, {
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${sessionData.session.access_token}`,
-        'Cookie': document.cookie, // Include existing cookies
+        'Content-Type': 'application/json',
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sbGJ1aGdnaGtwb3J2em1yemF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5MjU5MjksImV4cCI6MjA3MTUwMTkyOX0.6IRGOQDfUgnZgK6idaFYH_rueGFhY7-KFG5ZwvDfsdw',
+        'Cookie': document.cookie,
       },
+      body: JSON.stringify({ action: 'add' })
     });
 
-    if (response.error) {
-      throw new Error(response.error.message);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
     
-    console.debug('[MFA] Trusted device added successfully:', response.data);
+    const data = await response.json();
+    console.debug('[MFA] Trusted device added successfully:', data);
   } catch (error) {
     console.error('Error adding trusted device:', error);
     throw error;
