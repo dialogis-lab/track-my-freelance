@@ -11,7 +11,7 @@ export interface VersionMeta {
 export function getVersionMeta(): VersionMeta {
   // Try NEXT_PUBLIC_ first, then fall back to VITE_ for compatibility
   const version = import.meta.env.NEXT_PUBLIC_APP_VERSION || import.meta.env.VITE_APP_VERSION || 'dev-local';
-  const fullSha = import.meta.env.NEXT_PUBLIC_GIT_SHA || import.meta.env.VITE_GIT_SHA || 'unknown-sha';
+  const fullSha = import.meta.env.NEXT_PUBLIC_GIT_SHA || import.meta.env.VITE_GIT_SHA || 'dev-commit-' + Date.now().toString(36);
   const shortSha = fullSha.substring(0, 8);
   
   return {
