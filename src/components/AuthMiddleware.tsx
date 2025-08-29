@@ -37,11 +37,16 @@ export function AuthMiddleware({ children }: AuthMiddlewareProps) {
         location.pathname === route || location.pathname.startsWith(route + '/')
       );
 
-      if (import.meta.env.NEXT_PUBLIC_DEBUG_AUTH === 'true') {
+      const debugAuth = import.meta.env.NEXT_PUBLIC_DEBUG_AUTH === 'true';
+      
+      if (debugAuth) {
         console.info('[auth-middleware] Route check:', {
           pathname: location.pathname,
           isPublicRoute,
-          hasUser: !!state?.user
+          hasUser: !!state?.user,
+          userMfa: state?.mfa,
+          authLoading,
+          middlewareLoading
         });
       }
 
@@ -52,34 +57,66 @@ export function AuthMiddleware({ children }: AuthMiddlewareProps) {
 
       // b) If session AAL2 → allow
       if (state?.mfa.aal === 'aal2') {
-        if (import.meta.env.NEXT_PUBLIC_DEBUG_AUTH === 'true') {
+        if (debugAuth) {
           console.info('[auth-middleware] User has AAL2, allowing access');
         }
         return;
       }
 
-      // c) Validate trusted device (reads th_td cookie + DB)
-      if (state?.user) {
-        setMiddlewareLoading(true);
-        try {
-          const mfaRequirement = await shouldRequireMFA();
-          logMfaDecision(mfaRequirement, `middleware:${location.pathname}`);
+      // c) If no user but trying to access protected route → redirect to login
+      if (!state?.user) {
+        if (debugAuth) {
+          console.info('[auth-middleware] No user found, redirecting to login');
+        }
+        navigate('/login', { replace: true });
+        return;
+      }
 
-          if (mfaRequirement.requiresMfa) {
-            // d) Redirect to /auth/mfa?returnTo=<original>
-            const returnTo = location.pathname + location.search;
-            navigate(`/mfa?next=${encodeURIComponent(returnTo)}`, { replace: true });
-            return;
+      // d) Validate trusted device and MFA requirements
+      setMiddlewareLoading(true);
+      try {
+        if (debugAuth) {
+          console.info('[auth-middleware] Starting MFA requirement check');
+        }
+        
+        const mfaRequirement = await shouldRequireMFA();
+        logMfaDecision(mfaRequirement, `middleware:${location.pathname}`);
+
+        if (mfaRequirement.requiresMfa) {
+          if (debugAuth) {
+            console.info('[auth-middleware] MFA required, redirecting:', {
+              reason: mfaRequirement.reason,
+              trustedDevice: mfaRequirement.trustedDevice,
+              aal: mfaRequirement.aal
+            });
           }
-        } catch (error) {
-          console.error('[auth-middleware] MFA requirement check failed:', error);
-          // On error, redirect to MFA for security
+          // Redirect to /mfa with return URL
           const returnTo = location.pathname + location.search;
           navigate(`/mfa?next=${encodeURIComponent(returnTo)}`, { replace: true });
           return;
-        } finally {
-          setMiddlewareLoading(false);
+        } else {
+          if (debugAuth) {
+            console.info('[auth-middleware] MFA not required:', {
+              reason: mfaRequirement.reason,
+              trustedDevice: mfaRequirement.trustedDevice,
+              aal: mfaRequirement.aal
+            });
+          }
         }
+      } catch (error) {
+        console.error('[auth-middleware] MFA requirement check failed:', error);
+        if (debugAuth) {
+          console.error('[auth-middleware] Error details:', {
+            error: error instanceof Error ? error.message : error,
+            stack: error instanceof Error ? error.stack : undefined
+          });
+        }
+        // On error, redirect to MFA for security
+        const returnTo = location.pathname + location.search;
+        navigate(`/mfa?next=${encodeURIComponent(returnTo)}`, { replace: true });
+        return;
+      } finally {
+        setMiddlewareLoading(false);
       }
     };
 

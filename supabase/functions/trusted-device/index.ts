@@ -38,7 +38,16 @@ serve(async (req) => {
     const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
     const userAgent = req.headers.get('user-agent') || 'unknown'
 
-    console.log(`Trusted device action: ${action} for user: ${user.id}`)
+    const debugAuth = Deno.env.get('NEXT_PUBLIC_DEBUG_AUTH') === 'true';
+    
+    if (debugAuth) {
+      console.info(`[trusted-device] Action: ${action} for user: ${user.id}`);
+      console.info(`[trusted-device] Request details:`, {
+        clientIP,
+        userAgent: userAgent.substring(0, 50) + '...',
+        hasCookie: req.headers.get('cookie')?.includes('th_td') || false
+      });
+    }
 
     if (action === 'check') {
       return await checkTrustedDevice(req, supabase, user, clientIP, userAgent)
@@ -68,17 +77,27 @@ serve(async (req) => {
 })
 
 async function checkTrustedDevice(req: Request, supabase: any, user: any, clientIP: string, userAgent: string) {
+  const debugAuth = Deno.env.get('NEXT_PUBLIC_DEBUG_AUTH') === 'true';
+  
   // Get trusted device cookie
   const cookies = req.headers.get('cookie') || ''
   const trustedDeviceCookie = parseCookie(cookies, 'th_td')
   
-  if (import.meta?.env?.NEXT_PUBLIC_DEBUG_AUTH === 'true') {
-    console.info('[trusted-device] Cookie presence:', !!trustedDeviceCookie)
+  if (debugAuth) {
+    console.info('[trusted-device] Cookie check:', {
+      cookiesReceived: !!cookies,
+      cookieString: cookies ? cookies.substring(0, 100) + '...' : 'none',
+      trustedDeviceCookie: trustedDeviceCookie ? `${trustedDeviceCookie.substring(0, 10)}...` : 'none',
+      cookiePresent: !!trustedDeviceCookie
+    });
   }
   
   if (!trustedDeviceCookie) {
+    if (debugAuth) {
+      console.info('[trusted-device] No trusted device cookie found');
+    }
     return new Response(
-      JSON.stringify({ is_trusted: false }),
+      JSON.stringify({ is_trusted: false, reason: 'no_cookie' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
@@ -86,10 +105,20 @@ async function checkTrustedDevice(req: Request, supabase: any, user: any, client
   // Parse cookie: format is device_id.hmac
   const [deviceId, hmac] = trustedDeviceCookie.split('.')
   if (!deviceId || !hmac) {
+    if (debugAuth) {
+      console.warn('[trusted-device] Invalid cookie format:', { deviceId: !!deviceId, hmac: !!hmac });
+    }
     return new Response(
-      JSON.stringify({ is_trusted: false }),
+      JSON.stringify({ is_trusted: false, reason: 'invalid_cookie_format' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
+  }
+
+  if (debugAuth) {
+    console.info('[trusted-device] Cookie parsed successfully:', {
+      deviceId: deviceId.substring(0, 8) + '...',
+      hmacLength: hmac.length
+    });
   }
 
   // Look up device in database
@@ -103,19 +132,49 @@ async function checkTrustedDevice(req: Request, supabase: any, user: any, client
     .single()
 
   if (error || !device) {
+    if (debugAuth) {
+      console.warn('[trusted-device] Device lookup failed:', {
+        error: error?.message,
+        deviceFound: !!device,
+        deviceId: deviceId.substring(0, 8) + '...'
+      });
+    }
     return new Response(
-      JSON.stringify({ is_trusted: false }),
+      JSON.stringify({ 
+        is_trusted: false, 
+        reason: error ? 'db_error' : 'device_not_found',
+        details: debugAuth ? error?.message : undefined
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
+  }
+
+  if (debugAuth) {
+    console.info('[trusted-device] Device found in database:', {
+      deviceId: device.device_id.substring(0, 8) + '...',
+      expiresAt: device.expires_at,
+      lastSeen: device.last_seen_at
+    });
   }
 
   // Validate HMAC
   const expectedHmac = await generateHMAC(deviceId, user.id, device.expires_at)
   if (hmac !== expectedHmac) {
+    if (debugAuth) {
+      console.warn('[trusted-device] HMAC validation failed:', {
+        provided: hmac.substring(0, 8) + '...',
+        expected: expectedHmac.substring(0, 8) + '...',
+        deviceId: deviceId.substring(0, 8) + '...'
+      });
+    }
     return new Response(
-      JSON.stringify({ is_trusted: false }),
+      JSON.stringify({ is_trusted: false, reason: 'invalid_hmac' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
+  }
+
+  if (debugAuth) {
+    console.info('[trusted-device] HMAC validation successful');
   }
 
   // Optional: Check if user agent family changed significantly (more lenient)
@@ -135,6 +194,13 @@ async function checkTrustedDevice(req: Request, supabase: any, user: any, client
     .from('trusted_devices')
     .update({ last_seen_at: new Date().toISOString() })
     .eq('id', device.id)
+
+  if (debugAuth) {
+    console.info('[trusted-device] Device successfully validated as trusted:', {
+      deviceId: deviceId.substring(0, 8) + '...',
+      expiresAt: device.expires_at
+    });
+  }
 
   return new Response(
     JSON.stringify({ 
