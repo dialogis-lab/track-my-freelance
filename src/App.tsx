@@ -14,6 +14,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { TimerProvider } from "@/contexts/TimerContext";
 import { CookieProvider } from "@/components/CookieProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AuthMiddleware } from "@/components/AuthMiddleware";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Login from "./pages/Login";
@@ -50,7 +51,8 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Routes>
+              <AuthMiddleware>
+                <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
@@ -114,7 +116,8 @@ const App = () => (
                 <Route path="/subscription-success" element={<SubscriptionSuccess />} />
                 <Route path="/error" element={<Error />} />
                 <Route path="*" element={<NotFound />} />
-              </Routes>
+                </Routes>
+              </AuthMiddleware>
             </BrowserRouter>
           </TooltipProvider>
         </CookieProvider>

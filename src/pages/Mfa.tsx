@@ -104,35 +104,11 @@ export default function Mfa() {
         return;
       }
       
-      // If user has verified TOTP, check if we need MFA challenge
+      // If user has verified TOTP, prepare for verification challenge
       if (hasVerifiedTotp) {
-        console.debug('[MFA] User has verified TOTP, checking if challenge needed');
+        console.debug('[MFA] User has verified TOTP, starting challenge');
         
-        // Check if device is trusted first
-        try {
-          const { data: sessionData } = await supabase.auth.getSession();
-          if (sessionData?.session) {
-            const trustedCheck = await supabase.functions.invoke('trusted-device', {
-              body: { action: 'check' },
-              headers: {
-                'Authorization': `Bearer ${sessionData.session.access_token}`,
-                'Cookie': document.cookie,
-              },
-            });
-            
-            if (trustedCheck.data?.is_trusted) {
-              console.debug('[MFA] Device is trusted, redirecting to app');
-              setTimeout(() => {
-                navigate(nextUrl, { replace: true });
-              }, 0);
-              return;
-            }
-          }
-        } catch (error) {
-          console.debug('[MFA] Trusted device check failed:', error);
-        }
-        
-        // If not trusted, start challenge for verification
+        // Start challenge for verification
         const verifiedFactor = verifiedFactors[0]; // Use first verified factor
         if (verifiedFactor) {
           console.debug('[MFA] Starting challenge for verified factor:', verifiedFactor.id);
