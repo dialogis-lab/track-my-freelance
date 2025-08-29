@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthState } from '@/hooks/useAuthState';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AuthMiddleware } from './AuthMiddleware';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -26,14 +27,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  // Check if we're on the MFA page to avoid redirect loops
-  const onMfaPage = location.pathname.startsWith("/mfa");
-  
-  // If state.mfa.needsMfa === true and route isn't /mfa → redirect to /mfa (preserve from)
-  if (state.mfa.needsMfa && !onMfaPage) {
-    const nextUrl = `${location.pathname}${location.search}`;
-    return <Navigate to={`/mfa?next=${encodeURIComponent(nextUrl)}`} replace />;
-  }
-
-  return <>{children}</>;
+  // Use AuthMiddleware for MFA gate logic
+  return (
+    <AuthMiddleware>
+      {children}
+    </AuthMiddleware>
+  );
 }

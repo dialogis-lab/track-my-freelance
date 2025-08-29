@@ -81,9 +81,18 @@ export async function getAuthState(): Promise<AuthState> {
           },
         });
         trustedDevice = !!trustedDeviceResponse?.is_trusted;
-        console.debug('[auth] Trusted device check:', trustedDeviceResponse);
+        
+        if (import.meta.env.NEXT_PUBLIC_DEBUG_AUTH === 'true') {
+          console.info('[auth] Trusted device check result:', {
+            cookiePresent: document.cookie.includes('th_td'),
+            response: trustedDeviceResponse,
+            isTrusted: trustedDevice
+          });
+        }
       } catch (error) {
-        console.debug('Error checking trusted device:', error);
+        if (import.meta.env.NEXT_PUBLIC_DEBUG_AUTH === 'true') {
+          console.info('[auth] Trusted device check failed:', error);
+        }
         trustedDevice = false;
       }
 

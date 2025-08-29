@@ -70,7 +70,11 @@ serve(async (req) => {
 async function checkTrustedDevice(req: Request, supabase: any, user: any, clientIP: string, userAgent: string) {
   // Get trusted device cookie
   const cookies = req.headers.get('cookie') || ''
-  const trustedDeviceCookie = parseCookie(cookies, 'td')
+  const trustedDeviceCookie = parseCookie(cookies, 'th_td')
+  
+  if (import.meta?.env?.NEXT_PUBLIC_DEBUG_AUTH === 'true') {
+    console.info('[trusted-device] Cookie presence:', !!trustedDeviceCookie)
+  }
   
   if (!trustedDeviceCookie) {
     return new Response(
@@ -181,11 +185,15 @@ async function addTrustedDevice(req: Request, supabase: any, user: any, clientIP
 
   // Determine if we're in development or production for cookie settings
   const isProduction = Deno.env.get('SUPABASE_URL')?.includes('supabase.co') ?? false
+  
+  // Updated cookie settings as per requirements
   const cookieSettings = isProduction 
-    ? `td=${cookieValue}; HttpOnly; Secure; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}; Path=/; Domain=.timehatch.app`
-    : `td=${cookieValue}; HttpOnly; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}; Path=/`
+    ? `th_td=${cookieValue}; HttpOnly; Secure; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}; Path=/; Domain=.timehatch.app`
+    : `th_td=${cookieValue}; HttpOnly; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}; Path=/`
 
-  console.log(`Setting trusted device cookie: ${isProduction ? 'production' : 'development'} mode`)
+  if (Deno.env.get('NEXT_PUBLIC_DEBUG_AUTH') === 'true') {
+    console.info('[trusted-device] Setting cookie:', isProduction ? 'production' : 'development', 'mode')
+  }
 
   return new Response(
     JSON.stringify({ 
@@ -226,8 +234,8 @@ async function revokeTrustedDevice(supabase: any, user: any, deviceId: string) {
   // Clear cookie with proper domain settings
   const isProduction = Deno.env.get('SUPABASE_URL')?.includes('supabase.co') ?? false
   const clearCookieSettings = isProduction 
-    ? `td=; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Path=/; Domain=.timehatch.app`
-    : `td=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/`
+    ? `th_td=; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Path=/; Domain=.timehatch.app`
+    : `th_td=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/`
 
   return new Response(
     JSON.stringify({ success: true }),
@@ -264,8 +272,8 @@ async function revokeAllTrustedDevices(supabase: any, user: any) {
   // Clear cookie with proper domain settings
   const isProduction = Deno.env.get('SUPABASE_URL')?.includes('supabase.co') ?? false
   const clearCookieSettings = isProduction 
-    ? `td=; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Path=/; Domain=.timehatch.app`
-    : `td=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/`
+    ? `th_td=; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Path=/; Domain=.timehatch.app`
+    : `th_td=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/`
 
   return new Response(
     JSON.stringify({ success: true }),

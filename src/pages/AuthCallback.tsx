@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { shouldRequireMFA, logMfaDecision } from '@/lib/authMiddleware';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -48,8 +49,19 @@ export default function AuthCallback() {
             description: "You have been signed in successfully.",
           });
           
-          // Navigate to MFA - the ProtectedRoute will handle the redirect logic
-          navigate('/mfa', { replace: true });
+          // Check if MFA is required instead of unconditional redirect
+          const mfaRequirement = await shouldRequireMFA();
+          logMfaDecision(mfaRequirement, 'auth-callback');
+          
+          if (mfaRequirement.requiresMfa) {
+            // Redirect to MFA with return URL
+            const returnTo = searchParams.get('returnTo') || '/dashboard';
+            navigate(`/mfa?next=${encodeURIComponent(returnTo)}`, { replace: true });
+          } else {
+            // Skip MFA - go directly to dashboard or return URL
+            const returnTo = searchParams.get('returnTo') || '/dashboard';
+            navigate(returnTo, { replace: true });
+          }
         } else {
           throw new Error('No session created after code exchange');
         }
@@ -59,12 +71,24 @@ export default function AuthCallback() {
         // Check if user is actually signed in despite the error
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          console.log('User is actually signed in despite error, redirecting to MFA');
+          console.log('User is actually signed in despite error, checking MFA requirement');
+          
+          // Check MFA requirement instead of unconditional redirect
+          const mfaRequirement = await shouldRequireMFA();
+          logMfaDecision(mfaRequirement, 'auth-callback-error-recovery');
+          
           toast({
             title: "Welcome!",
             description: "You have been signed in successfully.",
           });
-          navigate('/mfa', { replace: true });
+          
+          if (mfaRequirement.requiresMfa) {
+            const returnTo = searchParams.get('returnTo') || '/dashboard';
+            navigate(`/mfa?next=${encodeURIComponent(returnTo)}`, { replace: true });
+          } else {
+            const returnTo = searchParams.get('returnTo') || '/dashboard';
+            navigate(returnTo, { replace: true });
+          }
           return;
         }
         
