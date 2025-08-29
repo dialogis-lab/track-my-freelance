@@ -28,11 +28,34 @@ export async function getAuthState(): Promise<AuthState> {
     let trustedDevice = false;
 
     if (session && user) {
-      // List factors for THIS user only
+      // Clean up duplicate factors and check for verified factors - single source of truth
       try {
         const { data: factors } = await supabase.auth.mfa.listFactors();
-        const hasTotp = Array.isArray(factors?.totp) && factors.totp.length > 0;
-        enabled = hasTotp;
+        const verifiedFactors = factors?.totp?.filter(f => f.status === 'verified') || [];
+        const unverifiedFactors = factors?.totp?.filter(f => f.status === 'unverified') || [];
+        
+        // Clean up duplicate unverified factors (keep only the newest one)
+        if (unverifiedFactors.length > 1) {
+          const sortedUnverified = unverifiedFactors.sort((a, b) => 
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+          // Remove all but the newest unverified factor
+          for (const factor of sortedUnverified.slice(1)) {
+            try {
+              await supabase.auth.mfa.unenroll({ factorId: factor.id });
+              console.debug('[auth] Cleaned up duplicate unverified factor:', factor.id);
+            } catch (cleanupError) {
+              console.debug('[auth] Error cleaning up factor:', cleanupError);
+            }
+          }
+        }
+        
+        enabled = verifiedFactors.length > 0;
+        console.debug('[auth] MFA factors:', { 
+          verified: verifiedFactors.length, 
+          unverified: unverifiedFactors.length,
+          enabled 
+        });
       } catch (error) {
         console.debug('Error checking MFA factors:', error);
         enabled = false;
@@ -64,6 +87,7 @@ export async function getAuthState(): Promise<AuthState> {
         trustedDevice = false;
       }
 
+      // Key logic: only need MFA if user has verified factors but hasn't completed verification
       needsMfa = enabled && aal !== 'aal2' && !trustedDevice;
     }
 

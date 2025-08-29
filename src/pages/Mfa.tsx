@@ -66,8 +66,34 @@ export default function Mfa() {
       const { data, error } = await supabase.auth.mfa.listFactors();
       if (error) throw error;
       
-      const hasVerifiedTotp = data?.totp?.some(f => f.status === 'verified') || false;
+      const verifiedFactors = data?.totp?.filter(f => f.status === 'verified') || [];
+      const unverifiedFactors = data?.totp?.filter(f => f.status === 'unverified') || [];
+      const hasVerifiedTotp = verifiedFactors.length > 0;
+      
+      console.debug('[MFA] Found factors:', { 
+        verified: verifiedFactors.length, 
+        unverified: unverifiedFactors.length,
+        hasVerifiedTotp,
+        aal 
+      });
+      
       setVerifiedTotpExists(hasVerifiedTotp);
+      
+      // Clean up duplicate unverified factors (keep only newest)
+      if (unverifiedFactors.length > 1) {
+        const sortedUnverified = unverifiedFactors.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        // Remove all but the newest unverified factor
+        for (const factor of sortedUnverified.slice(1)) {
+          try {
+            await supabase.auth.mfa.unenroll({ factorId: factor.id });
+            console.debug('[MFA] Cleaned up duplicate unverified factor:', factor.id);
+          } catch (cleanupError) {
+            console.debug('[MFA] Error cleaning up factor:', cleanupError);
+          }
+        }
+      }
       
       // If user already has AAL2, redirect to next page
       if (aal === 'aal2') {
@@ -80,7 +106,7 @@ export default function Mfa() {
       
       // If user has verified TOTP, check if we need MFA challenge
       if (hasVerifiedTotp) {
-        console.debug('[MFA] User has TOTP, checking if challenge needed');
+        console.debug('[MFA] User has verified TOTP, checking if challenge needed');
         
         // Check if device is trusted first
         try {
@@ -106,19 +132,27 @@ export default function Mfa() {
           console.debug('[MFA] Trusted device check failed:', error);
         }
         
-        // If not trusted, start challenge
-        const verifiedFactor = data?.totp?.find(f => f.status === 'verified');
+        // If not trusted, start challenge for verification
+        const verifiedFactor = verifiedFactors[0]; // Use first verified factor
         if (verifiedFactor) {
+          console.debug('[MFA] Starting challenge for verified factor:', verifiedFactor.id);
           setFactorId(verifiedFactor.id);
           try {
             const challengeId = await createChallenge(verifiedFactor.id);
             setChallengeId(challengeId);
+            console.debug('[MFA] Challenge created:', challengeId);
           } catch (challengeError) {
-            console.error('Error creating challenge:', challengeError);
+            console.error('[MFA] Error creating challenge:', challengeError);
+            toast({
+              title: "Error",
+              description: "Failed to create MFA challenge. Please try again.",
+              variant: "destructive",
+            });
           }
         }
       } else {
         // No verified TOTP - show setup option
+        console.debug('[MFA] No verified TOTP found, showing setup');
         setShowMfaSetup(true);
       }
     } catch (error: any) {
