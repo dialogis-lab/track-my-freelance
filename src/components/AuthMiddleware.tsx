@@ -22,6 +22,7 @@ export function AuthMiddleware({ children }: AuthMiddlewareProps) {
     const runMiddlewareChecks = async () => {
       // Skip middleware for auth-related routes (equivalent to public routes)
       const publicRoutes = [
+        '/', // Landing page should be accessible to everyone
         '/login', 
         '/register', 
         '/auth/callback', 
