@@ -33,8 +33,51 @@ serve(async (req) => {
       )
     }
 
-    const body = await req.json()
-    const { action, device_id } = body
+    // Enhanced JSON parsing with debugging
+    console.error('[trusted-device] === RAW REQUEST DEBUG ===', {
+      method: req.method,
+      contentType: req.headers.get('content-type'),
+      hasBody: req.body !== null,
+      url: req.url,
+      headers: Object.fromEntries(req.headers.entries())
+    });
+
+    let body: any = {};
+    let action = 'check'; // Default action
+    let device_id: string | undefined;
+
+    // Robust JSON parsing with fallback
+    try {
+      const rawBody = await req.text(); // Get as text first for debugging
+      console.error('[trusted-device] === RAW BODY ===', {
+        bodyLength: rawBody.length,
+        bodyContent: rawBody || '(empty)',
+        isEmptyString: rawBody === '',
+        isNull: rawBody === null,
+        isUndefined: rawBody === undefined
+      });
+
+      if (rawBody && rawBody.trim() !== '') {
+        body = JSON.parse(rawBody);
+        console.error('[trusted-device] === JSON PARSED SUCCESSFULLY ===', body);
+        action = body.action || 'check';
+        device_id = body.device_id;
+      } else {
+        console.error('[trusted-device] === EMPTY BODY - USING DEFAULTS ===');
+        // For empty body, default to check action
+        body = { action: 'check' };
+        action = 'check';
+      }
+    } catch (jsonError: any) {
+      console.error('[trusted-device] === JSON PARSING FAILED ===', {
+        error: jsonError.message,
+        bodyReceived: await req.text().catch(() => 'could-not-read-again')
+      });
+      
+      // Fallback to check action if JSON parsing fails
+      body = { action: 'check' };
+      action = 'check';
+    }
     const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
     const userAgent = req.headers.get('user-agent') || 'unknown'
 
