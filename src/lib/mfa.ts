@@ -298,7 +298,7 @@ export async function verifyRecoveryCode(
   }
 }
 
-// Add trusted device
+// Add trusted device using the new API endpoint
 export async function addTrustedDevice(): Promise<void> {
   try {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -307,23 +307,21 @@ export async function addTrustedDevice(): Promise<void> {
     }
 
     if (import.meta.env.NEXT_PUBLIC_DEBUG_AUTH === 'true') {
-      console.info('[MFA] === ADDING TRUSTED DEVICE ===', {
+      console.info('[MFA] === ADDING TRUSTED DEVICE (NEW API) ===', {
         userId: sessionData.session.user?.id,
         currentCookies: document.cookie.substring(0, 100) + '...',
         userAgent: navigator.userAgent.substring(0, 50) + '...'
       });
     }
 
-    // Make direct HTTP call to ensure body is sent properly
-    const supabaseUrl = 'https://ollbuhgghkporvzmrzau.supabase.co';
-    const response = await fetch(`${supabaseUrl}/functions/v1/trusted-device`, {
+    // Call the trusted device edge function
+    const response = await fetch(`https://ollbuhgghkporvzmrzau.supabase.co/functions/v1/trusted-device`, {
       method: 'POST',
       credentials: 'include', // Ensure cookies are sent and received
       headers: {
         'Authorization': `Bearer ${sessionData.session.access_token}`,
         'Content-Type': 'application/json',
         'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sbGJ1aGdnaGtwb3J2em1yemF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5MjU5MjksImV4cCI6MjA3MTUwMTkyOX0.6IRGOQDfUgnZgK6idaFYH_rueGFhY7-KFG5ZwvDfsdw',
-        'Cookie': document.cookie,
       },
       body: JSON.stringify({ action: 'add' })
     });
@@ -340,7 +338,7 @@ export async function addTrustedDevice(): Promise<void> {
       setTimeout(() => {
         const updatedCookies = document.cookie;
         const hasTrustedDeviceCookie = updatedCookies.includes('th_td=');
-        console.info('[MFA] === TRUSTED DEVICE ADDED ===', {
+        console.info('[MFA] === TRUSTED DEVICE ADDED (NEW API) ===', {
           success: data.success,
           device_id: data.device_id?.substring(0, 8) + '...',
           expires_at: data.expires_at,
@@ -355,5 +353,26 @@ export async function addTrustedDevice(): Promise<void> {
   } catch (error) {
     console.error('Error adding trusted device:', error);
     throw error;
+  }
+}
+
+// Clear trusted device cookie on logout
+export function clearTrustedDeviceCookie(): void {
+  const isDev = window.location.hostname.includes('lovable.dev') || window.location.hostname === 'localhost';
+  const isProd = window.location.hostname.includes('timehatch.app');
+  
+  // Clear cookie with same domain/path settings as when it was set
+  let cookieString = 'th_td=; Path=/; Max-Age=0; SameSite=Lax';
+  
+  if (isProd) {
+    cookieString += '; Domain=.timehatch.app; Secure';
+  } else if (!isDev) {
+    cookieString += '; Secure';
+  }
+  
+  document.cookie = cookieString;
+  
+  if (import.meta.env.NEXT_PUBLIC_DEBUG_AUTH === 'true') {
+    console.info('[MFA] Trusted device cookie cleared');
   }
 }

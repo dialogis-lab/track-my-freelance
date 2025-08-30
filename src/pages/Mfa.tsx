@@ -22,9 +22,9 @@ import { useAuthState } from '@/hooks/useAuthState';
 import { 
   verifyTotp, 
   createChallenge,
-  addTrustedDevice,
   verifyRecoveryCode,
 } from '@/lib/mfa';
+import { issueTrustedDevice } from '@/api/trusted-device/issue';
 
 export default function Mfa() {
   const navigate = useNavigate();
@@ -159,18 +159,31 @@ export default function Mfa() {
       console.debug('[MFA] Verifying challenge with factorId:', factorId, 'challengeId:', challengeId);
       await verifyTotp(factorId, totpCode, challengeId);
       
-      // Add trusted device if selected
+      // Issue trusted device cookie if remember is checked
       if (rememberDevice) {
         try {
-          await addTrustedDevice();
+          const result = await issueTrustedDevice();
+          if (!result.success) {
+            console.error('Failed to issue trusted device:', result.error);
+            toast({
+              title: "Warning",
+              description: "Authentication successful, but failed to remember device.",
+              variant: "default",
+            });
+          }
         } catch (error) {
-          console.error('Error adding trusted device:', error);
+          console.error('Error issuing trusted device:', error);
+          toast({
+            title: "Warning", 
+            description: "Authentication successful, but failed to remember device.",
+            variant: "default",
+          });
         }
       }
       
       toast({
         title: "Authentication Successful",
-        description: "Access granted.",
+        description: rememberDevice ? "Access granted. This browser will be remembered for 30 days." : "Access granted.",
       });
       
       await refresh();
@@ -201,9 +214,21 @@ export default function Mfa() {
       setLoading(true);
       await verifyRecoveryCode(factorId, challengeId, recoveryCode, rememberDevice);
       
+      // Issue trusted device cookie if remember is checked
+      if (rememberDevice) {
+        try {
+          const result = await issueTrustedDevice();
+          if (!result.success) {
+            console.error('Failed to issue trusted device:', result.error);
+          }
+        } catch (error) {
+          console.error('Error issuing trusted device:', error);
+        }
+      }
+      
       toast({
         title: "Recovery Code Accepted",
-        description: "Access granted using recovery code.",
+        description: rememberDevice ? "Access granted using recovery code. This browser will be remembered for 30 days." : "Access granted using recovery code.",
       });
       
       await refresh();
