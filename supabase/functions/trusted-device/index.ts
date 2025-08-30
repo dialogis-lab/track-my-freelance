@@ -1,15 +1,47 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+// CORS headers for credentials support
+const getCorsHeaders = (origin?: string | null) => {
+  // Allow specific origins when credentials are included
+  const allowedOrigins = [
+    'https://timehatch.app',
+    'https://www.timehatch.app',
+    /https:\/\/.*\.lovable\.dev$/,
+    'http://localhost:5173',
+    'http://localhost:3000'
+  ];
+  
+  let allowOrigin = '*';
+  if (origin) {
+    // Check if origin matches allowed origins
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (typeof allowed === 'string') {
+        return origin === allowed;
+      } else {
+        return allowed.test(origin);
+      }
+    });
+    
+    if (isAllowed) {
+      allowOrigin = origin;
+    }
+  }
+  
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  };
+};
 
 // Secret key for HMAC validation - in production this should be from environment
 const HMAC_SECRET = Deno.env.get('TRUSTED_DEVICE_SECRET') || 'default-secret-key-change-in-production'
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req.headers.get('origin'));
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -131,6 +163,7 @@ serve(async (req) => {
 })
 
 async function checkTrustedDevice(req: Request, supabase: any, user: any, clientIP: string, userAgent: string) {
+  const corsHeaders = getCorsHeaders(req.headers.get('origin'));
   const debugAuth = Deno.env.get('NEXT_PUBLIC_DEBUG_AUTH') === 'true';
   
   // Get trusted device cookie
@@ -320,6 +353,8 @@ async function checkTrustedDevice(req: Request, supabase: any, user: any, client
 }
 
 async function addTrustedDevice(req: Request, supabase: any, user: any, clientIP: string, userAgent: string) {
+  const corsHeaders = getCorsHeaders(req.headers.get('origin'));
+  
   // Generate 128-bit device ID (32 hex chars)
   const deviceId = crypto.randomUUID().replace(/-/g, '').substring(0, 32)
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
@@ -414,6 +449,12 @@ async function addTrustedDevice(req: Request, supabase: any, user: any, clientIP
 }
 
 async function revokeTrustedDevice(supabase: any, user: any, deviceId: string) {
+  // Use default CORS headers for revoke (no credentials needed)
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+  };
+  
   const { error } = await supabase
     .from('trusted_devices')
     .update({ revoked_at: new Date().toISOString() })
@@ -449,6 +490,12 @@ async function revokeTrustedDevice(supabase: any, user: any, deviceId: string) {
 }
 
 async function revokeAllTrustedDevices(supabase: any, user: any) {
+  // Use default CORS headers for revoke (no credentials needed)
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+  };
+  
   const { error } = await supabase
     .from('trusted_devices')
     .update({ revoked_at: new Date().toISOString() })
