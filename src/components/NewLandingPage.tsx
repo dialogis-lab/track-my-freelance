@@ -44,6 +44,7 @@ const NewLandingPage = () => {
             <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
             <a href="#security" className="text-muted-foreground hover:text-foreground transition-colors">Security</a>
             <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
+            <a href="#faq" className="text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
             <a href="#early-access" className="text-muted-foreground hover:text-foreground transition-colors">Early Access</a>
             
             {/* Hidden admin access - shows after admin reveal */}
@@ -284,6 +285,55 @@ const NewLandingPage = () => {
                 <Timer className="w-4 h-4 inline mr-2" />
                 Early access, special price, and exclusive updates.
               </p>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section id="faq" className="py-20 bg-muted/20" aria-labelledby="faq-heading">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 id="faq-heading" className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Frequently Asked Questions
+              </h2>
+            </div>
+            
+            <div className="grid gap-8 max-w-4xl mx-auto">
+              <Card>
+                <CardContent className="p-8">
+                  <h3 className="text-xl font-semibold text-foreground mb-4">What is TimeHatch?</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    TimeHatch is a simple time tracking tool for freelancers and small teams. Track work hours, manage projects, and generate professional PDF invoices.
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-8">
+                  <h3 className="text-xl font-semibold text-foreground mb-4">Is TimeHatch free?</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Yes, you can start with a free plan. Paid features like invoicing and exports are available later.
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-8">
+                  <h3 className="text-xl font-semibold text-foreground mb-4">How do I track my time?</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    You can use the built-in timer or add manual entries. Each session can be linked to a client and project.
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-8">
+                  <h3 className="text-xl font-semibold text-foreground mb-4">Does TimeHatch support invoices?</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Yes, you can generate invoices directly from your tracked time with your own branding.
+                  </p>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </section>
