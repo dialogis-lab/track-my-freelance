@@ -39,7 +39,7 @@ export function useAuthState() {
           setState({
             user: null,
             session: null,
-            mfa: { enabled: false, needsMfa: false, aal: null, trustedDevice: false }
+            mfa: { enabled: false, needsMfa: false, aal: null }
           });
         }
       } finally {

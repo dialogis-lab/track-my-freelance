@@ -32,7 +32,7 @@ import Success from "./pages/Success";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
 import Error from "./pages/Error";
 import NotFound from "./pages/NotFound";
-import Mfa from "./pages/Mfa";
+
 import { AdminLayout } from "@/components/AdminLayout";
 import { AdminOverview } from "@/pages/admin/AdminOverview";
 import { AdminUsers } from "@/pages/admin/AdminUsers";
@@ -58,7 +58,7 @@ const App = () => (
                 <Route path="/register" element={<Register />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
-                <Route path="/mfa" element={<Mfa />} />
+                
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
                 <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />

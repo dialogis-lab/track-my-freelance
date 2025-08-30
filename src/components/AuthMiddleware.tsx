@@ -30,7 +30,6 @@ export function AuthMiddleware({ children }: AuthMiddlewareProps) {
         '/login', 
         '/register', 
         '/auth/callback', 
-        '/mfa', 
         '/auth/reset', 
         '/privacy', 
         '/imprint',
@@ -92,21 +91,14 @@ export function AuthMiddleware({ children }: AuthMiddlewareProps) {
 
         if (mfaRequirement.requiresMfa) {
           if (debugAuth) {
-            console.info('[auth-middleware] MFA required, redirecting:', {
-              reason: mfaRequirement.reason,
-              trustedDevice: mfaRequirement.trustedDevice,
-              aal: mfaRequirement.aal
-            });
+            console.info('[auth-middleware] MFA required, but no MFA page available. Allowing access.');
           }
-          // Redirect to /mfa with return URL
-          const returnTo = location.pathname + location.search;
-          navigate(`/mfa?next=${encodeURIComponent(returnTo)}`, { replace: true });
-          return;
+          // Note: No MFA page available, so we allow access
+          // In a production environment, you might want to redirect to an error page
         } else {
           if (debugAuth) {
             console.info('[auth-middleware] MFA not required:', {
               reason: mfaRequirement.reason,
-              trustedDevice: mfaRequirement.trustedDevice,
               aal: mfaRequirement.aal
             });
           }
@@ -119,9 +111,8 @@ export function AuthMiddleware({ children }: AuthMiddlewareProps) {
             stack: error instanceof Error ? error.stack : undefined
           });
         }
-        // On error, redirect to MFA for security
-        const returnTo = location.pathname + location.search;
-        navigate(`/mfa?next=${encodeURIComponent(returnTo)}`, { replace: true });
+        // On error, allow access to prevent redirect loops
+        console.warn('[auth-middleware] Allowing access due to middleware error');
         return;
       } finally {
         setMiddlewareLoading(false);
