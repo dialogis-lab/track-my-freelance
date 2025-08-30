@@ -14,6 +14,9 @@ export type AuthState = {
 
 export async function getAuthState(): Promise<AuthState> {
   try {
+    // Force refresh session to get latest auth state
+    await supabase.auth.refreshSession();
+    
     const [{ data: sessionRes }, { data: userRes }] = await Promise.all([
       supabase.auth.getSession(),
       supabase.auth.getUser(),

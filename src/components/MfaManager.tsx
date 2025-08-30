@@ -210,6 +210,9 @@ export function MfaManager({ onMfaVerified, showContinueButton = false, nextUrl 
 
       console.log('[MFA] Verification successful');
       
+      // Force session refresh to get latest auth state
+      await supabase.auth.refreshSession();
+      
       // Reload factors to get updated state
       const updatedFactors = await loadFactors();
       const verifiedFactor = updatedFactors.find(f => f.status === 'verified');

@@ -19,7 +19,11 @@ export function AuthMiddleware({ children }: AuthMiddlewareProps) {
   const [middlewareLoading, setMiddlewareLoading] = useState(false);
 
   useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    
     const runMiddlewareChecks = async () => {
+      // Ignore if already loading to prevent concurrent checks
+      if (middlewareLoading) return;
       // Skip middleware for auth-related routes (equivalent to public routes)
       const publicRoutes = [
         '/', // Landing page should be accessible to everyone
@@ -125,8 +129,15 @@ export function AuthMiddleware({ children }: AuthMiddlewareProps) {
     };
 
     if (!authLoading) {
-      runMiddlewareChecks();
+      // Debounce middleware checks to prevent rapid redirects
+      timeout = setTimeout(runMiddlewareChecks, 100);
     }
+    
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
   }, [location.pathname, location.search, state?.user, state?.mfa.aal, authLoading, navigate]);
 
   // Show loading while auth or middleware checks are running

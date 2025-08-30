@@ -43,6 +43,7 @@ export async function validateTrustedCookie(): Promise<boolean> {
     });
 
     if (!response.ok) {
+      console.error('[Trusted] Fetch failed:', response.status);
       return false;
     }
 

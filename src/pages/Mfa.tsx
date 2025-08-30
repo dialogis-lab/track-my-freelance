@@ -98,9 +98,7 @@ export default function Mfa() {
       // If user already has AAL2, redirect to next page
       if (aal === 'aal2') {
         console.debug('[MFA] User already has AAL2, redirecting');
-        setTimeout(() => {
-          navigate(nextUrl, { replace: true });
-        }, 0);
+        navigate(nextUrl, { replace: true });
         return;
       }
       
@@ -187,6 +185,15 @@ export default function Mfa() {
       });
       
       await refresh();
+      
+      // Explicit AAL check after refresh
+      const { data: updatedAal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (updatedAal?.currentLevel !== 'aal2') {
+        console.error('[MFA] AAL not updated to aal2 after verify');
+        toast({ title: "Error", description: "Session not updated. Try again.", variant: "destructive" });
+        return;
+      }
+      
       navigate(nextUrl, { replace: true });
     } catch (error: any) {
       toast({
@@ -232,6 +239,15 @@ export default function Mfa() {
       });
       
       await refresh();
+      
+      // Explicit AAL check after refresh
+      const { data: updatedAal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (updatedAal?.currentLevel !== 'aal2') {
+        console.error('[MFA] AAL not updated to aal2 after verify');
+        toast({ title: "Error", description: "Session not updated. Try again.", variant: "destructive" });
+        return;
+      }
+      
       navigate(nextUrl, { replace: true });
     } catch (error: any) {
       toast({

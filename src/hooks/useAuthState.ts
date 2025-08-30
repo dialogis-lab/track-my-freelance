@@ -10,6 +10,8 @@ export function useAuthState() {
 
   const refresh = useCallback(async () => {
     try {
+      // Force refresh session before getting auth state
+      await supabase.auth.refreshSession();
       const s = await getAuthState();
       setState(s);
     } catch (error) {
