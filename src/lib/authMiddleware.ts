@@ -66,7 +66,6 @@ export function logMfaDecision(requirement: MfaRequirement, location: string): v
     console.info(`[auth-middleware] MFA decision at ${location}:`, {
       requiresMfa: requirement.requiresMfa,
       reason: requirement.reason,
-      trustedDevice: requirement.trustedDevice,
       aal: requirement.aal
     });
   }

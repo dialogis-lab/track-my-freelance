@@ -197,12 +197,6 @@ export function MfaSetupCard() {
         .delete()
         .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
 
-      // Clear trusted devices
-      await supabase
-        .from('trusted_devices')
-        .delete()
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
-
       setFactors([]);
       setRecoveryCodes([]);
       // Force immediate refresh to ensure UI reflects disabled state

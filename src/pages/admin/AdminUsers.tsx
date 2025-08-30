@@ -90,7 +90,6 @@ export function AdminUsers() {
     try {
       // Delete MFA-related data
       await supabase.from('mfa_recovery_codes').delete().eq('user_id', userId);
-      await supabase.from('trusted_devices').delete().eq('user_id', userId);
       await supabase.from('mfa_rate_limits').delete().eq('user_id', userId);
 
       toast.success('MFA settings reset for user');
