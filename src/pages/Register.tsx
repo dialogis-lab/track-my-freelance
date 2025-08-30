@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
+import { PasswordStrength } from '@/components/ui/password-strength';
+import { validatePasswordStrength } from '@/lib/passwordValidation';
 
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -15,9 +17,13 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showPasswordStrength, setShowPasswordStrength] = useState(false);
   const { signUp, signInWithGoogle, user } = useAuth();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
+
+  // Calculate password strength
+  const passwordStrength = validatePasswordStrength(password);
 
   // Check for OAuth error in URL params
   const oauthError = searchParams.get('error');
@@ -66,10 +72,11 @@ export default function Register() {
       return;
     }
 
-    if (password.length < 6) {
+    // Enhanced password validation
+    if (!passwordStrength.isValid) {
       toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters long.",
+        title: "Password too weak",
+        description: "Please meet all password requirements for better security.",
         variant: "destructive",
       });
       return;
@@ -94,6 +101,7 @@ export default function Register() {
       setEmail('');
       setPassword('');
       setConfirmPassword('');
+      setShowPasswordStrength(false);
     }
     
     setLoading(false);
@@ -172,12 +180,18 @@ export default function Register() {
                   id="password"
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setShowPasswordStrength(e.target.value.length > 0);
+                  }}
                   required
                   disabled={loading || googleLoading}
                   placeholder="Create a password"
-                  minLength={6}
+                  minLength={8}
                 />
+                {showPasswordStrength && (
+                  <PasswordStrength result={passwordStrength} />
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>

@@ -61,29 +61,48 @@ const LeadForm = ({ className = "", variant = "hero" }: LeadFormProps) => {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase
-        .from('leads')
-        .insert([{ email }]);
-
-      if (error) throw error;
-      setIsSubmitted(true);
-      toast({
-        title: "Success!",
-        description: "You've been added to our waitlist. We'll notify you when TimeHatch is ready!",
+      // Use secure Edge Function for waitlist signup
+      const { data, error } = await supabase.functions.invoke('secure-waitlist-signup', {
+        body: { 
+          email: email.toLowerCase().trim(),
+          honeypot 
+        }
       });
+
+      if (error) {
+        console.error('Function invocation error:', error);
+        throw new Error('Failed to submit. Please try again.');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      setIsSubmitted(true);
+      
+      if (data?.alreadyExists) {
+        toast({
+          title: "Already on the list!",
+          description: data.message,
+        });
+      } else {
+        toast({
+          title: "Success!",
+          description: data.message || "You've been added to our waitlist. We'll notify you when TimeHatch is ready!",
+        });
+      }
       
       // Redirect to success page after a short delay
       setTimeout(() => {
         navigate('/success');
       }, 1500);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Form submission error:', error);
       toast({
-        title: "Something went wrong",
-        description: "Please try again or contact support if the problem persists.",
+        title: "Submission failed",
+        description: error.message || "Please try again or contact support if the problem persists.",
         variant: "destructive",
       });
-      navigate('/error');
     } finally {
       setIsLoading(false);
     }

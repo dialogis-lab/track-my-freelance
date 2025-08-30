@@ -6,15 +6,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
 import { getAuthState } from '@/lib/authState';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockoutMessage, setLockoutMessage] = useState('');
   const { signIn, signInWithGoogle, user } = useAuth();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
@@ -55,19 +58,91 @@ export default function Login() {
     // Note: If successful, user will be redirected to /auth/callback
   };
 
+  // Check account lockout status when email changes
+  useEffect(() => {
+    const checkLockout = async () => {
+      if (email && email.includes('@')) {
+        try {
+          const { data, error } = await supabase
+            .rpc('check_account_lockout', { p_email: email.toLowerCase().trim() });
+
+          if (error) {
+            console.error('Lockout check error:', error);
+            return;
+          }
+
+          if (data && data.length > 0) {
+            const lockoutInfo = data[0];
+            setIsLocked(lockoutInfo.locked);
+            setLockoutMessage(lockoutInfo.reason);
+          }
+        } catch (error) {
+          console.error('Lockout check failed:', error);
+        }
+      }
+    };
+
+    const timeoutId = setTimeout(checkLockout, 500); // Debounce
+    return () => clearTimeout(timeoutId);
+  }, [email]);
+
+  const getClientIP = async () => {
+    try {
+      const response = await fetch('https://api.ipify.org?format=json');
+      const data = await response.json();
+      return data.ip;
+    } catch {
+      return '127.0.0.1'; // Fallback
+    }
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isLocked) {
+      toast({
+        title: "Account locked",
+        description: lockoutMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
+    const clientIP = await getClientIP();
 
     try {
       const { error } = await signIn(email, password);
       
+      // Record successful login attempt
+      await supabase.rpc('record_login_attempt', {
+        p_email: email.toLowerCase().trim(),
+        p_ip_address: clientIP,
+        p_success: !error,
+        p_user_agent: navigator.userAgent,
+        p_error_message: error?.message || null
+      });
+
       if (error) {
-        toast({
-          title: "Sign in failed",
-          description: error.message,
-          variant: "destructive",
-        });
+        // Check if account is now locked after failed attempt
+        const { data: lockoutData } = await supabase
+          .rpc('check_account_lockout', { p_email: email.toLowerCase().trim() });
+
+        if (lockoutData && lockoutData.length > 0 && lockoutData[0].locked) {
+          setIsLocked(true);
+          setLockoutMessage(lockoutData[0].reason);
+          toast({
+            title: "Account locked",
+            description: lockoutData[0].reason,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Sign in failed",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
         return;
       }
 
@@ -76,9 +151,18 @@ export default function Login() {
         description: "You have been signed in successfully.",
       });
       
-      // Navigate to MFA (all users need MFA now)
-      navigate('/mfa', { replace: true });
+      // Navigate to dashboard since MFA was removed
+      navigate('/dashboard', { replace: true });
     } catch (error: any) {
+      // Record failed login attempt
+      await supabase.rpc('record_login_attempt', {
+        p_email: email.toLowerCase().trim(),
+        p_ip_address: clientIP,
+        p_success: false,
+        p_user_agent: navigator.userAgent,
+        p_error_message: error.message || 'Unknown error'
+      });
+
       toast({
         title: "Sign in failed",
         description: error.message || "An error occurred during sign in.",
@@ -143,6 +227,16 @@ export default function Login() {
               </div>
             </div>
 
+            {isLocked && (
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-destructive" />
+                  <p className="text-sm text-destructive font-medium">Account Temporarily Locked</p>
+                </div>
+                <p className="text-sm text-destructive/80 mt-1">{lockoutMessage}</p>
+              </div>
+            )}
+
             <form onSubmit={handleSignIn} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -152,7 +246,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  disabled={loading || googleLoading}
+                  disabled={loading || googleLoading || isLocked}
                   placeholder="Enter your email"
                 />
               </div>
@@ -164,12 +258,12 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  disabled={loading || googleLoading}
+                  disabled={loading || googleLoading || isLocked}
                   placeholder="Enter your password"
-                  minLength={6}
+                  minLength={8}
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading || googleLoading}>
+              <Button type="submit" className="w-full" disabled={loading || googleLoading || isLocked}>
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
