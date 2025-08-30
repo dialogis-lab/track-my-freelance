@@ -303,7 +303,7 @@ const NewLandingPage = () => {
                 <CardContent className="p-8">
                   <h3 className="text-xl font-semibold text-foreground mb-4">What is TimeHatch?</h3>
                   <p className="text-muted-foreground leading-relaxed">
-                    TimeHatch is a simple time tracking tool for freelancers and small teams. Track work hours, manage projects, and generate professional PDF invoices.
+                    TimeHatch is a simple time tracking tool for freelancers and small teams. Track your work hours with a built-in timer, manage projects and clients, and generate professional PDF invoices.
                   </p>
                 </CardContent>
               </Card>
@@ -312,7 +312,7 @@ const NewLandingPage = () => {
                 <CardContent className="p-8">
                   <h3 className="text-xl font-semibold text-foreground mb-4">Is TimeHatch free?</h3>
                   <p className="text-muted-foreground leading-relaxed">
-                    Yes, you can start with a free plan. Paid features like invoicing and exports are available later.
+                    Yes, you can start with the Solo plan, which already includes invoicing and exports. A Team plan with collaboration features is also available.
                   </p>
                 </CardContent>
               </Card>
@@ -321,7 +321,7 @@ const NewLandingPage = () => {
                 <CardContent className="p-8">
                   <h3 className="text-xl font-semibold text-foreground mb-4">How do I track my time?</h3>
                   <p className="text-muted-foreground leading-relaxed">
-                    You can use the built-in timer or add manual entries. Each session can be linked to a client and project.
+                    Use the built-in start/stop timer. Each session is automatically recorded and linked to a client and project. (Manual entries are not yet available, but planned.)
                   </p>
                 </CardContent>
               </Card>
