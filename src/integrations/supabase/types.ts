@@ -949,6 +949,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      enhanced_waitlist_rate_limit: {
+        Args: { p_email?: string; p_ip_address: unknown }
+        Returns: {
+          allowed: boolean
+          reason: string
+          remaining_attempts: number
+        }[]
+      }
       expense_calculate_amounts: {
         Args: { p_quantity: number; p_unit_cents: number; p_vat_rate: number }
         Returns: {
@@ -1256,6 +1264,14 @@ export type Database = {
       is_free_user: {
         Args: { p_user?: string }
         Returns: boolean
+      }
+      is_valid_email_domain: {
+        Args: { email_address: string }
+        Returns: boolean
+      }
+      log_security_event: {
+        Args: { event_details?: Json; event_type: string; ip_address?: unknown }
+        Returns: undefined
       }
       record_login_attempt: {
         Args: {
