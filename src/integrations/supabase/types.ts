@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_lockouts: {
+        Row: {
+          created_at: string | null
+          email: string
+          failed_attempts: number | null
+          id: string
+          locked_until: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          failed_attempts?: number | null
+          id?: string
+          locked_until?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          failed_attempts?: number | null
+          id?: string
+          locked_until?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           created_at: string
@@ -422,6 +449,36 @@ export type Database = {
         }
         Relationships: []
       }
+      login_attempts: {
+        Row: {
+          attempt_time: string | null
+          email: string
+          error_message: string | null
+          id: string
+          ip_address: unknown | null
+          success: boolean | null
+          user_agent: string | null
+        }
+        Insert: {
+          attempt_time?: string | null
+          email: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown | null
+          success?: boolean | null
+          user_agent?: string | null
+        }
+        Update: {
+          attempt_time?: string | null
+          email?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown | null
+          success?: boolean | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       mfa_rate_limits: {
         Row: {
           attempts: number
@@ -775,6 +832,36 @@ export type Database = {
         }
         Relationships: []
       }
+      waitlist_rate_limits: {
+        Row: {
+          attempts: number | null
+          blocked_until: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          ip_address: unknown
+          window_start: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          ip_address: unknown
+          window_start?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          ip_address?: unknown
+          window_start?: string | null
+        }
+        Relationships: []
+      }
       workspace_keys: {
         Row: {
           created_at: string
@@ -807,6 +894,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_account_lockout: {
+        Args: { p_email: string }
+        Returns: {
+          attempts: number
+          locked: boolean
+          reason: string
+        }[]
+      }
       check_client_access_rate_limit: {
         Args: { user_id_param: string }
         Returns: boolean
@@ -818,6 +913,13 @@ export type Database = {
       check_profile_access_rate_limit: {
         Args: { user_id_param: string }
         Returns: boolean
+      }
+      check_waitlist_rate_limit: {
+        Args: { p_email?: string; p_ip_address: unknown }
+        Returns: {
+          allowed: boolean
+          reason: string
+        }[]
       }
       cleanup_expired_trusted_devices: {
         Args: Record<PropertyKey, never>
@@ -836,6 +938,10 @@ export type Database = {
         Returns: undefined
       }
       cleanup_old_sensitive_audit_logs: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_security_logs: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
@@ -1150,6 +1256,16 @@ export type Database = {
       is_free_user: {
         Args: { p_user?: string }
         Returns: boolean
+      }
+      record_login_attempt: {
+        Args: {
+          p_email: string
+          p_error_message?: string
+          p_ip_address: unknown
+          p_success: boolean
+          p_user_agent?: string
+        }
+        Returns: undefined
       }
       secure_delete_client_data: {
         Args: { client_id_param: string }
