@@ -367,9 +367,9 @@ async function addTrustedDevice(req: Request, supabase: any, user: any, clientIP
   let debugCookieSettings: string
   
   if (isLovableDev) {
-    // For Lovable development environment - no domain restriction, secure over HTTPS
-    cookieSettings = `th_td=${cookieValue}; HttpOnly; Secure; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}; Path=/`
-    debugCookieSettings = `th_td_debug=${deviceId.substring(0, 8)}; Secure; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}; Path=/`
+    // For Lovable development environment - use SameSite=None for cross-origin
+    cookieSettings = `th_td=${cookieValue}; HttpOnly; Secure; SameSite=None; Max-Age=${30 * 24 * 60 * 60}; Path=/`
+    debugCookieSettings = `th_td_debug=${deviceId.substring(0, 8)}; Secure; SameSite=None; Max-Age=${30 * 24 * 60 * 60}; Path=/`
   } else if (isTimehatchApp) {
     // For production timehatch.app
     cookieSettings = `th_td=${cookieValue}; HttpOnly; Secure; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}; Path=/; Domain=.timehatch.app`

@@ -306,10 +306,19 @@ export async function addTrustedDevice(): Promise<void> {
       throw new Error('No active session');
     }
 
+    if (import.meta.env.NEXT_PUBLIC_DEBUG_AUTH === 'true') {
+      console.info('[MFA] === ADDING TRUSTED DEVICE ===', {
+        userId: sessionData.session.user?.id,
+        currentCookies: document.cookie.substring(0, 100) + '...',
+        userAgent: navigator.userAgent.substring(0, 50) + '...'
+      });
+    }
+
     // Make direct HTTP call to ensure body is sent properly
     const supabaseUrl = 'https://ollbuhgghkporvzmrzau.supabase.co';
     const response = await fetch(`${supabaseUrl}/functions/v1/trusted-device`, {
       method: 'POST',
+      credentials: 'include', // Ensure cookies are sent and received
       headers: {
         'Authorization': `Bearer ${sessionData.session.access_token}`,
         'Content-Type': 'application/json',
@@ -325,6 +334,23 @@ export async function addTrustedDevice(): Promise<void> {
     }
     
     const data = await response.json();
+    
+    if (import.meta.env.NEXT_PUBLIC_DEBUG_AUTH === 'true') {
+      // Wait a moment for cookies to be set by browser
+      setTimeout(() => {
+        const updatedCookies = document.cookie;
+        const hasTrustedDeviceCookie = updatedCookies.includes('th_td=');
+        console.info('[MFA] === TRUSTED DEVICE ADDED ===', {
+          success: data.success,
+          device_id: data.device_id?.substring(0, 8) + '...',
+          expires_at: data.expires_at,
+          cookies_before: document.cookie.includes('th_td='),
+          cookies_after: hasTrustedDeviceCookie,
+          updated_cookies: updatedCookies.substring(0, 150) + '...'
+        });
+      }, 100);
+    }
+    
     console.debug('[MFA] Trusted device added successfully:', data);
   } catch (error) {
     console.error('Error adding trusted device:', error);

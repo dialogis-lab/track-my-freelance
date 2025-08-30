@@ -103,18 +103,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      // Clear trusted device cookie first
+      // Clear trusted device cookies first
       try {
-        // Clear the trusted device cookie manually since we might not have access to edge functions after logout
-        const isProduction = window.location.hostname.includes('timehatch.app');
-        const cookieOptions = isProduction 
-          ? '; Path=/; Domain=.timehatch.app; SameSite=Lax'
-          : '; Path=/; SameSite=Lax';
+        const currentHost = window.location.hostname;
+        const isLovableDev = currentHost.includes('lovable.dev');
+        const isTimehatchApp = currentHost.includes('timehatch.app');
         
-        document.cookie = `td=; Max-Age=0${cookieOptions}`;
-        console.debug('[auth] Cleared trusted device cookie on logout');
+        // Clear both the main cookie and debug cookie with proper domain settings
+        if (isLovableDev) {
+          // For Lovable dev - use SameSite=None for cross-origin
+          document.cookie = 'th_td=; Max-Age=0; Path=/; Secure; SameSite=None';
+          document.cookie = 'th_td_debug=; Max-Age=0; Path=/; Secure; SameSite=None';
+        } else if (isTimehatchApp) {
+          // For production timehatch.app
+          document.cookie = 'th_td=; Max-Age=0; Path=/; Domain=.timehatch.app; Secure; SameSite=Lax';
+          document.cookie = 'th_td_debug=; Max-Age=0; Path=/; Domain=.timehatch.app; Secure; SameSite=Lax';
+        } else {
+          // For localhost or other development
+          document.cookie = 'th_td=; Max-Age=0; Path=/; SameSite=Lax';
+          document.cookie = 'th_td_debug=; Max-Age=0; Path=/; SameSite=Lax';
+        }
+        
+        if (import.meta.env.NEXT_PUBLIC_DEBUG_AUTH === 'true') {
+          console.info('[auth] === LOGOUT - CLEARING TRUSTED DEVICE COOKIES ===', {
+            hostname: currentHost,
+            isLovableDev,
+            isTimehatchApp,
+            cookiesAfterClear: document.cookie.includes('th_td') ? 'STILL PRESENT' : 'CLEARED'
+          });
+        }
       } catch (error) {
-        console.debug('Error clearing trusted device cookie:', error);
+        console.debug('Error clearing trusted device cookies:', error);
       }
       
       // Clear state immediately to show user as logged out
